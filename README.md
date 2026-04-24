@@ -44,17 +44,15 @@ configured. SSL certificate installed. Kibana is live.
 <img width="1076" height="873" alt="elastic" src="https://github.com/user-attachments/assets/65e011c9-47b2-4088-a3f0-cd9c70e389b1" />
 - April 24 2026 — First logs flowing into Kibana. 704 documents ingested from server telemetry. Elastic Agent enrolled and healthy in Fleet.
 <img width="1076" height="873" alt="elastid" src="https://github.com/user-attachments/assets/4f297393-48c5-4416-97bf-e804358a2aaa" />
-## Progress
 - April 24 2026
-  - Full ELK stack deployed and secured on DigitalOcean
-  - Ubuntu server patched and firewall configured
-  - Elasticsearch 8.19 running and verified
-  - Kibana live at https://1xlozec.com with SSL via NGINX
-  - Fleet Server running and healthy
-  - Elastic Agent enrolled and shipping live telemetry
-  - 1,616 Elastic prebuilt detection rules installed with zero gaps
-  - GitHub repository live and documented
----
+    - Full ELK stack deployed and secured on DigitalOcean
+    - Ubuntu server patched and firewall configured
+    - Elasticsearch 8.19 running and verified
+    - Kibana live at https://1xlozec.com with SSL via NGINX
+    - Fleet Server running and healthy
+    - Elastic Agent enrolled and shipping live telemetry
+    - 1,616 Elastic prebuilt detection rules installed with zero gaps
+    - GitHub repository live and documented
 
 ## Lab Access
 
