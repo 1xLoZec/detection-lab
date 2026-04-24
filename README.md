@@ -40,26 +40,21 @@ them. This is not a finished product. It is a live build.
 
 ## Progress
 
-- **April 24 2026** — Repository created. ELK stack deployed and secured. Firewall configured. SSL certificate installed. Kibana live.
+## Progress
 
-- **April 24 2026** — Elasticsearch verified. Cluster and node confirmed healthy.
+**April 24 2026** — Repository created. ELK stack deployed and secured. Firewall configured. SSL certificate installed. Kibana live.
 
-- **April 24 2026** — First logs flowing into Kibana. Elastic Agent enrolled and healthy in Fleet.
+**April 24 2026** — Elasticsearch verified. Cluster and node confirmed healthy.
 
-- **April 24 2026**
-  - Full ELK stack deployed and secured on DigitalOcean
-  - Ubuntu server patched and firewall configured
-  - Kibana live with SSL via NGINX
-  - Fleet Server running and healthy
-  - Elastic Agent enrolled and shipping live telemetry
-  - 1,616 prebuilt detection rules installed with zero gaps
-  - GitHub repository live and documented
+<img width="1076" height="873" alt="elastic" src="https://github.com/user-attachments/assets/65e011c9-47b2-4088-a3f0-cd9c70e389b1" />
 
-- **April 24 2026**
-  - VPN tunnel configured — Kibana no longer publicly accessible
-  - Brute force protection active — first ban triggered within minutes
-  - Real attacker traffic observed and logged
-  - Infrastructure hardened — ready for Phase 4
+**April 24 2026** — First logs flowing into Kibana. Elastic Agent enrolled and healthy in Fleet.
+
+<img width="1076" height="873" alt="elastid" src="https://github.com/user-attachments/assets/4f297393-48c5-4416-97bf-e804358a2aaa" />
+
+**April 24 2026** — Full ELK stack live on DigitalOcean. Server patched and locked down. Kibana accessible via SSL. Fleet Server running. Elastic Agent shipping telemetry. 1,616 prebuilt detection rules installed with zero gaps.
+
+**April 24 2026** — VPN tunnel up. Kibana off the public internet. Brute force protection active. First ban triggered within minutes of going live. Real attacker traffic observed and logged. Infrastructure hardened. Phase 4 next.
       
 ## Lab Access
 
