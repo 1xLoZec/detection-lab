@@ -1,0 +1,150 @@
+<svg width="100%" viewBox="0 0 680 920" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>1xLoZec Detection Engineering Lab</title>
+<desc>Detection engineering pipeline top to bottom</desc>
+<defs>
+  <marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M2 2L8 5L2 8" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </marker>
+</defs>
+
+<rect width="680" height="920" fill="#ffffff"/>
+
+<!-- TITLE -->
+<text x="340" y="28" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:15px;font-weight:700;fill:#111;letter-spacing:1px">1xLoZec — Detection Engineering Lab</text>
+<line x1="40" y1="38" x2="640" y2="38" stroke="#e5e5e5" stroke-width="1"/>
+
+<!-- THREAT SOURCES -->
+<text x="340" y="60" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:10px;fill:#999;letter-spacing:2px">THREAT SOURCES</text>
+
+<rect x="40" y="68" width="340" height="90" rx="6" fill="#fffbf0" stroke="#F5A623" stroke-width="1.2"/>
+<text x="210" y="86" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:10px;font-weight:700;fill:#92400e">Honeypot Network — Cloud</text>
+<rect x="56" y="92" width="90" height="52" rx="5" fill="#fff" stroke="#F5A623" stroke-width="0.8"/>
+<text x="101" y="114" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:10px;font-weight:700;fill:#333">T-Pot</text>
+<text x="101" y="128" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:9px;fill:#777">20+ honeypots</text>
+<rect x="160" y="92" width="90" height="52" rx="5" fill="#fff" stroke="#F5A623" stroke-width="0.8"/>
+<text x="205" y="114" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:10px;font-weight:700;fill:#333">SSH Honeypy</text>
+<text x="205" y="128" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:9px;fill:#777">SSH traps</text>
+<rect x="264" y="92" width="90" height="52" rx="5" fill="#fff" stroke="#F5A623" stroke-width="0.8"/>
+<text x="309" y="114" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:10px;font-weight:700;fill:#333">RDP Honeypot</text>
+<text x="309" y="128" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:9px;fill:#777">RDP traps</text>
+
+<rect x="396" y="68" width="244" height="90" rx="6" fill="#fff5f5" stroke="#E24B4A" stroke-width="1.2"/>
+<text x="518" y="86" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:10px;font-weight:700;fill:#991b1b">Adversary Simulation — Local</text>
+<rect x="412" y="92" width="100" height="52" rx="5" fill="#fff" stroke="#E24B4A" stroke-width="0.8"/>
+<text x="462" y="112" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:10px;font-weight:700;fill:#333">Windows VM</text>
+<text x="462" y="126" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:9px;fill:#777">VMware Fusion</text>
+<rect x="524" y="92" width="100" height="24" rx="4" fill="#fff3f3" stroke="#fca5a5" stroke-width="0.8"/>
+<text x="574" y="108" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:9px;font-weight:700;fill:#dc2626">Atomic Red Team</text>
+<rect x="524" y="120" width="100" height="24" rx="4" fill="#eff6ff" stroke="#93c5fd" stroke-width="0.8"/>
+<text x="574" y="136" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:9px;font-weight:700;fill:#2563eb">Sysmon</text>
+
+<!-- LOG tags -->
+<rect x="89" y="157" width="28" height="16" rx="2" fill="#fef3c7" stroke="#F5A623" stroke-width="0.8"/>
+<text x="103" y="169" text-anchor="middle" style="font-family:ui-monospace,monospace;font-size:7.5px;font-weight:700;fill:#92400e">LOG</text>
+<rect x="193" y="157" width="28" height="16" rx="2" fill="#fef3c7" stroke="#F5A623" stroke-width="0.8"/>
+<text x="207" y="169" text-anchor="middle" style="font-family:ui-monospace,monospace;font-size:7.5px;font-weight:700;fill:#92400e">LOG</text>
+<rect x="297" y="157" width="28" height="16" rx="2" fill="#fef3c7" stroke="#F5A623" stroke-width="0.8"/>
+<text x="311" y="169" text-anchor="middle" style="font-family:ui-monospace,monospace;font-size:7.5px;font-weight:700;fill:#92400e">LOG</text>
+<rect x="450" y="157" width="28" height="16" rx="2" fill="#fee2e2" stroke="#E24B4A" stroke-width="0.8"/>
+<text x="464" y="169" text-anchor="middle" style="font-family:ui-monospace,monospace;font-size:7.5px;font-weight:700;fill:#991b1b">LOG</text>
+
+<line x1="103" y1="158" x2="103" y2="178" stroke="#F5A623" stroke-width="0.8"/>
+<line x1="207" y1="158" x2="207" y2="178" stroke="#F5A623" stroke-width="0.8"/>
+<line x1="311" y1="158" x2="311" y2="178" stroke="#F5A623" stroke-width="0.8"/>
+<line x1="464" y1="158" x2="464" y2="178" stroke="#E24B4A" stroke-width="0.8"/>
+<line x1="103" y1="178" x2="464" y2="178" stroke="#ccc" stroke-width="0.8"/>
+<line x1="280" y1="178" x2="280" y2="196" stroke="#555" stroke-width="1.2" marker-end="url(#a)"/>
+
+<!-- SIEM -->
+<text x="340" y="214" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:10px;fill:#999;letter-spacing:2px">SIEM — CLOUD</text>
+<rect x="40" y="222" width="600" height="160" rx="6" fill="#f0faf5" stroke="#6ee7b7" stroke-width="1.2"/>
+<rect x="60" y="240" width="120" height="64" rx="5" fill="#fff" stroke="#00BFB3" stroke-width="1"/>
+<text x="120" y="265" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:11px;font-weight:700;fill:#333">Logstash</text>
+<text x="120" y="281" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:9px;fill:#777">ingest · parse · enrich</text>
+<line x1="180" y1="272" x2="200" y2="272" stroke="#888" stroke-width="1" marker-end="url(#a)"/>
+<rect x="200" y="240" width="140" height="64" rx="5" fill="#fff" stroke="#FEC514" stroke-width="1"/>
+<text x="270" y="265" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:11px;font-weight:700;fill:#333">Elasticsearch</text>
+<text x="270" y="281" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:9px;fill:#777">store · index · search</text>
+<line x1="340" y1="272" x2="360" y2="272" stroke="#888" stroke-width="1" marker-end="url(#a)"/>
+<rect x="360" y="240" width="120" height="64" rx="5" fill="#fff" stroke="#E8488A" stroke-width="1"/>
+<text x="420" y="265" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:11px;font-weight:700;fill:#333">Kibana</text>
+<text x="420" y="281" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:9px;fill:#777">rules · alerts · dashboards</text>
+<rect x="60" y="320" width="90" height="32" rx="4" fill="#fff" stroke="#ddd" stroke-width="0.8"/>
+<text x="105" y="340" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:9px;font-weight:700;fill:#555">Fleet Server</text>
+<rect x="162" y="320" width="90" height="32" rx="4" fill="#fff" stroke="#ddd" stroke-width="0.8"/>
+<text x="207" y="340" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:9px;font-weight:700;fill:#555">Elastic Agent</text>
+<rect x="264" y="320" width="90" height="32" rx="4" fill="#fff" stroke="#ddd" stroke-width="0.8"/>
+<text x="309" y="340" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:9px;font-weight:700;fill:#555">NGINX + SSL</text>
+<rect x="366" y="320" width="90" height="32" rx="4" fill="#fff3f3" stroke="#fca5a5" stroke-width="0.8"/>
+<text x="411" y="336" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:9px;font-weight:700;fill:#dc2626">Security Alert</text>
+<text x="411" y="348" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:8px;fill:#ef4444">→ email</text>
+<rect x="468" y="320" width="90" height="32" rx="4" fill="#faf5ff" stroke="#c4b5fd" stroke-width="0.8"/>
+<text x="513" y="340" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:9px;font-weight:700;fill:#7c3aed">MISP</text>
+<line x1="280" y1="382" x2="280" y2="400" stroke="#555" stroke-width="1.2" marker-end="url(#a)"/>
+
+<!-- DETECTION PIPELINE -->
+<text x="340" y="418" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:10px;fill:#999;letter-spacing:2px">DETECTION PIPELINE</text>
+<rect x="40" y="426" width="600" height="90" rx="6" fill="#fafafa" stroke="#ccc" stroke-width="1"/>
+<rect x="60" y="444" width="100" height="52" rx="5" fill="#fff" stroke="#7c3aed" stroke-width="0.8"/>
+<text x="110" y="466" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:11px;font-weight:700;fill:#333">&#931; Sigma</text>
+<text x="110" y="482" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:9px;fill:#777">detection rules</text>
+<line x1="160" y1="470" x2="180" y2="470" stroke="#bbb" stroke-width="0.8" marker-end="url(#a)"/>
+<rect x="180" y="444" width="140" height="52" rx="5" fill="#fff" stroke="#ddd" stroke-width="0.8"/>
+<text x="250" y="466" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:10px;font-weight:700;fill:#333">Managed + Custom</text>
+<text x="250" y="482" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:9px;fill:#777">detection rules</text>
+<line x1="320" y1="470" x2="340" y2="470" stroke="#bbb" stroke-width="0.8" marker-end="url(#a)"/>
+<rect x="340" y="444" width="100" height="52" rx="5" fill="#fff" stroke="#ddd" stroke-width="0.8"/>
+<text x="390" y="464" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:11px;font-weight:700;fill:#333">GitHub</text>
+<text x="390" y="480" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:9px;fill:#777">version control</text>
+<line x1="440" y1="470" x2="460" y2="470" stroke="#bbb" stroke-width="0.8" marker-end="url(#a)"/>
+<rect x="460" y="444" width="120" height="52" rx="5" fill="#eff6ff" stroke="#93c5fd" stroke-width="0.8"/>
+<text x="520" y="464" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:11px;font-weight:700;fill:#333">GitHub Actions</text>
+<text x="520" y="480" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:9px;fill:#2563eb">CI/CD · pySigma · deploy</text>
+<path d="M520,444 Q520,416 420,384" fill="none" stroke="#2563eb" stroke-width="0.8" stroke-dasharray="4 3" marker-end="url(#a)" opacity="0.6"/>
+<text x="508" y="424" text-anchor="end" style="font-family:ui-sans-serif,sans-serif;font-size:8px;fill:#2563eb;opacity:0.8">deploy rules</text>
+<line x1="280" y1="516" x2="280" y2="534" stroke="#555" stroke-width="1.2" marker-end="url(#a)"/>
+
+<!-- AI REFINEMENT -->
+<text x="340" y="552" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:10px;fill:#999;letter-spacing:2px">AI REFINEMENT — DaC</text>
+<rect x="140" y="560" width="400" height="54" rx="6" fill="#fafafa" stroke="#ccc" stroke-width="1"/>
+<text x="340" y="581" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:10px;font-weight:700;fill:#444">LLM API — OpenAI · Claude · Gemini</text>
+<text x="340" y="600" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:9px;fill:#888">rule quality · FP scoring · pre-deploy validation gate</text>
+<line x1="280" y1="614" x2="280" y2="632" stroke="#555" stroke-width="1.2" marker-end="url(#a)"/>
+
+<!-- WORKSTATION MONITOR -->
+<text x="340" y="650" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:10px;fill:#999;letter-spacing:2px">ANALYST WORKSTATION</text>
+<rect x="100" y="658" width="480" height="140" rx="8" fill="#1e293b" stroke="#334155" stroke-width="1.5"/>
+<rect x="112" y="668" width="456" height="108" rx="4" fill="#0f172a"/>
+<rect x="112" y="668" width="456" height="18" rx="4" fill="#1e3a5f"/>
+<text x="124" y="681" style="font-family:ui-monospace,monospace;font-size:8px;fill:#94a3b8">kibana · elastic-agent: healthy · fleet: connected · rules: 1,616 active</text>
+<text x="124" y="702" style="font-family:ui-monospace,monospace;font-size:9px;fill:#00BFB3">$ elastic-agent status ········ healthy</text>
+<text x="124" y="716" style="font-family:ui-monospace,monospace;font-size:9px;fill:#FEC514">$ detection rules loaded ···· 1,616 / 0 gaps</text>
+<text x="124" y="730" style="font-family:ui-monospace,monospace;font-size:9px;fill:#E8488A">&#9888; ALERT: suspicious process · MITRE T1059 · HIGH</text>
+<text x="124" y="744" style="font-family:ui-monospace,monospace;font-size:9px;fill:#64748b">$ investigating ··············</text>
+<rect x="231" y="736" width="6" height="9" rx="1" fill="#64748b" opacity="0.9"/>
+<!-- Bell icon -->
+<circle cx="516" cy="718" r="20" fill="#1a0808" stroke="#E24B4A" stroke-width="1"/>
+<path d="M509,720 Q509,712 516,712 Q523,712 523,720 L524,726 L508,726 Z" fill="#E24B4A"/>
+<circle cx="516" cy="712" r="2.5" fill="#E24B4A"/>
+<path d="M513,726 Q513,730 516,730 Q519,730 519,726" fill="none" stroke="#E24B4A" stroke-width="1.5" stroke-linecap="round"/>
+<circle cx="523" cy="710" r="4" fill="#ff4444"/>
+<text x="516" y="742" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:8px;fill:#94a3b8">alert</text>
+<!-- Email icon -->
+<rect x="542" y="704" width="36" height="26" rx="3" fill="#1a0a0a" stroke="#EA4335" stroke-width="1"/>
+<polyline points="542,704 560,718 578,704" fill="none" stroke="#EA4335" stroke-width="1.2"/>
+<text x="560" y="742" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:8px;fill:#94a3b8">email</text>
+<!-- Monitor stand -->
+<rect x="316" y="798" width="48" height="8" rx="2" fill="#334155"/>
+<rect x="290" y="806" width="100" height="6" rx="3" fill="#334155"/>
+<text x="340" y="832" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:11px;font-weight:700;fill:#444">Workstation</text>
+
+<!-- LEGEND -->
+<line x1="40" y1="856" x2="640" y2="856" stroke="#e5e5e5" stroke-width="1"/>
+<line x1="56" y1="876" x2="80" y2="876" stroke="#555" stroke-width="1.2" marker-end="url(#a)"/>
+<text x="86" y="880" style="font-family:ui-sans-serif,sans-serif;font-size:9px;fill:#777">log pipeline</text>
+<line x1="176" y1="876" x2="200" y2="876" stroke="#2563eb" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#a)"/>
+<text x="206" y="880" style="font-family:ui-sans-serif,sans-serif;font-size:9px;fill:#777">CI/CD deploy</text>
+<line x1="316" y1="876" x2="340" y2="876" stroke="#E24B4A" stroke-width="1.2" marker-end="url(#a)"/>
+<text x="346" y="880" style="font-family:ui-sans-serif,sans-serif;font-size:9px;fill:#777">security alert</text>
+<text x="340" y="910" text-anchor="middle" style="font-family:ui-sans-serif,sans-serif;font-size:9px;fill:#ccc">github.com/1xLoZec/detection-lab · built in public</text>
+</svg>
