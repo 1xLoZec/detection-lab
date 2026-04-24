@@ -1,3 +1,5 @@
+![Lab Topology](topology.svg)
+
 # detection-lab
 
 ELK Stack, Honeypots, Threat Simulation, Detection Rules. 
