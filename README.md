@@ -38,28 +38,28 @@ them. This is not a finished product. It is a live build.
 
 ## Progress
 
-- April 24 2026 — Repository created. ELK stack deployed, 
-secured, and accessible at https://1xlozec.com. Firewall 
-configured. SSL certificate installed. Kibana is live.
-- April 24 2026 — Elasticsearch verified responding correctly. 
-  Cluster name 1xlozec-lab confirmed. Node elk-node-01 confirmed.
-<img width="1076" height="873" alt="elastic" src="https://github.com/user-attachments/assets/65e011c9-47b2-4088-a3f0-cd9c70e389b1" />
-- April 24 2026 — First logs flowing into Kibana. 704 documents ingested from server telemetry. Elastic Agent enrolled and healthy in Fleet.
-<img width="1076" height="873" alt="elastid" src="https://github.com/user-attachments/assets/4f297393-48c5-4416-97bf-e804358a2aaa" />
-- April 24 2026
-    - Full ELK stack deployed and secured on DigitalOcean
-    - Ubuntu server patched and firewall configured
-    - Elasticsearch 8.19 running and verified
-    - Kibana live at https://1xlozec.com with SSL via NGINX
-    - Fleet Server running and healthy
-    - Elastic Agent enrolled and shipping live telemetry
-    - 1,616 Elastic prebuilt detection rules installed with zero gaps
-    - GitHub repository live and documented
-- April 24 2026
-    - VPN tunnel configured — Kibana no longer publicly accessible
-    - Brute force protection active — first ban triggered within minutes
-    - Real attacker traffic observed and logged
-    - Infrastructure hardened — ready for Phase 4
+## Progress
+
+- **April 24 2026** — Repository created. ELK stack deployed and secured. Firewall configured. SSL certificate installed. Kibana live.
+
+- **April 24 2026** — Elasticsearch verified. Cluster and node confirmed healthy.
+
+- **April 24 2026** — First logs flowing into Kibana. Elastic Agent enrolled and healthy in Fleet.
+
+- **April 24 2026**
+  - Full ELK stack deployed and secured on DigitalOcean
+  - Ubuntu server patched and firewall configured
+  - Kibana live with SSL via NGINX
+  - Fleet Server running and healthy
+  - Elastic Agent enrolled and shipping live telemetry
+  - 1,616 prebuilt detection rules installed with zero gaps
+  - GitHub repository live and documented
+
+- **April 24 2026**
+  - VPN tunnel configured — Kibana no longer publicly accessible
+  - Brute force protection active — first ban triggered within minutes
+  - Real attacker traffic observed and logged
+  - Infrastructure hardened — ready for Phase 4
       
 ## Lab Access
 
