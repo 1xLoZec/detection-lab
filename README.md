@@ -55,7 +55,12 @@ configured. SSL certificate installed. Kibana is live.
     - Elastic Agent enrolled and shipping live telemetry
     - 1,616 Elastic prebuilt detection rules installed with zero gaps
     - GitHub repository live and documented
-
+- April 24 2026
+    - VPN tunnel configured — Kibana no longer publicly accessible
+    - Brute force protection active — first ban triggered within minutes
+    - Real attacker traffic observed and logged
+    - Infrastructure hardened — ready for Phase 4
+      
 ## Lab Access
 
 Live Kibana dashboard: https://1xlozec.com
