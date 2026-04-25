@@ -60,7 +60,7 @@ configured. SSL certificate installed. Kibana is live.
 
 - April 24 2026 — WireGuard VPN fully configured with split DNS. Kibana accessible only through encrypted VPN tunnel. Domain resolves correctly through VPN. Blocked on public internet. Infrastructure hardened and ready for Phase 4.
 
-- April 24 2026 — Windows 11 ARM VM deployed in VMware Fusion. Sysmon installed with SwiftOnSecurity config using the ARM64 native binary (Sysmon64a). Elastic Agent enrolled and healthy. Windows VM shipping telemetry to ELK stack. Network isolated to private only. Snapshots taken at clean install and post-enrollment. Phase 4 complete — Atomic Red Team next.
+- April 24 2026 — Windows 11 ARM VM deployed in VMware Fusion. Sysmon installed with SwiftOnSecurity config using the ARM64 native binary (Sysmon64a). Elastic Agent enrolled and healthy. Windows VM shipping telemetry to ELK stack. Network isolated to private only. Snapshots taken at clean install and post-enrollment. Phase 4 complete. Atomic Red Team next.
 ## Lab Access
 
 Live Kibana dashboard: https://1xlozec.com
