@@ -38,24 +38,25 @@ them. This is not a finished product. It is a live build.
 
 ## Progress
 
-## Progress
-
-## Progress
-
-**April 24 2026** — Repository created. ELK stack deployed and secured. Firewall configured. SSL certificate installed. Kibana live.
-
-**April 24 2026** — Elasticsearch verified. Cluster and node confirmed healthy.
-
+- April 24 2026 — Repository created. ELK stack deployed, 
+secured, and accessible at https://1xlozec.com. Firewall 
+configured. SSL certificate installed. Kibana is live.
+- April 24 2026 — Elasticsearch verified responding correctly. 
+  Cluster name 1xlozec-lab confirmed. Node elk-node-01 confirmed.
 <img width="1076" height="873" alt="elastic" src="https://github.com/user-attachments/assets/65e011c9-47b2-4088-a3f0-cd9c70e389b1" />
-
-**April 24 2026** — First logs flowing into Kibana. Elastic Agent enrolled and healthy in Fleet.
-
+- April 24 2026 — First logs flowing into Kibana. 704 documents ingested from server telemetry. Elastic Agent enrolled and healthy in Fleet.
 <img width="1076" height="873" alt="elastid" src="https://github.com/user-attachments/assets/4f297393-48c5-4416-97bf-e804358a2aaa" />
-
-**April 24 2026** — Full ELK stack live on DigitalOcean. Server patched and locked down. Kibana accessible via SSL. Fleet Server running. Elastic Agent shipping telemetry. 1,616 prebuilt detection rules installed with zero gaps.
-
-**April 24 2026** — VPN tunnel up. Kibana off the public internet. Brute force protection active. First ban triggered within minutes of going live. Real attacker traffic observed and logged. Infrastructure hardened. Phase 4 next.
-      
+- April 24 2026
+    - Full ELK stack deployed and secured on DigitalOcean
+    - Ubuntu server patched and firewall configured
+    - Elasticsearch 8.19 running and verified
+    - Kibana live at https://1xlozec.com with SSL via NGINX
+    - Fleet Server running and healthy
+    - Elastic Agent enrolled and shipping live telemetry
+    - 1,616 Elastic prebuilt detection rules installed with zero gaps
+    - GitHub repository live and documented
+- April 24 2026 — WireGuard VPN fully configured with split DNS. Kibana accessible only through encrypted VPN tunnel. Domain resolves correctly through VPN. Blocked on public internet. Infrastructure hardened and ready for Phase 4.
+- April 24 2026 — Windows 11 ARM VM deployed in VMware Fusion. Sysmon installed with SwiftOnSecurity config using the ARM64 native binary (Sysmon64a). Elastic Agent enrolled and healthy. Windows VM shipping telemetry to ELK stack. Network isolated to private only. Snapshots taken at clean install and post-enrollment. Phase 4 complete — Atomic Red Team next.
 ## Lab Access
 
 Live Kibana dashboard: https://1xlozec.com
