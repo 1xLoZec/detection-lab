@@ -61,11 +61,13 @@ configured. SSL certificate installed. Kibana is live.
 - April 24 2026 — WireGuard VPN fully configured with split DNS. Kibana accessible only through encrypted VPN tunnel. Domain resolves correctly through VPN. Blocked on public internet. Infrastructure hardened and ready for Phase 4.
 
 - April 24 2026 — Windows 11 ARM VM deployed in VMware Fusion. Sysmon installed with SwiftOnSecurity config using the ARM64 native binary (Sysmon64a). Elastic Agent enrolled and healthy. Windows VM shipping telemetry to ELK stack. Network isolated to private only. Snapshots taken at clean install and post-enrollment. Phase 4 complete. Atomic Red Team next.
+
+- April 25 2026 — Hit a wall with VMware. Dug into it, found out Broadcom is shipping incomplete installers. Not a config issue, the files are literally missing. Fixed a DNS issue while I was in there and kept moving.
+
+- April 28 2026 — Decided to do it right. Replaced the ISP router and mesh WiFi with enterprise grade gear. Bought a dedicated machine for Proxmox. Proper network segmentation is in place. Attack environment is locked down. Waiting on hardware to finish the build.
+
 ## Lab Access
 
-April 25 2026 — Hit a wall with VMware. Dug into it, found out Broadcom is shipping incomplete installers. Not a config issue, the files are literally missing. Fixed a DNS issue while I was in there and kept moving.
-
-April 28 2026 — Decided to do it right. Replaced the ISP router and mesh WiFi with enterprise grade gear. Bought a dedicated machine for Proxmox. Proper network segmentation is in place. Attack environment is locked down. Waiting on hardware to finish the build.
 
 Live Kibana dashboard: https://1xlozec.com
 
