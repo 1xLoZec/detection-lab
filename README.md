@@ -66,6 +66,8 @@ configured. SSL certificate installed. Kibana is live.
 
 - April 28 2026 — Decided to do it right. Replaced the ISP router and mesh WiFi with enterprise grade gear. Bought a dedicated machine for Proxmox. Proper network segmentation is in place. Attack environment is locked down. Waiting on hardware to finish the build.
 
+- May 7 2026 — Long sessions. Got Proxmox running on the dedicated lab machine and the Windows VM stood up inside it. Built a jump host for secure access to the lab environment. SSH from my PC to the jump host is working with full clipboard support. Still working through network segmentation. Getting closer.
+
 ## Lab Access
 
 
