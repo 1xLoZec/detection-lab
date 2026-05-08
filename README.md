@@ -68,6 +68,7 @@ configured. SSL certificate installed. Kibana is live.
 
 - May 7 2026 — Long sessions. Got Proxmox running on the dedicated lab machine and the Windows VM stood up inside it. Built a jump host for secure access to the lab environment. SSH from my PC to the jump host is working with full clipboard support. Still working through network segmentation. Getting closer.
 
+- May 8 2026 — The pipeline is live. Windows VM telemetry flowing into Kibana. Sysmon operational, Windows event logs, PowerShell logs & security events all showing up from VM. Took some work to get here but it's running clean now.
 ## Lab Access
 
 
