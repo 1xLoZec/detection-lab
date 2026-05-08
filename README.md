@@ -73,6 +73,10 @@ configured. SSL certificate installed. Kibana is live.
 
 - May 8 2026 — First Atomic Red Team simulation ran today. T1003 credential dumping. Completely isolated, nowhere to go. Telemetry showed up in Kibana immediately. Sysmon caught everything — process creation, registry modifications, logon events. The whole pipeline worked exactly as designed. Writing the first detection rule next.
 
+<img width="558" height="269" alt="image" src="https://github.com/user-attachments/assets/2a654b1a-2d26-4604-ae85-a65a5f95fb2a" />
+<img width="558" height="269" alt="image" src="https://github.com/user-attachments/assets/c20186bc-723b-47cb-aef3-f4cd0dee7068" />
+
+
 
 Live Kibana dashboard: https://1xlozec.com
 
