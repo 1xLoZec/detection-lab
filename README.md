@@ -71,6 +71,8 @@ configured. SSL certificate installed. Kibana is live.
 - May 8 2026 — The pipeline is live. Windows VM telemetry flowing into Kibana. Sysmon operational, Windows event logs, PowerShell logs & security events all showing up from VM. Took some work to get here but it's running clean now.
 ## Lab Access
 
+- May 8 2026 — First Atomic Red Team simulation ran today. T1003 credential dumping. Completely isolated, nowhere to go. Telemetry showed up in Kibana immediately. Sysmon caught everything — process creation, registry modifications, logon events. The whole pipeline worked exactly as designed. Writing the first detection rule next.
+
 
 Live Kibana dashboard: https://1xlozec.com
 
