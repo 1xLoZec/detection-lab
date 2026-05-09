@@ -31,3 +31,4 @@ level: medium
 falsepositives:
     - Legitimate administrative scripts — tune by adding exclusions for known good parent paths
 
+
