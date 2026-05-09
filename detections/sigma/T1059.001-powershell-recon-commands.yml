@@ -1,0 +1,29 @@
+title: PowerShell Spawning Reconnaissance Commands
+id: b2c3d4e5-f6a7-8901-bcde-f23456789012
+status: experimental
+description: Detects PowerShell spawning common reconnaissance commands used by attackers after initial access
+author: 1xLoZec
+date: 2026/05/08
+references:
+    - https://attack.mitre.org/techniques/T1059/001/
+tags:
+    - attack.execution
+    - attack.t1059.001
+    - attack.discovery
+logsource:
+    product: windows
+    service: sysmon
+detection:
+    selection:
+        EventID: 1
+        ParentImage|endswith: '\powershell.exe'
+        Image|endswith:
+            - '\whoami.exe'
+            - '\hostname.exe'
+            - '\ipconfig.exe'
+            - '\net.exe'
+            - '\systeminfo.exe'
+    condition: selection
+level: high
+falsepositives:
+    - Legitimate administrative PowerShell scripts
