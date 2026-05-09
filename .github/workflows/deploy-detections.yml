@@ -1,0 +1,105 @@
+name: Validate and Deploy Detection Rules
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'detections/sigma/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'detections/sigma/**'
+
+# Minimal permissions - principle of least privilege
+permissions:
+  contents: read
+
+jobs:
+  validate-and-deploy:
+    runs-on: ubuntu-latest
+    # Grant write only where needed
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        # Pinned to commit SHA v4.2.2 - prevents supply chain attacks
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 2
+
+      - name: Set up Python
+        # Pinned to commit SHA v5.4.0
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install \
+            pysigma==0.11.23 \
+            pysigma-backend-elasticsearch==1.1.6 \
+            pysigma-pipeline-sysmon==1.0.4 \
+            pysigma-pipeline-windows==1.2.0 \
+            requests==2.32.5 \
+            pyyaml==6.0.2
+
+      - name: Find changed Sigma rules
+        id: changed-files
+        run: |
+          # Use git diff instead of tj-actions/changed-files (compromised March 2025)
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- 'detections/sigma/*.yml' | tr '\n' ' ')
+          else
+            CHANGED=$(git diff --name-only HEAD~1 HEAD -- 'detections/sigma/*.yml' | tr '\n' ' ')
+          fi
+          echo "files=$CHANGED" >> $GITHUB_OUTPUT
+          if [ -n "$CHANGED" ]; then
+            echo "any_changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "any_changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Validate each changed rule
+        if: steps.changed-files.outputs.any_changed == 'true'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          FAILED=0
+          for file in ${{ steps.changed-files.outputs.files }}; do
+            if [ -f "$file" ]; then
+              echo "=========================================="
+              echo "Validating: $file"
+              echo "=========================================="
+              python3 validate_rule.py "$file"
+              if [ $? -ne 0 ]; then
+                echo "FAIL: $file did not pass validation"
+                FAILED=1
+              fi
+            fi
+          done
+          if [ $FAILED -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Deploy approved rules to Kibana
+        # Only deploy on push to main, not on pull requests
+        if: |
+          steps.changed-files.outputs.any_changed == 'true' &&
+          github.event_name == 'push' &&
+          github.ref == 'refs/heads/main'
+        env:
+          ELASTIC_URL: ${{ secrets.ELASTIC_URL }}
+          ELASTIC_API_KEY: ${{ secrets.ELASTIC_API_KEY }}
+        run: |
+          for file in ${{ steps.changed-files.outputs.files }}; do
+            if [ -f "$file" ]; then
+              echo "Deploying: $file"
+              python3 deploy_rule.py "$file"
+            fi
+          done
