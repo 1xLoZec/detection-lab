@@ -7,7 +7,7 @@ import urllib3
 from sigma.collection import SigmaCollection
 from sigma.backends.elasticsearch import LuceneBackend
 from sigma.pipelines.sysmon import sysmon_pipeline
-from sigma.pipelines.windows import windows_pipeline
+from sigma.pipelines.windows import windows_logsource_pipeline as windows_pipeline
 from sigma.processing.resolver import ProcessingPipelineResolver
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
