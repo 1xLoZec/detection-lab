@@ -1,44 +1,37 @@
-title: Registry Run Key Persistence via reg.exe (T1547.001)
-id: 6d7bd734-ebdb-4625-ab08-62dd11e2a5cf
+title: Suspicious sdbinst.exe Silent Background Shim Database Installation with Registry Writes
+id: 0fb1a2d5-180c-471d-827c-8bdc4b0a03b9
 status: experimental
-description: Detects the use of reg.exe to add a value to the Windows CurrentVersion\Run or RunOnce registry keys for persistence, particularly when spawned from cmd.exe or powershell.exe with a target executable path outside standard Windows directories. This matches the Atomic Red Team T1547.001 test pattern.
+description: Detects sdbinst.exe executing with silent background flags (-m -bg) combined with registry key creation or modification under AppCompatFlags SdbUpdates, indicative of shim database persistence installation. This pattern matches T1547.001 where attackers install shim databases to redirect legitimate application execution to attacker-controlled code.
 author: 1xLoZec
 date: 2026/05/10
 references:
     - https://attack.mitre.org/techniques/T1547/001/
-    - https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1547.001/T1547.001.md
+    - https://www.geoffchappell.com/studies/windows/win32/apphelp/sdb/index.htm
 tags:
     - attack.persistence
     - attack.t1547.001
 logsource:
-    category: process_creation
+    category: registry_event
     product: windows
 detection:
+    selection_registry:
+        event.code: '13'
+        registry.key|contains:
+            - 'SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\SdbUpdates'
+            - 'SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Custom'
     selection_process:
-        process.name: 'reg.exe'
-    selection_args_run_key:
+        process.name: 'sdbinst.exe'
         process.command_line|contains|all:
-            - 'ADD'
-            - 'CurrentVersion\\Run'
-    selection_suspicious_parent:
+            - '-m'
+            - '-bg'
+    filter_legitimate_parent:
         process.parent.name:
-            - 'cmd.exe'
-            - 'powershell.exe'
-    filter_standard_paths:
-        process.command_line|contains:
-            - 'C:\\Windows\\'
-            - 'C:\\Program Files\\'
-            - 'C:\\Program Files (x86)\\'
-    condition: selection_process and selection_args_run_key and selection_suspicious_parent and not filter_standard_paths
-fields:
-    - process.name
-    - process.command_line
-    - process.executable
-    - process.parent.name
-    - process.parent.executable
-    - winlog.event_data.IntegrityLevel
+            - 'TrustedInstaller.exe'
+            - 'MsiExec.exe'
+            - 'msiexec.exe'
+    condition: selection_registry and selection_process and not filter_legitimate_parent
 falsepositives:
-    - Legitimate software installers that register themselves in Run keys via cmd.exe or powershell.exe wrappers during setup
-    - System administration scripts that programmatically add startup entries using reg.exe for managed software deployment
-    - Software update mechanisms that use reg.exe called from a shell to persist update agents in non-standard directories
+    - Legitimate Windows Update or patch management processes using sdbinst.exe in background mode during OS servicing
+    - Enterprise software deployment tools that install application compatibility shims silently
+    - Microsoft compatibility update mechanisms running during scheduled maintenance windows
 level: high
