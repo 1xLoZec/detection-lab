@@ -236,6 +236,8 @@ Return JSON only:
   "key_indicators": ["the 3 most distinctive things you saw"],
   "detection_focus": "One sentence on what the rule specifically watches for.",
   "next_simulation": "T1XXX — Technique Name — one sentence on why this gap matters for defense.",
+  "severity": "high, medium, or low based on how dangerous this ATT\&CK technique is objectively",
+  "false_positive_risk": "low, medium, or high — how likely this rule is to fire on legitimate activity",
   "skip_reason": "Only fill this if already_covered is true, otherwise leave empty."
 }}"""
     msg = client.messages.create(model="claude-sonnet-4-6", max_tokens=1024,
@@ -353,7 +355,7 @@ def _bar(pct):
     filled = int(pct / 5)
     return (
         f'<span style="font-family:monospace;font-size:14px;color:{GREEN};">{"█"*filled}</span>'
-        f'<span style="font-family:monospace;font-size:14px;color:{BORDER};">{"░"*(20-filled)}</span>'
+        f'<span style="font-family:monospace;font-size:14px;color:#4a5568;">{"░"*(20-filled)}</span>'
     )
 
 def _section_label(text):
@@ -403,10 +405,29 @@ def email_rule_deployed(analysis, iocs, sigma_yaml, rule_id, events_count, lookb
         for ind in analysis.get("key_indicators",[])
     )
 
+    # Confidence — always blue, distinct from severity
     conf_badge = (
-        f'<span style="display:inline-block;background:{conf_color}22;color:{conf_color};'
-        f'border:1px solid {conf_color}55;border-radius:4px;padding:2px 10px;'
+        '<span style="display:inline-block;background:#388bfd22;color:#388bfd;'
+        'border:1px solid #388bfd55;border-radius:4px;padding:2px 8px;'
         f'font-size:11px;font-weight:700;letter-spacing:1px;font-family:monospace;">{conf.upper()}</span>'
+    )
+
+    # Severity — traffic light, how dangerous the technique is
+    sev       = analysis.get("severity", "medium").capitalize()
+    sev_color = {"High": RED, "Medium": YELLOW, "Low": GREEN}.get(sev, MUTED)
+    sev_badge = (
+        f'<span style="display:inline-block;background:{sev_color}22;color:{sev_color};'
+        f'border:1px solid {sev_color}55;border-radius:4px;padding:2px 8px;'
+        f'font-size:11px;font-weight:700;letter-spacing:1px;font-family:monospace;">{sev.upper()}</span>'
+    )
+
+    # False Positive Risk — inverted traffic light, how noisy the rule might be
+    fp       = analysis.get("false_positive_risk", "medium").capitalize()
+    fp_color = {"Low": GREEN, "Medium": YELLOW, "High": RED}.get(fp, MUTED)
+    fp_badge = (
+        f'<span style="display:inline-block;background:{fp_color}22;color:{fp_color};'
+        f'border:1px solid {fp_color}55;border-radius:4px;padding:2px 8px;'
+        f'font-size:11px;font-weight:700;letter-spacing:1px;font-family:monospace;">{fp.upper()}</span>'
     )
 
     medium_note = ""
@@ -421,7 +442,7 @@ def email_rule_deployed(analysis, iocs, sigma_yaml, rule_id, events_count, lookb
     content = f"""
 <tr><td style="padding:20px 36px;">
   <p style="margin:0;font-size:13px;color:{MUTED};">{now}</p>
-  <h1 style="margin:6px 0 0;font-size:20px;font-weight:700;color:{TEXT};">Detection Rule Deployed &nbsp;<span style="font-size:13px;font-weight:700;font-family:monospace;vertical-align:middle;padding:2px 10px;border-radius:4px;background:{conf_color}22;color:{conf_color};border:1px solid {conf_color}55;">{conf.upper()}</span></h1>
+  <h1 style="margin:6px 0 0;font-size:20px;font-weight:700;color:{TEXT};">Detection Rule Deployed &nbsp;{sev_badge}</h1>
 </td></tr>
 
 <tr><td style="padding:0 36px 20px;">
@@ -435,18 +456,25 @@ def email_rule_deployed(analysis, iocs, sigma_yaml, rule_id, events_count, lookb
   <table width="100%" cellpadding="0" cellspacing="0"
          style="border:1px solid {BORDER};border-radius:6px;overflow:hidden;background:{BG};">
   <tr>
-    <td style="padding:14px 18px;border-right:1px solid {BORDER};text-align:center;">
-      <p style="margin:0 0 4px;font-size:10px;letter-spacing:1.5px;color:{MUTED};text-transform:uppercase;">Technique</p>
-      <p style="margin:0;font-size:18px;font-weight:700;color:{GREEN};font-family:monospace;
-         text-shadow:0 0 8px {GREEN}66;">{analysis["technique_id"]}</p>
+    <td style="padding:12px 8px;border-right:1px solid {BORDER};text-align:center;">
+      <p style="margin:0 0 4px;font-size:9px;letter-spacing:1.5px;color:{MUTED};text-transform:uppercase;">Technique</p>
+      <p style="margin:0;font-size:13px;font-weight:700;color:{GREEN};font-family:monospace;">{analysis["technique_id"]}</p>
     </td>
-    <td style="padding:14px 18px;border-right:1px solid {BORDER};text-align:center;">
-      <p style="margin:0 0 6px;font-size:10px;letter-spacing:1.5px;color:{MUTED};text-transform:uppercase;">Confidence</p>
+    <td style="padding:12px 8px;border-right:1px solid {BORDER};text-align:center;">
+      <p style="margin:0 0 5px;font-size:9px;letter-spacing:1.5px;color:{MUTED};text-transform:uppercase;">Severity</p>
+      <p style="margin:0;">{sev_badge}</p>
+    </td>
+    <td style="padding:12px 8px;border-right:1px solid {BORDER};text-align:center;">
+      <p style="margin:0 0 5px;font-size:9px;letter-spacing:1.5px;color:{MUTED};text-transform:uppercase;">Confidence</p>
       <p style="margin:0;">{conf_badge}</p>
     </td>
-    <td style="padding:14px 18px;text-align:center;">
-      <p style="margin:0 0 4px;font-size:10px;letter-spacing:1.5px;color:{MUTED};text-transform:uppercase;">Tactic</p>
-      <p style="margin:0;font-size:13px;font-weight:600;color:{TEXT};">{analysis["tactic"].title()}</p>
+    <td style="padding:12px 8px;border-right:1px solid {BORDER};text-align:center;">
+      <p style="margin:0 0 4px;font-size:9px;letter-spacing:1.5px;color:{MUTED};text-transform:uppercase;">Tactic</p>
+      <p style="margin:0;font-size:11px;font-weight:600;color:{TEXT};">{analysis["tactic"].title()}</p>
+    </td>
+    <td style="padding:12px 8px;text-align:center;">
+      <p style="margin:0 0 5px;font-size:9px;letter-spacing:1.5px;color:{MUTED};text-transform:uppercase;">FP Risk</p>
+      <p style="margin:0;">{fp_badge}</p>
     </td>
   </tr>
   </table>
@@ -456,7 +484,7 @@ def email_rule_deployed(analysis, iocs, sigma_yaml, rule_id, events_count, lookb
 
 <tr><td style="padding:0 36px 20px;">
   {_section_label("ATT&amp;CK Coverage")}
-  <p style="margin:0 0 6px;font-size:14px;line-height:1;">{bar} &nbsp;{pct}%</p>
+  <p style="margin:0 0 6px;font-size:14px;line-height:1;">{bar} <span style="color:{TEXT};font-weight:600;">{pct}%</span></p>
   <p style="margin:0;font-size:12px;color:{MUTED};">
     {covered} of {total} attack categories have at least one detection rule
   </p>
@@ -540,7 +568,7 @@ def email_nothing_new(events_count, lookback, analysis, seen):
 
 <tr><td style="padding:0 36px 20px;">
   {_section_label("ATT&amp;CK Coverage")}
-  <p style="margin:0 0 6px;font-size:14px;">{bar} &nbsp;{pct}%</p>
+  <p style="margin:0 0 6px;font-size:14px;">{bar} <span style="color:{TEXT};font-weight:600;">{pct}%</span></p>
   <p style="margin:0;font-size:12px;color:{MUTED};">
     {covered} of {total} attack categories covered &nbsp;·&nbsp; {len(seen)} techniques in library
   </p>
@@ -620,7 +648,7 @@ def email_weekly_digest(seen, log):
 
 <tr><td style="padding:0 36px 20px;">
   {_section_label("Overall Coverage")}
-  <p style="margin:0 0 6px;font-size:14px;">{bar} &nbsp;{pct}%</p>
+  <p style="margin:0 0 6px;font-size:14px;">{bar} <span style="color:{TEXT};font-weight:600;">{pct}%</span></p>
   <p style="margin:0;font-size:12px;color:{MUTED};">{covered} of {total} attack categories &nbsp;·&nbsp; {len(seen)} techniques</p>
 </td></tr>
 
