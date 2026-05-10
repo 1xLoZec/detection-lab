@@ -186,5 +186,15 @@
     "rule_id": "9144651a-2b56-4047-ba53-1cff3babe181",
     "filepath": "detections/sigma/T1518-001-software-discovery:-security-software-discovery-autogen.yml",
     "lookback": 10
+  },
+  {
+    "timestamp": "2026-05-10T18:17:41.285044+00:00",
+    "result": "deployed",
+    "technique_id": "T1059.003",
+    "technique_name": "Command and Scripting Interpreter: Windows Command Shell",
+    "confidence": "high",
+    "rule_id": "62ed787d-48b7-4072-bca6-2a9048ed8bec",
+    "filepath": "detections/sigma/T1059-003-command-and-scripting-interpreter:-windows-command-shell-autogen.yml",
+    "lookback": 14
   }
 ]

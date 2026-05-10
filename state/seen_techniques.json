@@ -124,5 +124,12 @@
     "rule_id": "9144651a-2b56-4047-ba53-1cff3babe181",
     "deployed_at": "2026-05-10T18:08:33.118289+00:00",
     "confidence": "medium"
+  },
+  "T1059.003": {
+    "technique_name": "Command and Scripting Interpreter: Windows Command Shell",
+    "tactic": "execution",
+    "rule_id": "62ed787d-48b7-4072-bca6-2a9048ed8bec",
+    "deployed_at": "2026-05-10T18:17:41.285044+00:00",
+    "confidence": "high"
   }
 }
