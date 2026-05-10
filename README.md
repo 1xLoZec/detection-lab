@@ -80,6 +80,9 @@ configured. SSL certificate installed. Kibana is live.
 <img width="510" height="74" alt="image" src="https://github.com/user-attachments/assets/2951a146-6d4c-4349-99db-834555e4c09e" />
 <img width="752" height="140" alt="image" src="https://github.com/user-attachments/assets/dc67a15d-2a6e-44c8-9300-38d44620ef04" />
 
+- May 10 2026 — Built the full automation pipeline. One command triggers the entire detection engineering workflow. Queries Elasticsearch across all hosts, Claude extracts the ATT&CK technique, generates a Sigma rule, pushes to GitHub, CI/CD validates with three AI models, deploys to Kibana, and sends a formatted HTML executive summary to my inbox. No manual steps. The pipeline is fully operational.
+
+<img width="752" height="597" alt="image" src="https://github.com/user-attachments/assets/8ee8ced4-4a1d-4443-b7d8-22682c8532a0" />
 
 
 ## Lab Access
