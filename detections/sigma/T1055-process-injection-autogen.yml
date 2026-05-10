@@ -1,56 +1,80 @@
-title: PowerShell IEX Remote Download of Invoke-MalDoc Process Injection Payload
-id: feb24026-d206-40d7-b30b-b742ac23c6eb
+title: Process Injection via PowerShell IEX and CreateRemoteThread with Atomic Red Team T1055 Indicators
+id: b7e719f4-6d3a-48d0-951a-6408c79717b7
 status: experimental
-description: Detects PowerShell using Invoke-Expression (IEX) combined with Invoke-WebRequest to download and execute Invoke-MalDoc from raw.githubusercontent.com referencing Atomic Red Team T1055 process injection payloads. Also correlates with sdbinst.exe execution used to enable application shimming as an injection facilitator.
+description: Detects Sysmon Event ID 8 (CreateRemoteThread) originating from powershell.exe or cmd.exe combined with outbound DNS queries to raw.githubusercontent.com and PowerShell command lines referencing T1055 or Invoke-MalDoc. Also alerts on sdbinst.exe executed with -m -bg flags outside of patch/update context, which may indicate Application Shimming as an injection vector.
 author: 1xLoZec
 date: 2026/05/10
 references:
   - https://attack.mitre.org/techniques/T1055/
   - https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1055/T1055.md
-  - https://github.com/redcanaryco/invoke-atomicredteam
+  - https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1055/src/x64/T1055-macrocode.txt
 tags:
   - attack.defense_evasion
   - attack.t1055
-  - attack.t1059.001
-  - attack.t1218
+  - attack.t1055.001
+  - attack.t1218.011
 logsource:
-  category: process_creation
   product: windows
-  definition: Sysmon event ID 1 via Elastic Agent with ECS field mapping
+  category: sysmon
 detection:
-  selection_powershell_iex_invoke_maldoc:
+  selection_createremotethread:
+    event.code: '8'
+    process.name|contains:
+      - 'powershell.exe'
+      - 'cmd.exe'
+    winlog.event_data.TargetImage|contains: '<unknown process>'
+
+  selection_iex_t1055:
     event.code: '1'
     process.name: 'powershell.exe'
     process.command_line|contains|all:
       - 'IEX'
-      - 'iwr'
       - 'raw.githubusercontent.com'
-      - 'Invoke-MalDoc'
-  selection_powershell_iex_t1055_path:
+      - 'T1055'
+
+  selection_iex_invokemaldoc:
     event.code: '1'
     process.name: 'powershell.exe'
     process.command_line|contains|all:
-      - 'IEX'
+      - 'Invoke-MalDoc'
       - 'T1055'
-      - 'macroFile'
+
+  selection_iex_invokemaldoc_macrofile:
+    event.code: '1'
+    process.name: 'powershell.exe'
+    process.command_line|contains:
+      - 'T1055-macrocode.txt'
+      - 'Invoke-MalDoc.ps1'
+
+  selection_dns_github_raw:
+    event.code: '22'
+    dns.question.name: 'raw.githubusercontent.com'
+    process.name|contains:
+      - 'powershell.exe'
+      - 'cmd.exe'
+
   selection_sdbinst_shim:
     event.code: '1'
     process.name: 'sdbinst.exe'
     process.command_line|contains|all:
       - '-m'
       - '-bg'
-  condition: selection_powershell_iex_invoke_maldoc or selection_powershell_iex_t1055_path or (selection_sdbinst_shim and 1 of selection_powershell_iex_*)
+
+  filter_sdbinst_legitimate:
+    process.parent.name|contains:
+      - 'TrustedInstaller.exe'
+      - 'TiWorker.exe'
+      - 'svchost.exe'
+    process.command_line|contains:
+      - 'msimain.sdb'
+      - 'sysmain.sdb'
+
+  condition: selection_createremotethread or selection_iex_t1055 or selection_iex_invokemaldoc or selection_iex_invokemaldoc_macrofile or (selection_sdbinst_shim and not filter_sdbinst_legitimate) or selection_dns_github_raw
+
 falsepositives:
-  - Security researchers or red team operators running Atomic Red Team T1055 tests in authorized lab environments
-  - Penetration testers executing authorized process injection simulations via PowerShell
-  - Automated security validation pipelines that legitimately invoke Atomic Red Team atomics against test endpoints
-  - sdbinst.exe with -m -bg flags may be invoked by legitimate Windows application compatibility shim updates, but is rarely combined with PowerShell remote payload execution in the same session
+  - Legitimate security researchers or red team operators executing Atomic Red Team T1055 tests in authorized environments
+  - System administrators running PowerShell scripts that fetch resources from raw.githubusercontent.com for legitimate automation
+  - Windows Update or patch management tooling invoking sdbinst.exe with -m -bg flags as part of compatibility shim database updates via TrustedInstaller or TiWorker
+  - DevOps pipelines or CI/CD agents executing PowerShell IEX patterns to install dependencies from GitHub
+  - Security tooling that performs CreateRemoteThread for monitoring or injection into processes for legitimate instrumentation purposes
 level: high
-fields:
-  - process.name
-  - process.command_line
-  - process.parent.name
-  - process.executable
-  - winlog.event_data.IntegrityLevel
-  - process.pid
-  - process.parent.executable
