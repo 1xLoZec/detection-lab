@@ -1,5 +1,5 @@
 title: PowerShell Spawning Reconnaissance Commands
-id: b2c3d4e5-f6a7-8901-bcde-f23456789012
+id: 0d8f5280-0209-4112-a17f-8e6830258c82
 status: experimental
 description: Detects PowerShell spawning common reconnaissance commands used by attackers after initial access. Focuses on higher-fidelity binaries to reduce false positives.
 author: 1xLoZec
