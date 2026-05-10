@@ -18,5 +18,15 @@
     "rule_id": "5d9f4578-3ec8-4b4a-902d-62f951b3d28a",
     "filepath": "detections/sigma/T1087-001-account-discovery:-local-account-autogen.yml",
     "lookback": 45
+  },
+  {
+    "timestamp": "2026-05-10T08:13:55.059141+00:00",
+    "result": "deployed",
+    "technique_id": "T1016",
+    "technique_name": "System Network Configuration Discovery",
+    "confidence": "high",
+    "rule_id": "c480bbba-f460-498b-94cb-9921a52d9ec9",
+    "filepath": "detections/sigma/T1016-system-network-configuration-discovery-autogen.yml",
+    "lookback": 17
   }
 ]
