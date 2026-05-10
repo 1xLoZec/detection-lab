@@ -45,7 +45,7 @@ them. This is not a finished product. It is a live build.
 
 ## h4voc_water
 
-The center of the lab is a custom autonomous detection engineering pipeline I wrote called **h4voc_water**. Named after my dog Havoc and his water bowl — because like refilling it, detection engineering never stops.
+The center of the lab is a custom autonomous detection engineering pipeline I wrote called **h4voc_water**. h4voc_water is named after the lab's internal threat simulation agent. It runs continuously, because detection engineering never stops.
 
 One command runs the entire workflow:
 
