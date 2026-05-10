@@ -1,0 +1,42 @@
+title: Application Shimming via sdbinst.exe with AppCompatFlags Registry Write
+id: 575160f3-5822-495e-afce-54fee80dca9a
+status: experimental
+description: Detects execution of sdbinst.exe with machine-wide install flags combined with registry writes to HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\SdbUpdates, indicating potential Application Shimming persistence (T1546.011). The -m flag installs shims machine-wide and the registry path is the canonical location where shim database installations are recorded.
+author: 1xLoZec
+date: 2026/05/10
+references:
+  - https://attack.mitre.org/techniques/T1546/011/
+  - https://www.geoffchappell.com/studies/windows/win32/apphelp/sdb/index.htm
+  - https://docs.microsoft.com/en-us/windows/win32/devnotes/sdbinstall
+tags:
+  - attack.persistence
+  - attack.t1546.011
+logsource:
+  product: windows
+  category: registry_set
+detection:
+  selection_registry:
+    event.code: '13'
+    registry.key|contains: 'SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\SdbUpdates'
+    registry.value: 'FriendlyName'
+  filter_legitimate_sdbinst:
+    process.name: 'sdbinst.exe'
+    process.command_line|contains:
+      - '-m -bg'
+      - '-m'
+    winlog.event_data.IntegrityLevel: 'System'
+  condition: selection_registry and filter_legitimate_sdbinst
+fields:
+  - process.name
+  - process.executable
+  - process.command_line
+  - process.parent.name
+  - registry.key
+  - registry.value
+  - winlog.event_data.IntegrityLevel
+falsepositives:
+  - Legitimate Windows Update operations may install shim databases via sdbinst.exe during OS patching cycles
+  - Microsoft Edge or other Microsoft application updates may install compatibility shims as part of their update process
+  - Enterprise application compatibility toolkits (e.g., Microsoft ACT) used by IT administrators to deploy shims for legacy software
+  - Group Policy-based shim deployments managed by domain administrators for application compatibility purposes
+level: high
