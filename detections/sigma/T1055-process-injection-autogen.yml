@@ -1,0 +1,56 @@
+title: PowerShell IEX Remote Download of Invoke-MalDoc Process Injection Payload
+id: feb24026-d206-40d7-b30b-b742ac23c6eb
+status: experimental
+description: Detects PowerShell using Invoke-Expression (IEX) combined with Invoke-WebRequest to download and execute Invoke-MalDoc from raw.githubusercontent.com referencing Atomic Red Team T1055 process injection payloads. Also correlates with sdbinst.exe execution used to enable application shimming as an injection facilitator.
+author: 1xLoZec
+date: 2026/05/10
+references:
+  - https://attack.mitre.org/techniques/T1055/
+  - https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1055/T1055.md
+  - https://github.com/redcanaryco/invoke-atomicredteam
+tags:
+  - attack.defense_evasion
+  - attack.t1055
+  - attack.t1059.001
+  - attack.t1218
+logsource:
+  category: process_creation
+  product: windows
+  definition: Sysmon event ID 1 via Elastic Agent with ECS field mapping
+detection:
+  selection_powershell_iex_invoke_maldoc:
+    event.code: '1'
+    process.name: 'powershell.exe'
+    process.command_line|contains|all:
+      - 'IEX'
+      - 'iwr'
+      - 'raw.githubusercontent.com'
+      - 'Invoke-MalDoc'
+  selection_powershell_iex_t1055_path:
+    event.code: '1'
+    process.name: 'powershell.exe'
+    process.command_line|contains|all:
+      - 'IEX'
+      - 'T1055'
+      - 'macroFile'
+  selection_sdbinst_shim:
+    event.code: '1'
+    process.name: 'sdbinst.exe'
+    process.command_line|contains|all:
+      - '-m'
+      - '-bg'
+  condition: selection_powershell_iex_invoke_maldoc or selection_powershell_iex_t1055_path or (selection_sdbinst_shim and 1 of selection_powershell_iex_*)
+falsepositives:
+  - Security researchers or red team operators running Atomic Red Team T1055 tests in authorized lab environments
+  - Penetration testers executing authorized process injection simulations via PowerShell
+  - Automated security validation pipelines that legitimately invoke Atomic Red Team atomics against test endpoints
+  - sdbinst.exe with -m -bg flags may be invoked by legitimate Windows application compatibility shim updates, but is rarely combined with PowerShell remote payload execution in the same session
+level: high
+fields:
+  - process.name
+  - process.command_line
+  - process.parent.name
+  - process.executable
+  - winlog.event_data.IntegrityLevel
+  - process.pid
+  - process.parent.executable
