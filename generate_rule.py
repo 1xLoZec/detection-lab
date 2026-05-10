@@ -395,7 +395,7 @@ def save_and_push(sigma_yaml, analysis, rule_id):
         print(f"  {r.stdout.strip()}")
         subprocess.run(["git","pull","--rebase"], check=True, capture_output=True)
         subprocess.run(["git","push"], check=True, capture_output=True)
-        print("  Pushed to GitHub. CI/CD pipeline is validating and deploying to Kibana.")
+
     except subprocess.CalledProcessError:
         pass  # git error suppressed — panel shows deployment status
     return filepath
@@ -584,7 +584,7 @@ def email_rule_deployed(analysis, iocs, sigma_yaml, rule_id, events_count, lookb
 
 <tr><td style="padding:0 36px 20px;">
   {_section_label("ATT&amp;CK Coverage")}
-  <p style="margin:0 0 6px;font-size:14px;line-height:1;">{bar} &nbsp;{pct}%</p>
+  <p style="margin:0 0 6px;font-size:15px;font-weight:700;color:{GREEN};">{pct}%</p>
   <p style="margin:0;font-size:12px;color:{MUTED};">
     {covered} of {total} attack categories have at least one detection rule
   </p>
@@ -634,7 +634,7 @@ def email_rule_deployed(analysis, iocs, sigma_yaml, rule_id, events_count, lookb
     )
 
     send_email(
-        f"New Detection Rule — {analysis['technique_id']} {analysis['technique_name']}",
+        f"[{sev.upper()} Severity] {analysis['technique_id']} — {analysis['technique_name']}",
         _wrapper(content, footer)
     )
 
@@ -728,7 +728,7 @@ def email_nothing_new(events_count, lookback, analysis, seen):
 
 <tr><td style="padding:0 36px 20px;">
   {_section_label("ATT&amp;CK Coverage")}
-  <p style="margin:0 0 6px;font-size:14px;line-height:1;">{bar} &nbsp;<span style="font-weight:600;">{pct}%</span></p>
+  <p style="margin:0 0 6px;font-size:15px;font-weight:700;color:{GREEN};">{pct}%</p>
   <p style="margin:0;font-size:12px;color:{MUTED};">{covered} of {total} attack categories have at least one detection rule</p>
 </td></tr>
 
@@ -806,7 +806,7 @@ def email_weekly_digest(seen, log):
 
 <tr><td style="padding:0 36px 20px;">
   {_section_label("ATT&amp;CK Coverage")}
-  <p style="margin:0 0 6px;font-size:14px;line-height:1;">{bar} &nbsp;<span style="font-weight:600;">{pct}%</span></p>
+  <p style="margin:0 0 6px;font-size:15px;font-weight:700;color:{GREEN};">{pct}%</p>
   <p style="margin:0;font-size:12px;color:{MUTED};">{covered} of {total} attack categories &nbsp;·&nbsp; {len(seen)} techniques</p>
 </td></tr>
 
