@@ -5,6 +5,11 @@
 ELK Stack, Honeypots, Threat Simulation, Detection Rules. 
 Built from scratch, documented in real time.
 
+[![CI/CD](https://img.shields.io/github/actions/workflow/status/1xLoZec/detection-lab/deploy-detections.yml?label=CI%2FCD&style=flat-square)](https://github.com/1xLoZec/detection-lab/actions)
+[![Techniques](https://img.shields.io/badge/Techniques%20Deployed-31-blue?style=flat-square)](https://github.com/1xLoZec/detection-lab/tree/main/detections/sigma)
+[![ATT&CK Coverage](https://img.shields.io/badge/ATT%26CK%20Coverage-57%25-blue?style=flat-square)](https://attack.mitre.org/)
+[![SIEM](https://img.shields.io/badge/SIEM-Elastic%208.19-005571?style=flat-square&logo=elastic)](https://www.elastic.co/)
+
 ---
 
 Professionally I make artisan sandwiches. On my own time 
@@ -20,21 +25,57 @@ Everything here is documented as I build it. That includes
 the parts that break, the walls I hit, and how I got through 
 them. This is not a finished product. It is a live build.
 
----
-
 ## The Stack
 
 | Component | Technology | Status |
 |---|---|---|
-| SIEM | Elastic Stack 8.19 | Live |
-| Log Collection | Elastic Agent | Up Next |
-| Honeypot Network | T-Pot | Planned |
-| Threat Simulation | Atomic Red Team | Planned |
-| Detection Rules | Sigma | Planned |
-| CI/CD Pipeline | GitHub Actions | Planned |
-| Threat Intelligence | MISP | Planned |
+| SIEM | Elastic Stack 8.19 | ✅ Live |
+| Endpoint | Windows 11 Pro 25H2 · Sysmon | ✅ Live |
+| Log Collection | Elastic Agent 8.19 + Fleet | ✅ Live |
+| Hypervisor | Proxmox VE 9.1 | ✅ Live |
+| Network | UniFi · VLANs (Default/Home/Mgmt/Lab/RedLab) | ✅ Live |
+| VPN | WireGuard | ✅ Live |
+| Threat Simulation | Atomic Red Team | ✅ Live |
+| Detection Pipeline | h4voc_water (Claude + Gemini + Ollama) | ✅ Live |
+| Detection Rules | Sigma → pySigma → Elastic DSL | ✅ Live |
+| CI/CD | GitHub Actions (self-hosted, 3-AI gate) | ✅ Live |
+| Alerting | HTML email · Rich terminal | ✅ Live |
+| Honeypot Network | T-Pot | 🔜 Planned |
+| Threat Intelligence | MISP | 🔜 Planned |
 
----
+## h4voc_water
+
+The center of the lab is a custom autonomous detection engineering pipeline I wrote called **h4voc_water**. Named after my dog Havoc and his water bowl — because like refilling it, detection engineering never stops.
+
+One command runs the entire workflow:
+
+```
+h4voc_water
+```
+
+What happens next, without any human input:
+
+1. Queries Elasticsearch for Sysmon events across the configured lookback window
+2. Preprocesses and extracts behavioural indicators across process, network, file, registry, and DNS categories
+3. Claude AI identifies the ATT&CK technique, severity, confidence, false positive risk, and writes a plain-English summary
+4. Claude generates a production-ready Sigma rule with ECS field names
+5. Rule is pushed to GitHub and triggers the CI/CD pipeline
+6. Three AI models (Claude + Gemini + Ollama) independently validate the rule — requires 2/3 approval and average score ≥ 6
+7. pySigma converts the Sigma YAML to Elasticsearch DSL and deploys via API to Kibana
+8. A formatted HTML email lands in my inbox with technique stats, strongest signals, and the recommended next simulation
+
+Current coverage: **57% of MITRE ATT&CK tactics · 31 custom rules deployed**
+
+| Tactic | Coverage |
+|--------|----------|
+| Discovery | T1016, T1016.001, T1018, T1033, T1049, T1057, T1069.001, T1069.002, T1082, T1083, T1087.001, T1482 |
+| Defense Evasion | T1036.005, T1112, T1195.002, T1216, T1218.007, T1564.001, T1564.003 |
+| Execution | T1059.001, T1059.003 |
+| Persistence | T1053.005, T1547.001 |
+| Credential Access | T1003.002, T1555.004 |
+| Lateral Movement | T1021.001, T1021.002 |
+| Collection | T1056.001, T1560.001 |
+| Exfiltration | T1048.003 |
 
 ## Progress
 
@@ -80,10 +121,22 @@ configured. SSL certificate installed. Kibana is live.
 <img width="510" height="74" alt="image" src="https://github.com/user-attachments/assets/2951a146-6d4c-4349-99db-834555e4c09e" />
 <img width="752" height="140" alt="image" src="https://github.com/user-attachments/assets/dc67a15d-2a6e-44c8-9300-38d44620ef04" />
 
-- May 10 2026 — Built the full automation pipeline. One command triggers the entire detection engineering workflow. Queries Elasticsearch across all hosts, Claude extracts the ATT&CK technique, generates a Sigma rule, pushes to GitHub, CI/CD validates with three AI models, deploys to Kibana, and sends a formatted HTML executive summary to my inbox. No manual steps. The pipeline is fully operational.
+- May 10 2026 — Built the full h4voc_water automation pipeline. One command triggers the entire detection engineering workflow: query Elasticsearch, extract ATT&CK technique with Claude AI, generate a Sigma rule, push to GitHub, validate with three AI models (Claude + Gemini + Ollama), convert to Elastic DSL with pySigma, deploy to Kibana, send a formatted HTML alert to my inbox. 31 rules deployed. 57% ATT&CK tactic coverage. Runs 24/7 with adaptive lookback, weekly digest, and a kill switch. The pipeline is fully operational.
+
 
 <img width="752" height="597" alt="image" src="https://github.com/user-attachments/assets/8ee8ced4-4a1d-4443-b7d8-22682c8532a0" />
 
+## Roadmap
+
+- [ ] Public read-only Kibana at `training.1xlozec.com`
+- [ ] MITRE ATT&CK coverage heatmap (auto-generated)
+- [ ] Kibana email alerts when deployed rules fire
+- [ ] Active Directory domain controller in Proxmox
+- [ ] T-Pot honeypot on dedicated DigitalOcean droplet
+- [ ] MISP threat intelligence integration
+- [ ] Incident response playbooks per technique
+- [ ] Documentation site at `docs.1xlozec.com`
+- [ ] False positive feedback loop
 
 ## Lab Access
 
