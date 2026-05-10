@@ -68,5 +68,12 @@
     "rule_id": "83e6d320-4d0e-4b8c-95fc-4e5c7fe4afda",
     "deployed_at": "2026-05-10T17:28:21.536890+00:00",
     "confidence": "high"
+  },
+  "T1057": {
+    "technique_name": "Process Discovery",
+    "tactic": "discovery",
+    "rule_id": "a43bd367-b5b5-4a03-b2b4-f3053b2eef83",
+    "deployed_at": "2026-05-10T17:30:03.138867+00:00",
+    "confidence": "medium"
   }
 }

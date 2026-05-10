@@ -98,5 +98,15 @@
     "rule_id": "83e6d320-4d0e-4b8c-95fc-4e5c7fe4afda",
     "filepath": "detections/sigma/T1560-001-archive-collected-data:-archive-via-utility-autogen.yml",
     "lookback": 43
+  },
+  {
+    "timestamp": "2026-05-10T17:30:03.138867+00:00",
+    "result": "deployed",
+    "technique_id": "T1057",
+    "technique_name": "Process Discovery",
+    "confidence": "medium",
+    "rule_id": "a43bd367-b5b5-4a03-b2b4-f3053b2eef83",
+    "filepath": "detections/sigma/T1057-process-discovery-autogen.yml",
+    "lookback": 10
   }
 ]
