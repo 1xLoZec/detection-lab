@@ -78,5 +78,15 @@
     "rule_id": "e02cc050-88ca-459a-8b12-b17d384eeb00",
     "filepath": "detections/sigma/T1021-001-remote-services:-remote-desktop-protocol-autogen.yml",
     "lookback": 44
+  },
+  {
+    "timestamp": "2026-05-10T16:49:35.563902+00:00",
+    "result": "deployed",
+    "technique_id": "T1555.004",
+    "technique_name": "Credentials from Password Stores: Windows Credential Manager",
+    "confidence": "high",
+    "rule_id": "0ba73e8e-e872-4067-ac92-e53d7af7b7f1",
+    "filepath": "detections/sigma/T1555-004-credentials-from-password-stores:-windows-credential-manager-autogen.yml",
+    "lookback": 21
   }
 ]

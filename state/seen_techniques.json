@@ -54,5 +54,12 @@
     "rule_id": "e02cc050-88ca-459a-8b12-b17d384eeb00",
     "deployed_at": "2026-05-10T16:33:17.220543+00:00",
     "confidence": "high"
+  },
+  "T1555.004": {
+    "technique_name": "Credentials from Password Stores: Windows Credential Manager",
+    "tactic": "credential-access",
+    "rule_id": "0ba73e8e-e872-4067-ac92-e53d7af7b7f1",
+    "deployed_at": "2026-05-10T16:49:35.563902+00:00",
+    "confidence": "high"
   }
 }
