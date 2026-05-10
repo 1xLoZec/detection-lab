@@ -1,0 +1,38 @@
+title: Msiexec Silent Install from Non-Standard Path via CMD
+id: d134f553-f48a-471e-b593-05e99a4f57d6
+status: experimental
+description: Detects msiexec.exe invoked with silent install flags (/q /i) targeting an MSI file outside standard software deployment directories, launched from cmd.exe. This behavior is consistent with T1218.007 abuse where a signed Windows binary is used to proxy execution of a malicious MSI payload.
+author: 1xLoZec
+date: 2026/05/10
+references:
+    - https://attack.mitre.org/techniques/T1218/007/
+    - https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1218.007/T1218.007.md
+tags:
+    - attack.defense_evasion
+    - attack.t1218.007
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_process:
+        event.code: '1'
+        process.name|endswith: 'msiexec.exe'
+        process.parent.name|endswith: 'cmd.exe'
+    selection_cmdline:
+        process.command_line|contains|all:
+            - '/q'
+            - '/i'
+    filter_standard_paths:
+        process.command_line|contains:
+            - 'C:\Program Files'
+            - 'C:\Program Files (x86)'
+            - 'C:\Windows\ccmcache'
+            - 'C:\Windows\ccmsetup'
+            - 'C:\ProgramData\Microsoft\Windows\Start Menu'
+            - 'C:\Windows\Installer'
+    condition: selection_process and selection_cmdline and not filter_standard_paths
+falsepositives:
+    - Legitimate software deployments using custom or non-standard installation directories
+    - Administrative scripts invoking msiexec silently from non-default paths during provisioning or imaging
+    - Third-party patch management or RMM tools that stage MSI files outside standard directories
+level: high
