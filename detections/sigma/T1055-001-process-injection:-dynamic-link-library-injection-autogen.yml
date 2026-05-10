@@ -1,0 +1,63 @@
+title: Suspicious DLL Injection via Process Injection Techniques
+id: 9eeb98f7-f5b0-4d6a-ac79-d91184e7a5b3
+status: experimental
+description: Detects potential DLL injection activity (T1055.001) based on suspicious process access patterns and memory allocation behaviors commonly associated with dynamic-link library injection. This rule uses generic behavioral indicators due to absence of specific IOC data.
+author: 1xLoZec
+date: 2026/05/10
+references:
+    - https://attack.mitre.org/techniques/T1055/001/
+    - https://www.elastic.co/guide/en/siem/guide/current/process-injection-detected-elastic-endgame.html
+tags:
+    - attack.defense_evasion
+    - attack.t1055.001
+    - attack.privilege_escalation
+    - attack.t1055
+logsource:
+    category: process_access
+    product: windows
+    service: sysmon
+detection:
+    selection_process_access:
+        event.code: '10'
+        winlog.event_data.GrantedAccess|contains:
+            - '0x1F0FFF'
+            - '0x1F1FFF'
+            - '0x143A'
+            - '0x40'
+            - '0x1400'
+            - '0x1fffff'
+    selection_suspicious_sources:
+        process.name|endswith:
+            - 'rundll32.exe'
+            - 'regsvr32.exe'
+            - 'mshta.exe'
+            - 'wscript.exe'
+            - 'cscript.exe'
+            - 'powershell.exe'
+            - 'cmd.exe'
+            - 'msiexec.exe'
+            - 'svchost.exe'
+    filter_legitimate_access:
+        process.parent.name|contains:
+            - 'MsMpEng.exe'
+            - 'csrss.exe'
+            - 'lsass.exe'
+            - 'services.exe'
+            - 'winlogon.exe'
+    condition: selection_process_access and selection_suspicious_sources and not filter_legitimate_access
+falsepositives:
+    - Legitimate administrative tools performing process inspection or monitoring (e.g., Process Monitor, Process Explorer, Sysinternals tools)
+    - Security software and endpoint detection agents that routinely access process memory for scanning purposes
+    - Software developers and debuggers using Visual Studio or WinDbg attaching to processes during development
+    - Remote desktop or virtualization software that interacts with process memory spaces
+    - Legitimate automation scripts using PowerShell or WScript for administrative tasks that require process interaction
+    - Antivirus or EDR products performing injection-based hooking for monitoring purposes
+fields:
+    - process.name
+    - process.executable
+    - process.command_line
+    - process.parent.name
+    - process.parent.executable
+    - winlog.event_data.GrantedAccess
+    - winlog.event_data.IntegrityLevel
+level: medium
