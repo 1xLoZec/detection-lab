@@ -5,5 +5,12 @@
     "rule_id": "ae4b60ce-b6c0-4ca8-82df-9469de001220",
     "deployed_at": "2026-05-10T07:21:09.396447+00:00",
     "confidence": "high"
+  },
+  "T1087.001": {
+    "technique_name": "Account Discovery: Local Account",
+    "tactic": "discovery",
+    "rule_id": "5d9f4578-3ec8-4b4a-902d-62f951b3d28a",
+    "deployed_at": "2026-05-10T08:01:43.617305+00:00",
+    "confidence": "high"
   }
 }
