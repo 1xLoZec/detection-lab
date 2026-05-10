@@ -1,0 +1,43 @@
+title: System User Discovery via whoami and HOSTNAME from Suspicious Parent
+id: 36b76eed-fe01-4c10-a2d2-c97f8bcc01fa
+status: experimental
+description: Detects whoami.exe or HOSTNAME.EXE spawned from scripting engines or interactive shells under a standard user account at High integrity level, indicative of post-compromise user and host enumeration.
+author: 1xLoZec
+date: 2026/05/10
+references:
+    - https://attack.mitre.org/techniques/T1033/
+tags:
+    - attack.discovery
+    - attack.t1033
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_process:
+        event.code: '1'
+        process.name|lowercasefield:
+            - whoami.exe
+            - hostname.exe
+    selection_parent:
+        process.parent.name|lowercasefield:
+            - powershell.exe
+            - cmd.exe
+            - wscript.exe
+            - cscript.exe
+    selection_integrity:
+        winlog.event_data.IntegrityLevel: High
+    filter_system_accounts:
+        process.name|lowercasefield:
+            - whoami.exe
+            - hostname.exe
+        winlog.event_data.IntegrityLevel:
+            - System
+    filter_known_admin:
+        process.parent.name|lowercasefield:
+            - services.exe
+            - svchost.exe
+    condition: selection_process and selection_parent and selection_integrity and not filter_system_accounts and not filter_known_admin
+falsepositives:
+    - Administrators or DevOps scripts running whoami or hostname for legitimate diagnostic or automation purposes at elevated integrity
+    - Software deployment tools invoking these utilities during installation or configuration checks
+level: medium
