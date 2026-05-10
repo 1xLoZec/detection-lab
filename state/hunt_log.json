@@ -38,5 +38,15 @@
     "rule_id": "32bcde9b-c3c8-4b34-ae75-89d885cda787",
     "filepath": "detections/sigma/T1082-system-information-discovery-autogen.yml",
     "lookback": 25
+  },
+  {
+    "timestamp": "2026-05-10T08:49:56.330051+00:00",
+    "result": "deployed",
+    "technique_id": "T1204.002",
+    "technique_name": "User Execution: Malicious File",
+    "confidence": "high",
+    "rule_id": "e998f335-c133-40a1-b6dd-8dab20e774ae",
+    "filepath": "detections/sigma/T1204-002-user-execution:-malicious-file-autogen.yml",
+    "lookback": 20
   }
 ]

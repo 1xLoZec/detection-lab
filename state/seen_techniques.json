@@ -26,5 +26,12 @@
     "rule_id": "32bcde9b-c3c8-4b34-ae75-89d885cda787",
     "deployed_at": "2026-05-10T08:34:26.089672+00:00",
     "confidence": "high"
+  },
+  "T1204.002": {
+    "technique_name": "User Execution: Malicious File",
+    "tactic": "execution",
+    "rule_id": "e998f335-c133-40a1-b6dd-8dab20e774ae",
+    "deployed_at": "2026-05-10T08:49:56.330051+00:00",
+    "confidence": "high"
   }
 }
