@@ -138,5 +138,12 @@
     "rule_id": "c5830d3b-c4fb-465d-8540-44e6b09fc8e7",
     "deployed_at": "2026-05-10T18:22:28.268979+00:00",
     "confidence": "high"
+  },
+  "T1218.007": {
+    "technique_name": "System Binary Proxy Execution: Msiexec",
+    "tactic": "defense-evasion",
+    "rule_id": "d134f553-f48a-471e-b593-05e99a4f57d6",
+    "deployed_at": "2026-05-10T18:28:37.089496+00:00",
+    "confidence": "high"
   }
 }
