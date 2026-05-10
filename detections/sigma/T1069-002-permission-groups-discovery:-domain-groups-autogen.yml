@@ -1,0 +1,35 @@
+title: Domain Group Enumeration Chain via Net.exe at High Integrity
+id: eb0dc4a9-2abf-4471-8905-68bcef7c63c8
+status: experimental
+description: Detects net.exe or net1.exe executing domain group enumeration commands including 'group /domain', 'domain admins', or 'enterprise admins' arguments, particularly when chained via cmd.exe and executed at High integrity level by a non-SYSTEM user. Indicative of T1069.002 post-compromise domain reconnaissance.
+author: 1xLoZec
+date: 2026/05/10
+references:
+  - https://attack.mitre.org/techniques/T1069/002/
+tags:
+  - attack.discovery
+  - attack.t1069.002
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_net_binaries:
+    event.code: '1'
+    process.name|contains:
+      - 'net.exe'
+      - 'net1.exe'
+  selection_domain_group_args:
+    process.command_line|contains:
+      - 'group /domain'
+      - 'domain admins'
+      - 'enterprise admins'
+  selection_high_integrity:
+    winlog.event_data.IntegrityLevel: 'High'
+  filter_system_user:
+    process.parent.name: 'services.exe'
+  condition: selection_net_binaries and selection_domain_group_args and selection_high_integrity and not filter_system_user
+falsepositives:
+  - Legitimate IT administrators performing domain group audits or inventory tasks from an elevated session
+  - Automated IT management or helpdesk tooling that enumerates domain groups using net.exe under elevated credentials
+  - Security assessment or penetration testing activity authorized within the environment
+level: medium
