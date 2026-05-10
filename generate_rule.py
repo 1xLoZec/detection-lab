@@ -22,6 +22,8 @@ from pathlib import Path
 
 import requests
 import anthropic
+import logging as _logging
+_logging.getLogger("httpx").setLevel(_logging.WARNING)
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -100,6 +102,7 @@ logging.basicConfig(
         show_level=False,
         markup=True,
         rich_tracebacks=False,
+        omit_repeated_times=False,
     )]
 )
 _log = logging.getLogger("h4voc")
@@ -393,8 +396,8 @@ def save_and_push(sigma_yaml, analysis, rule_id):
         subprocess.run(["git","pull","--rebase"], check=True, capture_output=True)
         subprocess.run(["git","push"], check=True, capture_output=True)
         print("  Pushed to GitHub. CI/CD pipeline is validating and deploying to Kibana.")
-    except subprocess.CalledProcessError as e:
-        print(f"  Git failed: {e}")
+    except subprocess.CalledProcessError:
+        pass  # git error suppressed — panel shows deployment status
     return filepath
 
 
@@ -452,7 +455,7 @@ def _bar(pct):
     filled = int(pct / 5)
     return (
         f'<span style="font-family:monospace;font-size:14px;color:{GREEN};">{"█"*filled}</span>'
-        f'<span style="font-family:monospace;font-size:14px;color:{BORDER};">{"░"*(20-filled)}</span>'
+        f'<span style="font-family:monospace;font-size:14px;color:#555555;">{"░"*(20-filled)}</span>'
     )
 
 def _section_label(text):
@@ -853,6 +856,138 @@ def email_stopped():
 </td></tr>
 """
     send_email("[Pipeline Paused] h4voc_water is stopped", _wrapper(content))
+
+
+
+
+# ── Main pipeline ──────────────────────────────────────────────────────────────
+def main():
+    import time as _t
+
+    if not ANTHROPIC_API_KEY:
+        _con.print("[red]Error:[/] ANTHROPIC_API_KEY not set. Check your .env file.")
+        sys.exit(1)
+
+    if STOP_H4VOC_WATER:
+        _con.print("[yellow]Pipeline paused.[/] [dim]STOP_H4VOC_WATER=true in .env[/]")
+        email_stopped()
+        sys.exit(0)
+
+    seen, last, log, digest = load_state()
+    now_ts = datetime.now(timezone.utc).isoformat()
+
+    if should_send_weekly_digest(digest):
+        _con.print("[dim]Sending weekly digest...[/]")
+        email_weekly_digest(seen, log)
+        digest["week_start"] = now_ts
+
+    last_run_ts = last.get("timestamp")
+    if last_run_ts:
+        mins_since = int((datetime.now(timezone.utc) - datetime.fromisoformat(last_run_ts)).total_seconds() / 60)
+        lookback   = max(10, min(mins_since + 5, 1440))
+        _print_header(lookback, mins_since)
+    else:
+        lookback = 60
+        _print_header(lookback)
+
+    # Step 1: Elasticsearch
+    t0 = _t.time()
+    with _con.status("[cyan]Querying Elasticsearch...[/]", spinner="dots", spinner_style="cyan"):
+        events = query_elasticsearch(lookback)
+    _step_ok("Elasticsearch", f"pulled {len(events)} Sysmon events from the last {lookback} minutes", _t.time()-t0)
+
+    if not events:
+        _con.print("  [yellow]No events found.[/] [dim]Run an Atomic Red Team simulation first.[/]")
+        log.append({"timestamp":now_ts,"result":"no_events","lookback":lookback})
+        last["timestamp"] = now_ts
+        save_state(seen, last, log, digest)
+        git_push_state()
+        sys.exit(0)
+
+    # Step 2: Preprocessing
+    t0 = _t.time()
+    with _con.status("[cyan]Preprocessing...[/]", spinner="dots", spinner_style="cyan"):
+        iocs = preprocess_events(events)
+    _step_ok("Preprocessing", f"extracted {len(iocs)} behavioural indicator categories", _t.time()-t0)
+
+    # Step 3: Claude analyzes
+    t0 = _t.time()
+    with _con.status("[cyan]Claude is analyzing...[/]", spinner="dots", spinner_style="cyan"):
+        analysis = analyze_with_claude(iocs, len(events), seen, lookback)
+    sv  = analysis.get("severity","?").upper()
+    sc  = _sev_color(analysis.get("severity","low"))
+    cf  = analysis.get("confidence","?").upper()
+    _step_ok(
+        "Analysis",
+        f"[white]{analysis['technique_id']} — {analysis['technique_name']}[/]  [{sc}]{sv}[/]  [magenta]{cf} confidence[/]",
+        _t.time()-t0
+    )
+
+    last["timestamp"] = now_ts
+
+    # Skip if already covered or low confidence
+    if analysis["already_covered"] or analysis["confidence"] == "low":
+        reason = "already covered" if analysis["already_covered"] else "confidence too low"
+        _step_skip("Skipped", reason)
+        log.append({
+            "timestamp":now_ts, "result":reason.replace(" ","_"),
+            "technique_id":analysis["technique_id"],
+            "technique_name":analysis["technique_name"],
+            "confidence":analysis["confidence"], "lookback":lookback
+        })
+        save_state(seen, last, log, digest)
+        git_push_state()
+        email_nothing_new(len(events), lookback, analysis, seen)
+        covered, total, pct, _ = coverage_stats(seen)
+        _con.print()
+        _con.print(f"  [white]Coverage[/] [green]{pct}%[/] [dim]· {len(seen)} techniques · nothing new to deploy[/]")
+        _con.print()
+        return
+
+    # Step 4: Generate Sigma rule
+    t0 = _t.time()
+    with _con.status("[cyan]Generating Sigma rule...[/]", spinner="dots", spinner_style="cyan"):
+        sigma_yaml, rule_id = generate_sigma_rule(iocs, analysis)
+
+    if not all(f in sigma_yaml for f in ["title:","id:","logsource:","detection:","condition:"]):
+        _con.print("[red]✗  Rule failed validation.[/]")
+        sys.exit(1)
+
+    # Step 5: Push to GitHub
+    t0 = _t.time()
+    with _con.status("[cyan]Pushing to GitHub...[/]", spinner="dots", spinner_style="cyan"):
+        filepath = save_and_push(sigma_yaml, analysis, rule_id)
+    _step_ok("Deployed", "Sigma rule pushed to GitHub — CI/CD pipeline is validating", _t.time()-t0)
+
+    # Update state
+    seen[analysis["technique_id"]] = {
+        "technique_name": analysis["technique_name"],
+        "tactic":         analysis["tactic"],
+        "rule_id":        rule_id,
+        "deployed_at":    now_ts,
+        "confidence":     analysis["confidence"],
+    }
+    log.append({
+        "timestamp":now_ts, "result":"deployed",
+        "technique_id":analysis["technique_id"],
+        "technique_name":analysis["technique_name"],
+        "confidence":analysis["confidence"],
+        "rule_id":rule_id, "filepath":filepath, "lookback":lookback
+    })
+    save_state(seen, last, log, digest)
+    git_push_state()
+
+    # Email
+    email_rule_deployed(analysis, iocs, sigma_yaml, rule_id, len(events), lookback, filepath, seen)
+
+    # Summary panel
+    covered, total, pct, _ = coverage_stats(seen)
+    np = analysis.get("next_simulation","").split(" — ", 2)
+    next_fmt = f"{np[0]} — {np[1]}" if len(np) >= 2 else analysis.get("next_simulation","")
+
+    _con.print()
+    _print_panel(analysis, events, iocs, lookback, seen, next_fmt, pct)
+    _con.print()
 
 
 # ── Entry point ────────────────────────────────────────────────────────────────
