@@ -1,0 +1,47 @@
+title: System Network Connections Discovery via Chained CMD Commands
+id: 7bf6f4b4-b3fc-4563-8f05-9b3d9c62132b
+status: experimental
+description: Detects cmd.exe or powershell.exe spawning netstat.exe, net.exe, or net1.exe with discovery-oriented arguments such as -ano, sessions, or use. Particularly suspicious when chained in a single command line, indicating active enumeration of network connections, mapped drives, and SMB sessions consistent with T1049.
+author: 1xLoZec
+date: 2026/05/10
+references:
+    - https://attack.mitre.org/techniques/T1049/
+tags:
+    - attack.discovery
+    - attack.t1049
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_parent:
+        process.parent.name|contains:
+            - 'cmd.exe'
+            - 'powershell.exe'
+    selection_process:
+        process.name|contains:
+            - 'netstat.exe'
+            - 'net.exe'
+            - 'net1.exe'
+            - 'NETSTAT.EXE'
+    selection_args:
+        process.command_line|contains:
+            - '-ano'
+            - 'sessions'
+            - 'use'
+    selection_chained:
+        process.command_line|contains|all:
+            - 'netstat'
+            - 'net'
+    condition: (selection_parent and selection_process and selection_args) or selection_chained
+falsepositives:
+    - Legitimate administrative scripts that enumerate network connections or mapped drives
+    - IT monitoring tools that invoke netstat or net commands as part of diagnostics
+    - Automated deployment or patch management systems running network checks
+level: medium
+fields:
+    - process.name
+    - process.executable
+    - process.command_line
+    - process.parent.name
+    - process.parent.executable
+    - winlog.event_data.IntegrityLevel
