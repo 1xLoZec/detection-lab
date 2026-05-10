@@ -1,0 +1,36 @@
+title: Remote System Discovery via Net View with Domain Enumeration
+id: 7d5e8bb8-a144-4791-a605-fd4a955ddc89
+status: experimental
+description: Detects net.exe invocations with 'view' arguments including the '/domain' flag, especially when spawned from cmd.exe or powershell.exe under a standard user account. This pattern is consistent with T1018 Remote System Discovery used to enumerate domain-joined hosts and visible network shares for lateral movement planning.
+author: 1xLoZec
+date: 2026/05/10
+references:
+  - https://attack.mitre.org/techniques/T1018/
+tags:
+  - attack.discovery
+  - attack.t1018
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_net_view:
+    event.code: '1'
+    process.name: 'net.exe'
+    process.command_line|contains:
+      - 'view'
+  selection_domain_flag:
+    process.command_line|contains:
+      - '/domain'
+  selection_parent:
+    process.parent.name:
+      - 'cmd.exe'
+      - 'powershell.exe'
+  filter_system_accounts:
+    winlog.event_data.IntegrityLevel:
+      - 'System'
+  condition: selection_net_view and selection_parent and not filter_system_accounts
+falsepositives:
+  - Legitimate IT administrators or helpdesk staff running net view commands for troubleshooting network connectivity or share enumeration
+  - Automated inventory or asset management scripts executed under user context
+  - Network monitoring tools that enumerate domain resources on behalf of users
+level: medium
