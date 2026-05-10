@@ -534,7 +534,7 @@ def email_rule_deployed(analysis, iocs, sigma_yaml, rule_id, events_count, lookb
     )
 
     send_email(
-        f"New Detection Rule — {analysis['technique_id']} {analysis['technique_name']}",
+        f"[{sev.capitalize()} Severity] {analysis['technique_id']} — {analysis['technique_name']}",
         _wrapper(content, footer)
     )
 
