@@ -1,0 +1,12 @@
+[
+  {
+    "timestamp": "2026-05-10T07:21:09.396447+00:00",
+    "result": "deployed",
+    "technique_id": "T1059.001",
+    "technique_name": "Command and Scripting Interpreter: PowerShell",
+    "confidence": "high",
+    "rule_id": "ae4b60ce-b6c0-4ca8-82df-9469de001220",
+    "filepath": "detections/sigma/T1059-001-command-and-scripting-interpreter:-powershell-autogen.yml",
+    "lookback": 60
+  }
+]
