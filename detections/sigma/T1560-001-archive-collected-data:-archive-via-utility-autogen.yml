@@ -1,0 +1,37 @@
+title: Archive Utility Spawned by CMD or PowerShell for Data Staging
+id: 83e6d320-4d0e-4b8c-95fc-4e5c7fe4afda
+status: experimental
+description: Detects cmd.exe or powershell.exe spawning known archive utilities such as Rar.exe or 7z.exe with archive creation flags targeting user profile directories or broad wildcard file patterns, indicative of data staging prior to exfiltration (T1560.001).
+author: 1xLoZec
+date: 2026/05/10
+references:
+    - https://attack.mitre.org/techniques/T1560/001/
+tags:
+    - attack.collection
+    - attack.t1560.001
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_parent:
+        process.parent.name|contains:
+            - 'cmd.exe'
+            - 'powershell.exe'
+    selection_process:
+        process.name|contains:
+            - 'Rar.exe'
+            - '7z.exe'
+            - 'zip.exe'
+            - 'WinRAR.exe'
+    selection_cmdline:
+        process.command_line|contains|all:
+            - ' a '
+            - '-r'
+        process.command_line|contains:
+            - '%USERPROFILE%'
+            - '\Users\'
+    condition: selection_parent and selection_process and selection_cmdline
+falsepositives:
+    - Legitimate backup scripts or administrative tools that use archive utilities to compress files from user profile directories
+    - Scheduled tasks or deployment pipelines that invoke archive utilities with recursive flags
+level: high
