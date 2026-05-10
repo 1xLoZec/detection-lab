@@ -3,6 +3,7 @@
 1xLoZec Detection Lab
 h4voc_water — Autonomous Detection Engineering Pipeline
 
+Named after Havoc the dog and his water bowl.
 Loads credentials from .env automatically.
 Set STOP_H4VOC_WATER=true in .env to pause all auto-deployment.
 """
@@ -76,12 +77,13 @@ SYSMON_ECS_FIELDS = [
 # ── State ──────────────────────────────────────────────────────────────────────
 def load_state():
     STATE_DIR.mkdir(exist_ok=True)
-    def load(f): return json.loads(f.read_text()) if f.exists() else None
-    seen   = load(STATE_DIR / "seen_techniques.json") or {}
-    last   = load(STATE_DIR / "last_run.json") or {}
-    log    = load(STATE_DIR / "hunt_log.json") or []
-    digest = load(STATE_DIR / "weekly_digest.json") or {"week_start": None}
-    return seen, last, log, digest
+    def _l(f): return json.loads(f.read_text()) if f.exists() else None
+    return (
+        _l(STATE_DIR / "seen_techniques.json") or {},
+        _l(STATE_DIR / "last_run.json") or {},
+        _l(STATE_DIR / "hunt_log.json") or [],
+        _l(STATE_DIR / "weekly_digest.json") or {"week_start": None},
+    )
 
 def save_state(seen, last, log, digest):
     STATE_DIR.mkdir(exist_ok=True)
@@ -92,22 +94,30 @@ def save_state(seen, last, log, digest):
 
 def git_push_state():
     try:
-        subprocess.run(["git", "add", "state/"], check=True, capture_output=True)
-        result = subprocess.run(["git", "commit", "-m", "update: h4voc_water state"],
-                                capture_output=True, text=True)
-        if "nothing to commit" not in result.stdout:
-            subprocess.run(["git", "pull", "--rebase"], check=True, capture_output=True)
-            subprocess.run(["git", "push"], check=True, capture_output=True)
+        subprocess.run(["git","add","state/"], check=True, capture_output=True)
+        r = subprocess.run(["git","commit","-m","update: h4voc_water state"],
+                           capture_output=True, text=True)
+        if "nothing to commit" not in r.stdout:
+            subprocess.run(["git","pull","--rebase"], check=True, capture_output=True)
+            subprocess.run(["git","push"], check=True, capture_output=True)
     except subprocess.CalledProcessError:
         pass
 
 def coverage_stats(seen):
     covered_tactics = {v.get("tactic","") for v in seen.values() if v.get("tactic")}
-    covered = len(covered_tactics)
-    total   = len(ALL_TACTICS)
-    pct     = int((covered / total) * 100) if total else 0
+    covered  = len(covered_tactics)
+    total    = len(ALL_TACTICS)
+    pct      = int((covered / total) * 100) if total else 0
     uncovered = [t for t in ALL_TACTICS if t not in covered_tactics]
     return covered, total, pct, uncovered
+
+def _fmt_next(raw):
+    """Split next_simulation string so technique ID+name is line 1, description is line 2."""
+    # Format: "T1049 — Technique Name — description..."
+    parts = raw.split(" — ", 2)
+    if len(parts) == 3:
+        return f"{parts[0]} — {parts[1]}<br>{parts[2]}"
+    return raw
 
 def should_send_weekly_digest(digest):
     now = datetime.now(timezone.utc)
@@ -134,9 +144,7 @@ def query_elasticsearch(lookback_minutes):
     headers = {"Content-Type": "application/json"}
     if ELASTIC_API_KEY:
         headers["Authorization"] = f"ApiKey {ELASTIC_API_KEY}"
-
     host_filter = {"match_all": {}} if TARGET_HOST == "*" else {"term": {"host.name": TARGET_HOST}}
-
     query = {
         "size": 100,
         "sort": [{"@timestamp": {"order": "desc"}}],
@@ -150,7 +158,6 @@ def query_elasticsearch(lookback_minutes):
             ]}}]
         }}
     }
-
     r = requests.post(f"{ELASTIC_URL}/logs-*/_search",
                       headers=headers, json=query, verify=False, timeout=30)
     if r.status_code != 200:
@@ -224,7 +231,7 @@ Return JSON only:
   "tactic": "tactic-name",
   "already_covered": true or false,
   "confidence": "high" or "medium" or "low",
-  "plain_english_summary": "One sentence a non-technical executive would understand. What happened and why it matters. No jargon.",
+  "plain_english_summary": "One sentence a non-technical executive understands. What happened and why it matters. No jargon.",
   "reasoning": "Two sentences explaining what you saw and why you identified this technique.",
   "key_indicators": ["the 3 most distinctive things you saw"],
   "detection_focus": "One sentence on what the rule specifically watches for.",
@@ -281,8 +288,8 @@ def save_and_push(sigma_yaml, analysis, rule_id):
         f.write(sigma_yaml)
     try:
         subprocess.run(["git","add",filepath], check=True, capture_output=True)
-        msg = f"auto-generate: {analysis['technique_id']} {analysis['technique_name']} [{rule_id[:8]}]"
-        r   = subprocess.run(["git","commit","-m",msg], check=True, capture_output=True, text=True)
+        commit_msg = f"auto-generate: {analysis['technique_id']} {analysis['technique_name']} [{rule_id[:8]}]"
+        r = subprocess.run(["git","commit","-m",commit_msg], check=True, capture_output=True, text=True)
         print(f"  {r.stdout.strip()}")
         subprocess.run(["git","pull","--rebase"], check=True, capture_output=True)
         subprocess.run(["git","push"], check=True, capture_output=True)
@@ -292,7 +299,7 @@ def save_and_push(sigma_yaml, analysis, rule_id):
     return filepath
 
 
-# ── Email ──────────────────────────────────────────────────────────────────────
+# ── Email shared helpers ───────────────────────────────────────────────────────
 def send_email(subject, html):
     if not all([GMAIL_FROM, GMAIL_TO, GMAIL_APP_PASSWORD]):
         print("  Email not configured.")
@@ -312,82 +319,134 @@ def send_email(subject, html):
     except Exception as e:
         print(f"  Email failed: {e}")
 
+# shared color palette
+BG      = "#0d1117"
+CARD    = "#161b22"
+BORDER  = "#30363d"
+GREEN   = "#3fb950"
+GREEN_D = "#1c3a24"
+YELLOW  = "#d29922"
+RED     = "#da3633"
+TEXT    = "#e6edf3"
+MUTED   = "#8b949e"
+FAINT   = "#6e7681"
 
-def _coverage_bar(pct):
+# ASCII water drop — terminal boot style, renders via monospace pre in all major clients
+ASCII_DROP = (
+    '<div style="font-family:\'SF Mono\',\'Fira Code\',\'Consolas\',monospace;'
+    f'white-space:pre;font-size:9px;line-height:1.4;color:{FAINT};display:inline-block;">'
+    "   .  \n"
+    "  ( ) \n"
+    " (   )\n"
+    "  ) ( \n"
+    "   =  "
+    '</div>'
+)
+
+def fmt_next(raw):
+    parts = raw.split(" — ", 2)
+    if len(parts) == 3:
+        return f"{parts[0]} — {parts[1]}<br>{parts[2]}"
+    return raw
+
+def _bar(pct):
     filled = int(pct / 5)
     return (
-        f'<span style="color:#2563eb;font-family:monospace;font-size:15px;">{"█"*filled}</span>'
-        f'<span style="color:#e2e8f0;font-family:monospace;font-size:15px;">{"░"*(20-filled)}</span>'
+        f'<span style="font-family:monospace;font-size:14px;color:{GREEN};">{"█"*filled}</span>'
+        f'<span style="font-family:monospace;font-size:14px;color:{BORDER};">{"░"*(20-filled)}</span>'
     )
 
+def _section_label(text):
+    return (
+        f'<p style="margin:0 0 10px;font-size:10px;font-weight:600;letter-spacing:2px;'
+        f'color:{MUTED};text-transform:uppercase;">{text}</p>'
+    )
 
+def _wrapper(content, footer=""):
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>h4voc_water</title></head>
+<body style="margin:0;padding:0;background:{BG};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:{BG};">
+<tr><td align="center" style="padding:32px 16px;">
+<table width="580" cellpadding="0" cellspacing="0"
+       style="background:{CARD};border-radius:10px;border:1px solid {BORDER};overflow:hidden;">
+
+<tr><td style="padding:22px 36px 16px;border-bottom:1px solid {BORDER};">
+  <p style="margin:0;font-size:10px;font-weight:600;letter-spacing:2px;color:{MUTED};text-transform:uppercase;">1xLoZec Detection Lab</p>
+</td></tr>
+
+{content}
+
+{'<tr><td style="padding:14px 36px;border-top:1px solid ' + BORDER + ';">' + footer + '</td></tr>' if footer else ''}
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>"""
+
+
+# ── Email: rule deployed ───────────────────────────────────────────────────────
 def email_rule_deployed(analysis, iocs, sigma_yaml, rule_id, events_count, lookback, filepath, seen):
     now  = datetime.now(timezone.utc).strftime("%B %d, %Y at %I:%M %p UTC")
     conf = analysis.get("confidence","unknown").capitalize()
-    conf_color = {"High":"#16a34a","Medium":"#d97706","Low":"#dc2626"}.get(conf,"#64748b")
+    conf_color = {"High": RED, "Medium": YELLOW, "Low": GREEN}.get(conf, MUTED)
 
     covered, total, pct, _ = coverage_stats(seen)
-    bar = _coverage_bar(pct)
+    bar = _bar(pct)
 
     indicators_html = "".join(
-        f'<tr><td style="padding:8px 16px;font-family:monospace;font-size:12px;'
-        f'color:#1e293b;border-bottom:1px solid #f1f5f9;">{ind}</td></tr>'
+        f'<tr><td style="padding:8px 14px;font-family:\'SF Mono\',\'Fira Code\',monospace;'
+        f'font-size:12px;color:{GREEN};border-bottom:1px solid {BORDER};">{ind}</td></tr>'
         for ind in analysis.get("key_indicators",[])
     )
 
     conf_badge = (
-        f'<span style="display:inline-block;background:{conf_color}15;color:{conf_color};'
-        f'border:1px solid {conf_color}40;border-radius:4px;padding:2px 10px;'
-        f'font-size:12px;font-weight:600;letter-spacing:0.5px;">{conf}</span>'
+        f'<span style="display:inline-block;background:{conf_color}22;color:{conf_color};'
+        f'border:1px solid {conf_color}55;border-radius:4px;padding:2px 10px;'
+        f'font-size:11px;font-weight:700;letter-spacing:1px;font-family:monospace;">{conf.upper()}</span>'
     )
 
     medium_note = ""
     if conf == "Medium":
-        medium_note = (
-            '<tr><td style="padding:0 40px 24px;">'
-            '<p style="margin:0;padding:12px 16px;background:#fffbeb;border:1px solid #fbbf24;'
-            'border-radius:6px;font-size:13px;color:#92400e;">'
-            'This rule was deployed at medium confidence. Review it in Kibana before relying on it in production.'
-            '</p></td></tr>'
-        )
+        medium_note = f"""<tr><td style="padding:0 36px 20px;">
+  <p style="margin:0;padding:12px 14px;background:{YELLOW}15;border:1px solid {YELLOW}44;
+     border-radius:6px;font-size:13px;color:{YELLOW};line-height:1.6;">
+    This rule was deployed at medium confidence. Review it in Kibana before relying on it in production.
+  </p>
+</td></tr>"""
 
-    html = f"""<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Detection Rule Deployed</title></head>
-<body style="margin:0;padding:0;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;">
-<tr><td align="center" style="padding:32px 16px;">
-<table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;border:1px solid #e2e8f0;">
-
-<tr><td style="padding:0;">
-  <div style="background:#2563eb;border-radius:8px 8px 0 0;height:4px;"></div>
+    content = f"""
+<tr><td style="padding:20px 36px;">
+  <p style="margin:0;font-size:13px;color:{MUTED};">{now}</p>
+  <h1 style="margin:6px 0 0;font-size:20px;font-weight:700;color:{TEXT};">Detection Rule Deployed &nbsp;<span style="font-size:13px;font-weight:700;font-family:monospace;vertical-align:middle;padding:2px 10px;border-radius:4px;background:{conf_color}22;color:{conf_color};border:1px solid {conf_color}55;">{conf.upper()}</span></h1>
 </td></tr>
 
-<tr><td style="padding:32px 40px 24px;">
-  <p style="margin:0 0 4px;font-size:11px;font-weight:600;letter-spacing:1.5px;color:#94a3b8;text-transform:uppercase;">1xLoZec Detection Lab</p>
-  <h1 style="margin:0 0 4px;font-size:22px;font-weight:700;color:#0f172a;line-height:1.3;">Detection Rule Deployed</h1>
-  <p style="margin:0;font-size:13px;color:#94a3b8;">{now}</p>
+<tr><td style="padding:0 36px 20px;">
+  <p style="margin:0;font-size:14px;color:{TEXT};line-height:1.7;padding:14px 16px;
+     background:{BG};border-left:3px solid {GREEN};border-radius:0 6px 6px 0;">
+    {analysis.get("plain_english_summary","")}
+  </p>
 </td></tr>
 
-<tr><td style="padding:0 40px 24px;">
-  <p style="margin:0;font-size:15px;color:#334155;line-height:1.6;padding:16px 20px;background:#f8fafc;border-left:3px solid #2563eb;border-radius:0 6px 6px 0;">{analysis.get("plain_english_summary","")}</p>
-</td></tr>
-
-<tr><td style="padding:0 40px 24px;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2e8f0;border-radius:6px;overflow:hidden;">
+<tr><td style="padding:0 36px 20px;">
+  <table width="100%" cellpadding="0" cellspacing="0"
+         style="border:1px solid {BORDER};border-radius:6px;overflow:hidden;background:{BG};">
   <tr>
-    <td style="padding:16px 20px;border-right:1px solid #e2e8f0;text-align:center;width:33%;">
-      <p style="margin:0 0 2px;font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;">Technique</p>
-      <p style="margin:0;font-size:16px;font-weight:700;color:#2563eb;font-family:monospace;">{analysis["technique_id"]}</p>
+    <td style="padding:14px 18px;border-right:1px solid {BORDER};text-align:center;">
+      <p style="margin:0 0 4px;font-size:10px;letter-spacing:1.5px;color:{MUTED};text-transform:uppercase;">Technique</p>
+      <p style="margin:0;font-size:18px;font-weight:700;color:{GREEN};font-family:monospace;
+         text-shadow:0 0 8px {GREEN}66;">{analysis["technique_id"]}</p>
     </td>
-    <td style="padding:16px 20px;border-right:1px solid #e2e8f0;text-align:center;width:33%;">
-      <p style="margin:0 0 4px;font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;">Confidence</p>
+    <td style="padding:14px 18px;border-right:1px solid {BORDER};text-align:center;">
+      <p style="margin:0 0 6px;font-size:10px;letter-spacing:1.5px;color:{MUTED};text-transform:uppercase;">Confidence</p>
       <p style="margin:0;">{conf_badge}</p>
     </td>
-    <td style="padding:16px 20px;text-align:center;width:34%;">
-      <p style="margin:0 0 2px;font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;">Tactic</p>
-      <p style="margin:0;font-size:13px;font-weight:600;color:#0f172a;">{analysis["tactic"].title()}</p>
+    <td style="padding:14px 18px;text-align:center;">
+      <p style="margin:0 0 4px;font-size:10px;letter-spacing:1.5px;color:{MUTED};text-transform:uppercase;">Tactic</p>
+      <p style="margin:0;font-size:13px;font-weight:600;color:{TEXT};">{analysis["tactic"].title()}</p>
     </td>
   </tr>
   </table>
@@ -395,236 +454,209 @@ def email_rule_deployed(analysis, iocs, sigma_yaml, rule_id, events_count, lookb
 
 {medium_note}
 
-<tr><td style="padding:0 40px 24px;">
-  <p style="margin:0 0 10px;font-size:11px;font-weight:600;letter-spacing:1px;color:#94a3b8;text-transform:uppercase;">ATT&amp;CK Coverage</p>
+<tr><td style="padding:0 36px 20px;">
+  {_section_label("ATT&amp;CK Coverage")}
   <p style="margin:0 0 6px;font-size:14px;line-height:1;">{bar} &nbsp;{pct}%</p>
-  <p style="margin:0;font-size:12px;color:#94a3b8;">{covered} of {total} attack categories have at least one detection rule</p>
+  <p style="margin:0;font-size:12px;color:{MUTED};">
+    {covered} of {total} attack categories have at least one detection rule
+  </p>
 </td></tr>
 
-<tr><td style="padding:0 40px 24px;">
-  <p style="margin:0 0 10px;font-size:11px;font-weight:600;letter-spacing:1px;color:#94a3b8;text-transform:uppercase;">Why This Was Flagged</p>
-  <p style="margin:0;font-size:14px;color:#334155;line-height:1.7;">{analysis.get("reasoning","")}</p>
+<tr><td style="padding:0 36px 20px;">
+  {_section_label("Why This Was Flagged")}
+  <p style="margin:0;font-size:14px;color:{TEXT};line-height:1.7;">{analysis.get("reasoning","")}</p>
 </td></tr>
 
-<tr><td style="padding:0 40px 24px;">
-  <p style="margin:0 0 10px;font-size:11px;font-weight:600;letter-spacing:1px;color:#94a3b8;text-transform:uppercase;">The 3 Strongest Signals</p>
-  <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2e8f0;border-radius:6px;overflow:hidden;background:#f8fafc;">
+<tr><td style="padding:0 36px 20px;">
+  {_section_label("The 3 Strongest Signals")}
+  <table width="100%" cellpadding="0" cellspacing="0"
+         style="border:1px solid {BORDER};border-radius:6px;overflow:hidden;background:{BG};">
   {indicators_html}
   </table>
 </td></tr>
 
-<tr><td style="padding:0 40px 24px;">
-  <p style="margin:0 0 10px;font-size:11px;font-weight:600;letter-spacing:1px;color:#94a3b8;text-transform:uppercase;">What the Rule Watches For</p>
-  <p style="margin:0;font-size:14px;color:#334155;line-height:1.7;">{analysis.get("detection_focus","")}</p>
+<tr><td style="padding:0 36px 20px;">
+  {_section_label("What the Rule Watches For")}
+  <p style="margin:0;font-size:14px;color:{TEXT};line-height:1.7;">{analysis.get("detection_focus","")}</p>
 </td></tr>
 
-<tr><td style="padding:0 40px 32px;">
-  <p style="margin:0 0 10px;font-size:11px;font-weight:600;letter-spacing:1px;color:#94a3b8;text-transform:uppercase;">Recommended Next Step</p>
-  <p style="margin:0;font-size:14px;color:#334155;line-height:1.7;padding:14px 16px;background:#f0f9ff;border-radius:6px;border:1px solid #bae6fd;">{analysis.get("next_simulation","")}</p>
+<tr><td style="padding:0 36px 28px;">
+  {_section_label("Recommended Next Step")}
+  <p style="margin:0;font-size:14px;color:{TEXT};line-height:1.7;padding:14px 16px;
+     background:{GREEN_D};border:1px solid {GREEN}44;border-radius:6px;">
+    {analysis.get("next_simulation","")}
+  </p>
 </td></tr>
 
-<tr><td style="padding:0 40px 32px;">
-  <table cellpadding="0" cellspacing="0">
-  <tr>
-    <td style="padding-right:12px;">
+<tr><td style="padding:0 36px 28px;">
+  <table cellpadding="0" cellspacing="0"><tr>
+    <td>
       <a href="https://github.com/1xLoZec/detection-lab/actions"
-         style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;
-                padding:10px 20px;border-radius:6px;font-size:13px;font-weight:600;">
+         style="display:inline-block;background:{GREEN};color:#000000;text-decoration:none;
+                padding:10px 20px;border-radius:6px;font-size:13px;font-weight:700;">
         CI/CD Pipeline
       </a>
     </td>
-    <td>
-      <a href="https://1xlozec.com/app/security/rules"
-         style="display:inline-block;background:#ffffff;color:#2563eb;text-decoration:none;
-                padding:10px 20px;border-radius:6px;font-size:13px;font-weight:600;
-                border:1px solid #2563eb;">
-        Kibana Rules
-      </a>
-    </td>
-  </tr>
-  </table>
+  </tr></table>
 </td></tr>
+"""
 
-<tr><td style="padding:16px 40px;border-top:1px solid #f1f5f9;">
-  <p style="margin:0;font-size:11px;color:#cbd5e1;font-family:monospace;">{rule_id}</p>
-</td></tr>
-
-</table>
-</td></tr>
-</table>
-</body>
-</html>"""
+    footer = (
+        f''
+    )
 
     send_email(
-        f"[h4voc_water] {analysis['technique_id']} — {analysis['technique_name']} ({conf} confidence)",
-        html
+        f"New Detection Rule — {analysis['technique_id']} {analysis['technique_name']}",
+        _wrapper(content, footer)
     )
 
 
+# ── Email: nothing new ─────────────────────────────────────────────────────────
 def email_nothing_new(events_count, lookback, analysis, seen):
     now = datetime.now(timezone.utc).strftime("%B %d, %Y at %I:%M %p UTC")
     covered, total, pct, _ = coverage_stats(seen)
-    bar = _coverage_bar(pct)
-    reason = analysis.get("skip_reason") or "This technique already has a detection rule."
+    bar = _bar(pct)
+
+    reason   = analysis.get("skip_reason") or "This technique already has a detection rule."
     next_sim = analysis.get("next_simulation","")
 
     covered_rows = "".join(
-        f'<tr><td style="padding:6px 16px;font-size:13px;color:#64748b;font-family:monospace;'
-        f'border-bottom:1px solid #f1f5f9;">{t} — {seen[t].get("technique_name","")}</td></tr>'
+        f'<tr><td style="padding:7px 14px;font-size:12px;color:{MUTED};font-family:monospace;'
+        f'border-bottom:1px solid {BORDER};">{t} — {seen[t].get("technique_name","")}</td></tr>'
         for t in seen
-    ) or '<tr><td style="padding:12px 16px;font-size:13px;color:#94a3b8;">None yet.</td></tr>'
+    ) or f'<tr><td style="padding:12px 14px;font-size:13px;color:{FAINT};">None yet.</td></tr>'
 
-    html = f"""<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;">
-<tr><td align="center" style="padding:32px 16px;">
-<table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;border:1px solid #e2e8f0;">
-
-<tr><td><div style="background:#64748b;border-radius:8px 8px 0 0;height:4px;"></div></td></tr>
-
-<tr><td style="padding:32px 40px 24px;">
-  <p style="margin:0 0 4px;font-size:11px;font-weight:600;letter-spacing:1.5px;color:#94a3b8;text-transform:uppercase;">1xLoZec Detection Lab</p>
-  <h1 style="margin:0 0 4px;font-size:22px;font-weight:700;color:#0f172a;">Hunt Complete</h1>
-  <p style="margin:0;font-size:13px;color:#94a3b8;">{now}</p>
+    content = f"""
+<tr><td style="padding:20px 36px;">
+  <p style="margin:0;font-size:13px;color:{MUTED};">{now}</p>
+  <h1 style="margin:6px 0 0;font-size:20px;font-weight:700;color:{TEXT};">Hunt Complete</h1>
 </td></tr>
 
-<tr><td style="padding:0 40px 24px;">
-  <p style="margin:0;font-size:14px;color:#334155;line-height:1.7;">Reviewed {events_count} events from the last {lookback} minutes. {reason} No new rule was generated.</p>
+<tr><td style="padding:0 36px 20px;">
+  <p style="margin:0;font-size:14px;color:{TEXT};line-height:1.7;">
+    Reviewed {events_count} events from the last {lookback} minutes. {reason} No new rule was generated.
+  </p>
 </td></tr>
 
-<tr><td style="padding:0 40px 24px;">
-  <p style="margin:0 0 10px;font-size:11px;font-weight:600;letter-spacing:1px;color:#94a3b8;text-transform:uppercase;">ATT&amp;CK Coverage</p>
+<tr><td style="padding:0 36px 20px;">
+  {_section_label("ATT&amp;CK Coverage")}
   <p style="margin:0 0 6px;font-size:14px;">{bar} &nbsp;{pct}%</p>
-  <p style="margin:0;font-size:12px;color:#94a3b8;">{covered} of {total} attack categories covered &nbsp;·&nbsp; {len(seen)} techniques in library</p>
+  <p style="margin:0;font-size:12px;color:{MUTED};">
+    {covered} of {total} attack categories covered &nbsp;·&nbsp; {len(seen)} techniques in library
+  </p>
 </td></tr>
 
-<tr><td style="padding:0 40px 24px;">
-  <p style="margin:0 0 10px;font-size:11px;font-weight:600;letter-spacing:1px;color:#94a3b8;text-transform:uppercase;">Recommended Next Step</p>
-  <p style="margin:0;font-size:14px;color:#334155;padding:14px 16px;background:#f0f9ff;border-radius:6px;border:1px solid #bae6fd;">{next_sim}</p>
+<tr><td style="padding:0 36px 20px;">
+  {_section_label("Recommended Next Step")}
+  <p style="margin:0;font-size:14px;color:{TEXT};padding:14px 16px;
+     background:{GREEN_D};border:1px solid {GREEN}44;border-radius:6px;line-height:1.7;">
+    {_fmt_next(next_sim)}
+  </p>
 </td></tr>
 
-<tr><td style="padding:0 40px 32px;">
-  <p style="margin:0 0 10px;font-size:11px;font-weight:600;letter-spacing:1px;color:#94a3b8;text-transform:uppercase;">Techniques Already Covered</p>
-  <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2e8f0;border-radius:6px;overflow:hidden;">
+<tr><td style="padding:0 36px 28px;">
+  {_section_label("Techniques Already Covered")}
+  <table width="100%" cellpadding="0" cellspacing="0"
+         style="border:1px solid {BORDER};border-radius:6px;overflow:hidden;background:{BG};">
   {covered_rows}
   </table>
 </td></tr>
-
-</table>
-</td></tr>
-</table>
-</body>
-</html>"""
-    send_email("[h4voc_water] Hunt complete — no new techniques found", html)
+"""
+    send_email("💧 h4voc_water — Hunt complete — no new techniques found", _wrapper(content))
 
 
+# ── Email: weekly digest ───────────────────────────────────────────────────────
 def email_weekly_digest(seen, log):
     now = datetime.now(timezone.utc).strftime("%B %d, %Y")
     covered, total, pct, uncovered = coverage_stats(seen)
-    bar = _coverage_bar(pct)
+    bar = _bar(pct)
 
     week_ago = datetime.now(timezone.utc) - timedelta(days=7)
-    week_log  = [e for e in log if datetime.fromisoformat(e["timestamp"]) > week_ago]
-    deployed  = [e for e in week_log if e.get("result") == "deployed"]
+    week_log = [e for e in log if datetime.fromisoformat(e["timestamp"]) > week_ago]
+    deployed = [e for e in week_log if e.get("result") == "deployed"]
 
     deployed_rows = "".join(
         f'<tr>'
-        f'<td style="padding:8px 16px;font-size:13px;font-family:monospace;color:#2563eb;border-bottom:1px solid #f1f5f9;">{e["technique_id"]}</td>'
-        f'<td style="padding:8px 16px;font-size:13px;color:#334155;border-bottom:1px solid #f1f5f9;">{e["technique_name"]}</td>'
-        f'<td style="padding:8px 16px;font-size:12px;color:#94a3b8;border-bottom:1px solid #f1f5f9;text-align:right;">{e["confidence"].capitalize()}</td>'
+        f'<td style="padding:8px 14px;font-size:12px;color:{GREEN};font-family:monospace;'
+        f'border-bottom:1px solid {BORDER};">{e["technique_id"]}</td>'
+        f'<td style="padding:8px 14px;font-size:13px;color:{TEXT};border-bottom:1px solid {BORDER};">{e["technique_name"]}</td>'
+        f'<td style="padding:8px 14px;font-size:11px;color:{MUTED};border-bottom:1px solid {BORDER};text-align:right;">{e["confidence"].upper()}</td>'
         f'</tr>'
         for e in deployed
-    ) or '<tr><td colspan="3" style="padding:12px 16px;font-size:13px;color:#94a3b8;">No rules deployed this week.</td></tr>'
+    ) or f'<tr><td colspan="3" style="padding:12px 14px;font-size:13px;color:{FAINT};">No rules deployed this week.</td></tr>'
 
-    uncovered_html = "".join(
-        f'<span style="display:inline-block;margin:3px;padding:4px 10px;background:#f1f5f9;'
-        f'border-radius:4px;font-size:12px;color:#64748b;">{t.replace("-"," ").title()}</span>'
+    uncovered_tags = "".join(
+        f'<span style="display:inline-block;margin:3px;padding:4px 10px;background:{BG};'
+        f'border:1px solid {BORDER};border-radius:4px;font-size:12px;color:{MUTED};">'
+        f'{t.replace("-"," ").title()}</span>'
         for t in uncovered
-    ) or '<span style="font-size:13px;color:#16a34a;">All major tactics covered.</span>'
+    ) or f'<span style="font-size:13px;color:{GREEN};">All major tactics covered.</span>'
 
-    html = f"""<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;">
-<tr><td align="center" style="padding:32px 16px;">
-<table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;border:1px solid #e2e8f0;">
-
-<tr><td><div style="background:#2563eb;border-radius:8px 8px 0 0;height:4px;"></div></td></tr>
-
-<tr><td style="padding:32px 40px 24px;">
-  <p style="margin:0 0 4px;font-size:11px;font-weight:600;letter-spacing:1.5px;color:#94a3b8;text-transform:uppercase;">1xLoZec Detection Lab</p>
-  <h1 style="margin:0 0 4px;font-size:22px;font-weight:700;color:#0f172a;">Weekly Detection Report</h1>
-  <p style="margin:0;font-size:13px;color:#94a3b8;">Week ending {now}</p>
+    content = f"""
+<tr><td style="padding:20px 36px;">
+  <p style="margin:0;font-size:13px;color:{MUTED};">Week ending {now}</p>
+  <h1 style="margin:6px 0 0;font-size:20px;font-weight:700;color:{TEXT};">Weekly Detection Report</h1>
 </td></tr>
 
-<tr><td style="padding:0 40px 24px;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2e8f0;border-radius:6px;overflow:hidden;">
+<tr><td style="padding:0 36px 20px;">
+  <table width="100%" cellpadding="0" cellspacing="0"
+         style="border:1px solid {BORDER};border-radius:6px;overflow:hidden;background:{BG};">
   <tr>
-    <td style="padding:20px;text-align:center;border-right:1px solid #e2e8f0;">
-      <p style="margin:0;font-size:32px;font-weight:700;color:#2563eb;">{len(deployed)}</p>
-      <p style="margin:4px 0 0;font-size:12px;color:#94a3b8;">Rules Deployed</p>
+    <td style="padding:18px;text-align:center;border-right:1px solid {BORDER};">
+      <p style="margin:0;font-size:30px;font-weight:700;color:{GREEN};">{len(deployed)}</p>
+      <p style="margin:4px 0 0;font-size:11px;color:{MUTED};text-transform:uppercase;letter-spacing:1px;">Rules Deployed</p>
     </td>
-    <td style="padding:20px;text-align:center;border-right:1px solid #e2e8f0;">
-      <p style="margin:0;font-size:32px;font-weight:700;color:#0f172a;">{len(week_log)}</p>
-      <p style="margin:4px 0 0;font-size:12px;color:#94a3b8;">Hunts Run</p>
+    <td style="padding:18px;text-align:center;border-right:1px solid {BORDER};">
+      <p style="margin:0;font-size:30px;font-weight:700;color:{TEXT};">{len(week_log)}</p>
+      <p style="margin:4px 0 0;font-size:11px;color:{MUTED};text-transform:uppercase;letter-spacing:1px;">Hunts Run</p>
     </td>
-    <td style="padding:20px;text-align:center;">
-      <p style="margin:0;font-size:32px;font-weight:700;color:#16a34a;">{pct}%</p>
-      <p style="margin:4px 0 0;font-size:12px;color:#94a3b8;">Tactic Coverage</p>
+    <td style="padding:18px;text-align:center;">
+      <p style="margin:0;font-size:30px;font-weight:700;color:{GREEN};">{pct}%</p>
+      <p style="margin:4px 0 0;font-size:11px;color:{MUTED};text-transform:uppercase;letter-spacing:1px;">Coverage</p>
     </td>
   </tr>
   </table>
 </td></tr>
 
-<tr><td style="padding:0 40px 24px;">
-  <p style="margin:0 0 10px;font-size:11px;font-weight:600;letter-spacing:1px;color:#94a3b8;text-transform:uppercase;">Overall Coverage</p>
+<tr><td style="padding:0 36px 20px;">
+  {_section_label("Overall Coverage")}
   <p style="margin:0 0 6px;font-size:14px;">{bar} &nbsp;{pct}%</p>
-  <p style="margin:0;font-size:12px;color:#94a3b8;">{covered} of {total} attack categories &nbsp;·&nbsp; {len(seen)} techniques in library</p>
+  <p style="margin:0;font-size:12px;color:{MUTED};">{covered} of {total} attack categories &nbsp;·&nbsp; {len(seen)} techniques</p>
 </td></tr>
 
-<tr><td style="padding:0 40px 24px;">
-  <p style="margin:0 0 10px;font-size:11px;font-weight:600;letter-spacing:1px;color:#94a3b8;text-transform:uppercase;">Rules Deployed This Week</p>
-  <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2e8f0;border-radius:6px;overflow:hidden;">
+<tr><td style="padding:0 36px 20px;">
+  {_section_label("Rules Deployed This Week")}
+  <table width="100%" cellpadding="0" cellspacing="0"
+         style="border:1px solid {BORDER};border-radius:6px;overflow:hidden;background:{BG};">
   {deployed_rows}
   </table>
 </td></tr>
 
-<tr><td style="padding:0 40px 32px;">
-  <p style="margin:0 0 10px;font-size:11px;font-weight:600;letter-spacing:1px;color:#94a3b8;text-transform:uppercase;">Attack Categories Without Coverage</p>
-  <div>{uncovered_html}</div>
+<tr><td style="padding:0 36px 28px;">
+  {_section_label("Attack Categories Without Coverage")}
+  <div>{uncovered_tags}</div>
 </td></tr>
-
-</table>
-</td></tr>
-</table>
-</body>
-</html>"""
-    send_email(f"[h4voc_water] Weekly Report — {pct}% coverage — {now}", html)
+"""
+    send_email(f"💧 h4voc_water — Weekly Report — {pct}% coverage", _wrapper(content))
 
 
+# ── Email: stopped ─────────────────────────────────────────────────────────────
 def email_stopped():
     now = datetime.now(timezone.utc).strftime("%B %d, %Y at %I:%M %p UTC")
-    html = f"""<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"></head>
-<body style="margin:0;padding:0;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:32px 16px;">
-<table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;border:1px solid #e2e8f0;">
-<tr><td><div style="background:#dc2626;border-radius:8px 8px 0 0;height:4px;"></div></td></tr>
-<tr><td style="padding:32px 40px;">
-  <p style="margin:0 0 4px;font-size:11px;font-weight:600;letter-spacing:1.5px;color:#94a3b8;text-transform:uppercase;">1xLoZec Detection Lab</p>
-  <h1 style="margin:0 0 16px;font-size:22px;font-weight:700;color:#0f172a;">Pipeline Paused</h1>
-  <p style="margin:0;font-size:14px;color:#334155;line-height:1.7;">h4voc_water ran but STOP_H4VOC_WATER is set to true in your .env file. No data was queried and no rules were generated. Set it to false to resume.</p>
-  <p style="margin:12px 0 0;font-size:12px;color:#94a3b8;">{now}</p>
+    content = f"""
+<tr><td style="padding:20px 36px;">
+  <p style="margin:0;font-size:13px;color:{MUTED};">{now}</p>
+  <h1 style="margin:6px 0 0;font-size:20px;font-weight:700;color:{TEXT};">Pipeline Paused</h1>
 </td></tr>
-</table>
-</td></tr></table>
-</body>
-</html>"""
-    send_email("[h4voc_water] Pipeline is paused", html)
+<tr><td style="padding:0 36px 28px;">
+  <p style="margin:0;font-size:14px;color:{TEXT};line-height:1.7;">
+    h4voc_water ran but STOP_H4VOC_WATER is set to true in your .env file.
+    No data was queried and no rules were generated.
+    Set it to false to resume.
+  </p>
+</td></tr>
+"""
+    send_email("💧 h4voc_water — Pipeline is paused", _wrapper(content))
 
 
 # ── Main ───────────────────────────────────────────────────────────────────────
