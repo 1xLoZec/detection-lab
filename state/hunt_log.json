@@ -28,5 +28,15 @@
     "rule_id": "c480bbba-f460-498b-94cb-9921a52d9ec9",
     "filepath": "detections/sigma/T1016-system-network-configuration-discovery-autogen.yml",
     "lookback": 17
+  },
+  {
+    "timestamp": "2026-05-10T08:34:26.089672+00:00",
+    "result": "deployed",
+    "technique_id": "T1082",
+    "technique_name": "System Information Discovery",
+    "confidence": "high",
+    "rule_id": "32bcde9b-c3c8-4b34-ae75-89d885cda787",
+    "filepath": "detections/sigma/T1082-system-information-discovery-autogen.yml",
+    "lookback": 25
   }
 ]
