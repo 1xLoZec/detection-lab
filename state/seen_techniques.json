@@ -159,5 +159,12 @@
     "rule_id": "68a6befc-d840-4c30-8e8f-6b21ecd6d4d5",
     "deployed_at": "2026-05-10T18:35:44.746794+00:00",
     "confidence": "medium"
+  },
+  "T1069.002": {
+    "technique_name": "Permission Groups Discovery: Domain Groups",
+    "tactic": "discovery",
+    "rule_id": "eb0dc4a9-2abf-4471-8905-68bcef7c63c8",
+    "deployed_at": "2026-05-10T18:43:55.502481+00:00",
+    "confidence": "high"
   }
 }

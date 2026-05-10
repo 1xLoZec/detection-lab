@@ -236,5 +236,15 @@
     "rule_id": "68a6befc-d840-4c30-8e8f-6b21ecd6d4d5",
     "filepath": "detections/sigma/T1036-005-masquerading:-match-legitimate-name-or-location-autogen.yml",
     "lookback": 10
+  },
+  {
+    "timestamp": "2026-05-10T18:43:55.502481+00:00",
+    "result": "deployed",
+    "technique_id": "T1069.002",
+    "technique_name": "Permission Groups Discovery: Domain Groups",
+    "confidence": "high",
+    "rule_id": "eb0dc4a9-2abf-4471-8905-68bcef7c63c8",
+    "filepath": "detections/sigma/T1069-002-permission-groups-discovery:-domain-groups-autogen.yml",
+    "lookback": 13
   }
 ]
