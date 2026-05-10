@@ -173,5 +173,12 @@
     "rule_id": "7bf6f4b4-b3fc-4563-8f05-9b3d9c62132b",
     "deployed_at": "2026-05-10T18:50:26.823039+00:00",
     "confidence": "high"
+  },
+  "T1053.005": {
+    "technique_name": "Scheduled Task/Job: Scheduled Task",
+    "tactic": "persistence",
+    "rule_id": "fe6d1f50-c1bc-4a22-ac80-c9712bab85c7",
+    "deployed_at": "2026-05-10T19:17:31.030180+00:00",
+    "confidence": "high"
   }
 }

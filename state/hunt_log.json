@@ -256,5 +256,15 @@
     "rule_id": "7bf6f4b4-b3fc-4563-8f05-9b3d9c62132b",
     "filepath": "detections/sigma/T1049-system-network-connections-discovery-autogen.yml",
     "lookback": 11
+  },
+  {
+    "timestamp": "2026-05-10T19:17:31.030180+00:00",
+    "result": "deployed",
+    "technique_id": "T1053.005",
+    "technique_name": "Scheduled Task/Job: Scheduled Task",
+    "confidence": "high",
+    "rule_id": "fe6d1f50-c1bc-4a22-ac80-c9712bab85c7",
+    "filepath": "detections/sigma/T1053-005-scheduled-task-job:-scheduled-task-autogen.yml",
+    "lookback": 32
   }
 ]
