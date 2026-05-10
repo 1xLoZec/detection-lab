@@ -1,128 +1,85 @@
-title: Atomic Red Team T1082 System Information Discovery Chain via CMD and PowerShell
-id: 71ab9ffc-673a-4e43-98f5-4d0896d39704
+title: System Information Discovery - Chained Network and System Enumeration via CMD and PowerShell
+id: 1e360948-ea2e-4162-9826-0d1afcd35550
 status: experimental
-description: Detects coordinated system information discovery activity consistent with Atomic Red Team T1082 simulation. Identifies PowerShell downloading Discovery.bat from raw.githubusercontent.com and subsequent chained execution of discovery binaries (systeminfo, ipconfig, arp, nbtstat, netsh, net, reg) via cmd.exe, or standalone execution of multiple discovery tools in rapid succession.
+description: Detects coordinated system and network discovery sweep using cmd.exe or powershell.exe spawning multiple discovery binaries chained via '&' operators, PowerShell downloading Discovery.bat from raw.githubusercontent.com, and extensive reg.exe queries against Run/Winlogon/SafeBoot registry hives. Consistent with post-compromise situational awareness gathering (T1082, T1016, T1049, T1012).
 author: 1xLoZec
 date: 2026/05/10
 references:
-    - https://attack.mitre.org/techniques/T1082/
-    - https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1082/T1082.md
-    - https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1074.001/src/Discovery.bat
+  - https://attack.mitre.org/techniques/T1082/
+  - https://attack.mitre.org/techniques/T1016/
+  - https://attack.mitre.org/techniques/T1049/
+  - https://attack.mitre.org/techniques/T1012/
+  - https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1074.001/src/Discovery.bat
 tags:
-    - attack.discovery
-    - attack.t1082
-    - attack.t1016
-    - attack.t1033
-    - attack.t1049
+  - attack.discovery
+  - attack.t1082
+  - attack.t1016
+  - attack.t1049
+  - attack.t1012
+  - attack.t1033
 logsource:
-    category: process_creation
-    product: windows
-    service: sysmon
+  category: process_creation
+  product: windows
+  definition: Sysmon EventID 1 via Elastic Agent with ECS field mapping
 detection:
-    selection_powershell_download_discovery:
-        event.code: '1'
-        process.name|contains:
-            - 'powershell.exe'
-        process.command_line|contains|all:
-            - 'raw.githubusercontent.com'
-            - 'atomic-red-team'
-            - 'Discovery.bat'
-
-    selection_powershell_download_maldoc:
-        event.code: '1'
-        process.name|contains:
-            - 'powershell.exe'
-        process.command_line|contains|all:
-            - 'raw.githubusercontent.com'
-            - 'atomic-red-team'
-            - 'Invoke-MalDoc'
-
-    selection_cmd_chained_network_discovery:
-        event.code: '1'
-        process.name|contains:
-            - 'cmd.exe'
-        process.command_line|contains|all:
-            - 'ipconfig'
-            - 'netsh'
-            - 'arp'
-            - 'nbtstat'
-            - 'net config'
-
-    selection_cmd_chained_system_discovery:
-        event.code: '1'
-        process.name|contains:
-            - 'cmd.exe'
-        process.command_line|contains|all:
-            - 'systeminfo'
-            - 'reg query'
-            - 'HKLM\\SYSTEM\\CurrentControlSet\\Services\\Disk\\Enum'
-
-    selection_discovery_child_of_cmd:
-        event.code: '1'
-        process.parent.name|contains:
-            - 'cmd.exe'
-        process.name|contains:
-            - 'systeminfo.exe'
-            - 'ipconfig.exe'
-            - 'ARP.EXE'
-            - 'nbtstat.exe'
-            - 'netsh.exe'
-            - 'net.exe'
-            - 'reg.exe'
-            - 'whoami.exe'
-            - 'HOSTNAME.EXE'
-
-    selection_discovery_child_of_powershell:
-        event.code: '1'
-        process.parent.name|contains:
-            - 'powershell.exe'
-        process.name|contains:
-            - 'systeminfo.exe'
-            - 'ipconfig.exe'
-            - 'ARP.EXE'
-            - 'nbtstat.exe'
-            - 'netsh.exe'
-            - 'net.exe'
-            - 'reg.exe'
-            - 'whoami.exe'
-            - 'HOSTNAME.EXE'
-
-    filter_legitimate_net_config:
-        process.parent.name|contains:
-            - 'services.exe'
-            - 'svchost.exe'
-        process.name|contains:
-            - 'net.exe'
-            - 'net1.exe'
-
-    filter_legitimate_ipconfig:
-        process.name|contains:
-            - 'ipconfig.exe'
-        process.parent.name|contains:
-            - 'svchost.exe'
-
-    filter_legitimate_reg:
-        process.name|contains:
-            - 'reg.exe'
-        process.parent.name|contains:
-            - 'svchost.exe'
-            - 'TrustedInstaller.exe'
-            - 'TiWorker.exe'
-
-    condition: >
-        (
-            selection_powershell_download_discovery
-            or selection_powershell_download_maldoc
-            or selection_cmd_chained_network_discovery
-            or selection_cmd_chained_system_discovery
-            or (selection_discovery_child_of_cmd and not filter_legitimate_net_config and not filter_legitimate_ipconfig and not filter_legitimate_reg)
-            or (selection_discovery_child_of_powershell and not filter_legitimate_net_config and not filter_legitimate_ipconfig and not filter_legitimate_reg)
-        )
-
+  selection_chained_network_discovery:
+    process.name:
+      - 'cmd.exe'
+      - 'powershell.exe'
+    process.command_line|contains|all:
+      - 'ipconfig'
+      - 'netsh'
+      - 'arp'
+      - 'nbtstat'
+      - 'net config'
+  selection_chained_sysinfo_reg:
+    process.name:
+      - 'cmd.exe'
+      - 'powershell.exe'
+    process.command_line|contains|all:
+      - 'systeminfo'
+      - 'reg query'
+      - 'Disk\\Enum'
+  selection_powershell_download_discovery:
+    process.name: 'powershell.exe'
+    process.command_line|contains:
+      - 'raw.githubusercontent.com/redcanaryco/atomic-red-team'
+      - 'Discovery.bat'
+  selection_powershell_invoke_maldoc:
+    process.name: 'powershell.exe'
+    process.command_line|contains|all:
+      - 'Invoke-MalDoc'
+      - 'raw.githubusercontent.com'
+      - 'T1055'
+  selection_reg_run_winlogon_hive:
+    process.name: 'reg.exe'
+    process.command_line|contains:
+      - 'CurrentVersion\\Run'
+      - 'CurrentVersion\\RunOnce'
+      - 'Winlogon'
+      - 'SafeBoot'
+      - 'Active Setup\\Installed Components'
+      - 'ShellServiceObjectDelayLoad'
+      - 'Group Policy\\Scripts\\Startup'
+  filter_legitimate_parent:
+    process.parent.name:
+      - 'TrustedInstaller.exe'
+      - 'MoUsoCoreWorker.exe'
+      - 'TiWorker.exe'
+      - 'services.exe'
+      - 'svchost.exe'
+      - 'MicrosoftEdgeUpdate.exe'
+      - 'SecurityHealthHost.exe'
+  filter_system_user:
+    winlog.event_data.IntegrityLevel: 'System'
+    process.parent.name:
+      - 'svchost.exe'
+      - 'services.exe'
+  condition: (1 of selection_chained_* or 1 of selection_powershell_* or selection_reg_run_winlogon_hive) and not 1 of filter_*
 falsepositives:
-    - Legitimate IT administrators running ipconfig, netsh, or systeminfo manually from cmd.exe for network troubleshooting
-    - Vulnerability scanners or endpoint management agents (e.g., SCCM, Tanium) that chain discovery commands as part of inventory collection
-    - Automated deployment scripts using PowerShell to download and execute configuration or inventory batch files from internal or trusted external repositories
-    - Security assessment tools or penetration testing frameworks executing reconnaissance modules on authorised engagements
-    - Windows Update or servicing components querying registry keys under HKLM\SYSTEM\CurrentControlSet\Services\Disk\Enum
+  - Legitimate IT administrators running network diagnostic scripts or inventory collection tools that chain ipconfig, netsh, arp, and nbtstat commands
+  - Security assessment tooling or vulnerability scanners executing enumeration commands via cmd.exe with chained operators
+  - System management software (e.g., SCCM, Ansible, PDQ Deploy) invoking systeminfo and reg.exe queries for asset inventory
+  - Automated patch management or compliance scripts querying Run/Winlogon registry keys for baseline auditing
+  - Penetration testing engagements using Atomic Red Team or similar frameworks in authorized lab environments
 level: high
