@@ -266,5 +266,13 @@
     "rule_id": "fe6d1f50-c1bc-4a22-ac80-c9712bab85c7",
     "filepath": "detections/sigma/T1053-005-scheduled-task-job:-scheduled-task-autogen.yml",
     "lookback": 32
+  },
+  {
+    "timestamp": "2026-05-10T19:19:08.144951+00:00",
+    "result": "confidence_too_low",
+    "technique_id": "T1195.002",
+    "technique_name": "Supply Chain Compromise: Compromise Software Supply Chain",
+    "confidence": "low",
+    "lookback": 10
   }
 ]
