@@ -48,5 +48,15 @@
     "rule_id": "e998f335-c133-40a1-b6dd-8dab20e774ae",
     "filepath": "detections/sigma/T1204-002-user-execution:-malicious-file-autogen.yml",
     "lookback": 20
+  },
+  {
+    "timestamp": "2026-05-10T08:53:51.098208+00:00",
+    "result": "deployed",
+    "technique_id": "T1055",
+    "technique_name": "Process Injection",
+    "confidence": "high",
+    "rule_id": "0f2928af-3955-4131-ae07-2a35ad02725e",
+    "filepath": "detections/sigma/T1055-process-injection-autogen.yml",
+    "lookback": 10
   }
 ]
