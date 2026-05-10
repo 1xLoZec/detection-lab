@@ -75,5 +75,12 @@
     "rule_id": "a43bd367-b5b5-4a03-b2b4-f3053b2eef83",
     "deployed_at": "2026-05-10T17:30:03.138867+00:00",
     "confidence": "medium"
+  },
+  "T1033": {
+    "technique_name": "System Owner/User Discovery",
+    "tactic": "discovery",
+    "rule_id": "36b76eed-fe01-4c10-a2d2-c97f8bcc01fa",
+    "deployed_at": "2026-05-10T17:31:50.986599+00:00",
+    "confidence": "high"
   }
 }

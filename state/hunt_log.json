@@ -108,5 +108,15 @@
     "rule_id": "a43bd367-b5b5-4a03-b2b4-f3053b2eef83",
     "filepath": "detections/sigma/T1057-process-discovery-autogen.yml",
     "lookback": 10
+  },
+  {
+    "timestamp": "2026-05-10T17:31:50.986599+00:00",
+    "result": "deployed",
+    "technique_id": "T1033",
+    "technique_name": "System Owner/User Discovery",
+    "confidence": "high",
+    "rule_id": "36b76eed-fe01-4c10-a2d2-c97f8bcc01fa",
+    "filepath": "detections/sigma/T1033-system-owner-user-discovery-autogen.yml",
+    "lookback": 10
   }
 ]
