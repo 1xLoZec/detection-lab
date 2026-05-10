@@ -302,5 +302,15 @@
     "rule_id": "cb9127a0-e005-4aff-a599-dd2dff0eec62",
     "filepath": "detections/sigma/T1482-domain-trust-discovery-autogen.yml",
     "lookback": 10
+  },
+  {
+    "timestamp": "2026-05-10T20:10:25.371431+00:00",
+    "result": "deployed",
+    "technique_id": "T1018",
+    "technique_name": "Remote System Discovery",
+    "confidence": "high",
+    "rule_id": "7d5e8bb8-a144-4791-a605-fd4a955ddc89",
+    "filepath": "detections/sigma/T1018-remote-system-discovery-autogen.yml",
+    "lookback": 22
   }
 ]

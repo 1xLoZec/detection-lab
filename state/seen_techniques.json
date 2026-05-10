@@ -194,5 +194,12 @@
     "rule_id": "cb9127a0-e005-4aff-a599-dd2dff0eec62",
     "deployed_at": "2026-05-10T19:52:26.775991+00:00",
     "confidence": "high"
+  },
+  "T1018": {
+    "technique_name": "Remote System Discovery",
+    "tactic": "discovery",
+    "rule_id": "7d5e8bb8-a144-4791-a605-fd4a955ddc89",
+    "deployed_at": "2026-05-10T20:10:25.371431+00:00",
+    "confidence": "high"
   }
 }
