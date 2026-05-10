@@ -145,5 +145,12 @@
     "rule_id": "d134f553-f48a-471e-b593-05e99a4f57d6",
     "deployed_at": "2026-05-10T18:28:37.089496+00:00",
     "confidence": "high"
+  },
+  "T1216": {
+    "technique_name": "System Script Proxy Execution",
+    "tactic": "defense-evasion",
+    "rule_id": "b8ee8991-c2af-4d5e-9dd8-4702f01a2e14",
+    "deployed_at": "2026-05-10T18:31:24.087481+00:00",
+    "confidence": "medium"
   }
 }
