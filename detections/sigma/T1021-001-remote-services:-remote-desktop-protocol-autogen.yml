@@ -1,0 +1,46 @@
+title: Cmdkey Credential Store Followed by MSTSC RDP Lateral Movement
+id: e02cc050-88ca-459a-8b12-b17d384eeb00
+status: experimental
+description: Detects cmdkey.exe storing TERMSRV credentials followed by mstsc.exe launching an RDP connection, indicative of scripted lateral movement via RDP. This pattern matches T1021.001 where credentials are pre-staged via cmdkey before initiating Remote Desktop sessions.
+author: 1xLoZec
+date: 2026/05/10
+references:
+    - https://attack.mitre.org/techniques/T1021/001/
+    - https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/cmdkey
+tags:
+    - attack.lateral_movement
+    - attack.t1021.001
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_cmdkey_termsrv:
+        event.code: '1'
+        process.name: 'cmdkey.exe'
+        process.command_line|contains:
+            - '/generic:TERMSRV/'
+            - '/pass:'
+    selection_cmdkey_parent:
+        process.parent.name:
+            - 'cmd.exe'
+            - 'powershell.exe'
+    selection_mstsc:
+        event.code: '1'
+        process.name: 'mstsc.exe'
+        process.command_line|contains: '/v:'
+    selection_mstsc_parent:
+        process.parent.name:
+            - 'cmd.exe'
+            - 'powershell.exe'
+    condition: (selection_cmdkey_termsrv and selection_cmdkey_parent) or (selection_mstsc and selection_mstsc_parent)
+falsepositives:
+    - Legitimate IT administrators using scripted RDP automation tools for remote management
+    - Deployment or configuration management scripts that pre-stage RDP credentials
+    - Jump host or bastion server automation that stores credentials before connecting
+level: high
+fields:
+    - process.name
+    - process.command_line
+    - process.parent.name
+    - process.executable
+    - winlog.event_data.IntegrityLevel
