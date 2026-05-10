@@ -1,0 +1,37 @@
+title: Domain Trust Discovery via Net View Command Chaining
+id: cb9127a0-e005-4aff-a599-dd2dff0eec62
+status: experimental
+description: Detects cmd.exe or powershell.exe spawning net.exe with arguments containing 'view' and '/domain' consistent with domain trust discovery activity (T1482). Observed pattern includes chained commands 'net view /domain & net view' executed under user context.
+author: 1xLoZec
+date: 2026/05/10
+references:
+    - https://attack.mitre.org/techniques/T1482/
+tags:
+    - attack.discovery
+    - attack.t1482
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_parent:
+        process.parent.name|contains:
+            - 'cmd.exe'
+            - 'powershell.exe'
+    selection_process:
+        process.name: 'net.exe'
+    selection_cmdline:
+        process.command_line|contains|all:
+            - 'view'
+            - '/domain'
+    condition: selection_parent and selection_process and selection_cmdline
+falsepositives:
+    - Legitimate IT administrative scripts enumerating domain resources using net view
+    - Automated inventory or asset management tools querying domain shares
+level: medium
+fields:
+    - process.name
+    - process.executable
+    - process.command_line
+    - process.parent.name
+    - process.parent.executable
+    - winlog.event_data.IntegrityLevel
