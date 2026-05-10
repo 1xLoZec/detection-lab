@@ -1,0 +1,55 @@
+title: PowerShell Invoke-WebRequest Download to Temp Directory
+id: ae4b60ce-b6c0-4ca8-82df-9469de001220
+status: experimental
+description: Detects powershell.exe invoking Invoke-WebRequest or similar download cmdlets targeting external domains and writing output to user-writable or temp directories. This pattern is consistent with T1059.001 staged payload delivery.
+author: 1xLoZec
+date: 2026/05/10
+references:
+    - https://attack.mitre.org/techniques/T1059/001/
+    - https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1059.001/T1059.001.md
+tags:
+    - attack.execution
+    - attack.t1059.001
+    - attack.t1105
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_process:
+        process.name|endswith:
+            - '\powershell.exe'
+            - 'powershell.exe'
+    selection_cmdline_download:
+        process.command_line|contains|all:
+            - 'Invoke-WebRequest'
+            - 'OutFile'
+    selection_cmdline_temp:
+        process.command_line|contains:
+            - '$env:TEMP'
+            - '%TEMP%'
+            - '\AppData\Local\Temp'
+            - '\AppData\Roaming'
+            - '\Users\Public'
+            - 'C:\Windows\Temp'
+    selection_external_domain:
+        process.command_line|contains:
+            - 'raw.githubusercontent.com'
+            - 'http://'
+            - 'https://'
+    selection_dns:
+        dns.question.name:
+            - 'raw.githubusercontent.com'
+    condition: (selection_process and selection_cmdline_download and selection_cmdline_temp and selection_external_domain) or (selection_process and selection_dns)
+falsepositives:
+    - Legitimate software deployment scripts using PowerShell to download installers or configuration files to temp directories
+    - IT administrators using Invoke-WebRequest for sanctioned software updates or patch management automation
+    - Developer workstations running CI/CD pipeline scripts that download build artifacts using PowerShell
+    - Security tooling or EDR solutions that invoke PowerShell web requests for threat intelligence or update checks
+fields:
+    - process.name
+    - process.command_line
+    - process.parent.name
+    - dns.question.name
+    - file.path
+    - winlog.event_data.IntegrityLevel
+level: high
