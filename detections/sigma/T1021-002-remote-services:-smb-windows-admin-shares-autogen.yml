@@ -1,0 +1,35 @@
+title: PowerShell SMB Mapping via QUIC Transport with Certificate Check Disabled
+id: c413ce24-f558-4226-810b-c52b958638f0
+status: experimental
+description: Detects PowerShell processes invoking New-SmbMapping with TransportType QUIC and SkipCertificateCheck, potentially followed by file copy operations to the mapped drive. This technique abuses SMB over QUIC (port 443) to evade traditional SMB detection on port 445 and may indicate lateral movement or exfiltration staging.
+author: 1xLoZec
+date: 2026/05/10
+references:
+  - https://attack.mitre.org/techniques/T1021/002/
+  - https://learn.microsoft.com/en-us/windows-server/storage/file-server/smb-over-quic
+tags:
+  - attack.lateral_movement
+  - attack.t1021.002
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_process:
+    event.code: '1'
+    process.name|contains: 'powershell.exe'
+  selection_cmdline_mapping:
+    process.command_line|contains|all:
+      - 'New-SmbMapping'
+      - 'TransportType'
+      - 'QUIC'
+      - 'SkipCertificateCheck'
+  selection_cmdline_copy:
+    process.command_line|contains:
+      - 'copy'
+      - 'Copy-Item'
+      - 'cp '
+  condition: selection_process and selection_cmdline_mapping and selection_cmdline_copy
+falsepositives:
+  - Legitimate administrators testing or configuring SMB over QUIC in lab or pilot environments
+  - Automated provisioning scripts that map SMB shares using QUIC transport with self-signed certificates
+level: high
