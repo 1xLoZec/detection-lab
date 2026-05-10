@@ -1,0 +1,46 @@
+title: Internet Connection Discovery via Chained Network Enumeration Tools Under cmd.exe
+id: f7f59eb3-ad8b-4d57-b1cc-fe60a5418b39
+status: experimental
+description: Detects cmd.exe spawning two or more network enumeration tools (ipconfig, netsh, arp, nbtstat, net) in sequence, consistent with T1016.001 Internet Connection Discovery via chained discovery commands.
+author: 1xLoZec
+date: 2026/05/10
+references:
+    - https://attack.mitre.org/techniques/T1016/001/
+tags:
+    - attack.discovery
+    - attack.t1016.001
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_parent:
+        process.parent.name: 'cmd.exe'
+    selection_children:
+        process.name|contains:
+            - 'ipconfig.exe'
+            - 'netsh.exe'
+            - 'arp.exe'
+            - 'nbtstat.exe'
+            - 'net.exe'
+            - 'net1.exe'
+    selection_cmdline:
+        process.parent.name: 'cmd.exe'
+        process.command_line|contains:
+            - 'ipconfig'
+            - 'netsh'
+            - 'arp'
+            - 'nbtstat'
+            - 'net config'
+    condition: (selection_parent and selection_children) or selection_cmdline
+falsepositives:
+    - Legitimate network diagnostic scripts or administrator troubleshooting tools that chain multiple network commands
+    - Monitoring or asset management software that runs sequential network queries
+    - Helpdesk or IT automation scripts performing routine network checks
+level: medium
+fields:
+    - process.name
+    - process.command_line
+    - process.parent.name
+    - process.parent.executable
+    - process.executable
+    - event.code
