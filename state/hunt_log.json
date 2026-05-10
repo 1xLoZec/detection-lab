@@ -322,5 +322,15 @@
     "rule_id": "bdade355-a931-4fba-b349-eedb384f8993",
     "filepath": "detections/sigma/T1083-file-and-directory-discovery-autogen.yml",
     "lookback": 11
+  },
+  {
+    "timestamp": "2026-05-10T20:19:42.154280+00:00",
+    "result": "deployed",
+    "technique_id": "T1012",
+    "technique_name": "Query Registry",
+    "confidence": "medium",
+    "rule_id": "da3d7d73-325d-4fd8-b3ec-3d7e01dcd0b3",
+    "filepath": "detections/sigma/T1012-query-registry-autogen.yml",
+    "lookback": 10
   }
 ]
