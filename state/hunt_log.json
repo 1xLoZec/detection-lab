@@ -176,5 +176,15 @@
     "rule_id": "aea83186-6d3e-4623-aa2d-e7f2a21a088e",
     "filepath": "detections/sigma/T1564-003-hide-artifacts:-hidden-window-autogen.yml",
     "lookback": 10
+  },
+  {
+    "timestamp": "2026-05-10T18:08:33.118289+00:00",
+    "result": "deployed",
+    "technique_id": "T1518.001",
+    "technique_name": "Software Discovery: Security Software Discovery",
+    "confidence": "medium",
+    "rule_id": "9144651a-2b56-4047-ba53-1cff3babe181",
+    "filepath": "detections/sigma/T1518-001-software-discovery:-security-software-discovery-autogen.yml",
+    "lookback": 10
   }
 ]

@@ -117,5 +117,12 @@
     "rule_id": "aea83186-6d3e-4623-aa2d-e7f2a21a088e",
     "deployed_at": "2026-05-10T18:04:32.985037+00:00",
     "confidence": "medium"
+  },
+  "T1518.001": {
+    "technique_name": "Software Discovery: Security Software Discovery",
+    "tactic": "discovery",
+    "rule_id": "9144651a-2b56-4047-ba53-1cff3babe181",
+    "deployed_at": "2026-05-10T18:08:33.118289+00:00",
+    "confidence": "medium"
   }
 }
