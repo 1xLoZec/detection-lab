@@ -77,6 +77,9 @@ configured. SSL certificate installed. Kibana is live.
 
 - May 10 2026 — Full Detection as Code pipeline is live. Push a Sigma rule to GitHub and it automatically gets validated by three AI models, converted to Elastic query language, and deployed to Kibana. No manual steps. First rule deployed successfully — PowerShell Spawning Reconnaissance Commands. Running every 5 minutes.
 
+<img width="510" height="74" alt="image" src="https://github.com/user-attachments/assets/2951a146-6d4c-4349-99db-834555e4c09e" />
+<img width="752" height="140" alt="image" src="https://github.com/user-attachments/assets/dc67a15d-2a6e-44c8-9300-38d44620ef04" />
+
 
 
 ## Lab Access
