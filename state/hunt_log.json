@@ -312,5 +312,15 @@
     "rule_id": "7d5e8bb8-a144-4791-a605-fd4a955ddc89",
     "filepath": "detections/sigma/T1018-remote-system-discovery-autogen.yml",
     "lookback": 22
+  },
+  {
+    "timestamp": "2026-05-10T20:17:03.429796+00:00",
+    "result": "deployed",
+    "technique_id": "T1083",
+    "technique_name": "File and Directory Discovery",
+    "confidence": "high",
+    "rule_id": "bdade355-a931-4fba-b349-eedb384f8993",
+    "filepath": "detections/sigma/T1083-file-and-directory-discovery-autogen.yml",
+    "lookback": 11
   }
 ]
