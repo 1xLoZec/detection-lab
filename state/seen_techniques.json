@@ -180,5 +180,12 @@
     "rule_id": "fe6d1f50-c1bc-4a22-ac80-c9712bab85c7",
     "deployed_at": "2026-05-10T19:17:31.030180+00:00",
     "confidence": "high"
+  },
+  "T1016.001": {
+    "technique_name": "System Network Configuration Discovery: Internet Connection Discovery",
+    "tactic": "discovery",
+    "rule_id": "f7f59eb3-ad8b-4d57-b1cc-fe60a5418b39",
+    "deployed_at": "2026-05-10T19:47:07.925416+00:00",
+    "confidence": "high"
   }
 }
