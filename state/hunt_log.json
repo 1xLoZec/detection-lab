@@ -274,5 +274,13 @@
     "technique_name": "Supply Chain Compromise: Compromise Software Supply Chain",
     "confidence": "low",
     "lookback": 10
+  },
+  {
+    "timestamp": "2026-05-10T19:29:01.026393+00:00",
+    "result": "confidence_too_low",
+    "technique_id": "T1195.002",
+    "technique_name": "Supply Chain Compromise: Compromise Software Supply Chain",
+    "confidence": "low",
+    "lookback": 14
   }
 ]
