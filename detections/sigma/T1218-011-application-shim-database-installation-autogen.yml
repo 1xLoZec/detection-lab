@@ -1,0 +1,52 @@
+title: Application Shim Database Installation via sdbinst.exe
+id: 8bee2d0f-3f88-46cc-842a-75e51e197d65
+status: experimental
+description: Detects the installation of application shim databases via sdbinst.exe with suspicious flags (-m -bg) and associated registry writes to AppCompatFlags SdbUpdates keys, indicative of T1218.011 shim-based defense evasion or persistence.
+author: 1xLoZec
+date: 2026/05/10
+references:
+    - https://attack.mitre.org/techniques/T1218/011/
+    - https://www.fireeye.com/blog/threat-research/2017/05/fin7-shim-databases-persistence.html
+    - https://docs.microsoft.com/en-us/windows/win32/devnotes/application-compatibility-database
+tags:
+    - attack.defense_evasion
+    - attack.t1218.011
+logsource:
+    product: windows
+    category: sysmon
+detection:
+    selection_sdbinst_execution:
+        event.code: '1'
+        process.name: 'sdbinst.exe'
+        process.command_line|contains:
+            - '-m'
+            - '-bg'
+    selection_registry_sdbupdates:
+        event.code: '13'
+        registry.key|contains:
+            - 'SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\SdbUpdates'
+            - 'SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\InstalledSDB'
+    filter_microsoft_signed_sdb:
+        process.name: 'sdbinst.exe'
+        registry.key|contains:
+            - 'msimain.sdb'
+            - 'sysmain.sdb'
+        winlog.event_data.IntegrityLevel: 'System'
+        process.parent.name:
+            - 'TrustedInstaller.exe'
+            - 'TiWorker.exe'
+            - 'svchost.exe'
+    condition: selection_sdbinst_execution or (selection_registry_sdbupdates and not filter_microsoft_signed_sdb)
+falsepositives:
+    - Legitimate enterprise application compatibility shim deployments managed via SCCM or Group Policy
+    - Microsoft Windows Update installing or updating built-in shim databases (msimain.sdb, sysmain.sdb) via TrustedInstaller
+    - Software vendors using sdbinst.exe as part of their legitimate installer routines with valid signed shim databases
+    - IT administrators manually applying application compatibility fixes using the Application Compatibility Toolkit (ACT)
+fields:
+    - process.name
+    - process.command_line
+    - process.parent.name
+    - registry.key
+    - winlog.event_data.IntegrityLevel
+    - process.executable
+level: high
