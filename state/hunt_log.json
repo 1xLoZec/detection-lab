@@ -226,5 +226,15 @@
     "rule_id": "b8ee8991-c2af-4d5e-9dd8-4702f01a2e14",
     "filepath": "detections/sigma/T1216-system-script-proxy-execution-autogen.yml",
     "lookback": 10
+  },
+  {
+    "timestamp": "2026-05-10T18:35:44.746794+00:00",
+    "result": "deployed",
+    "technique_id": "T1036.005",
+    "technique_name": "Masquerading: Match Legitimate Name or Location",
+    "confidence": "medium",
+    "rule_id": "68a6befc-d840-4c30-8e8f-6b21ecd6d4d5",
+    "filepath": "detections/sigma/T1036-005-masquerading:-match-legitimate-name-or-location-autogen.yml",
+    "lookback": 10
   }
 ]

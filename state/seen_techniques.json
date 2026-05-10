@@ -152,5 +152,12 @@
     "rule_id": "b8ee8991-c2af-4d5e-9dd8-4702f01a2e14",
     "deployed_at": "2026-05-10T18:31:24.087481+00:00",
     "confidence": "medium"
+  },
+  "T1036.005": {
+    "technique_name": "Masquerading: Match Legitimate Name or Location",
+    "tactic": "defense-evasion",
+    "rule_id": "68a6befc-d840-4c30-8e8f-6b21ecd6d4d5",
+    "deployed_at": "2026-05-10T18:35:44.746794+00:00",
+    "confidence": "medium"
   }
 }
