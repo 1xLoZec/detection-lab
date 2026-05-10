@@ -87,6 +87,7 @@ def deploy_to_kibana(rule_path):
         "rule_id": str(metadata.get("id", "")),
         "false_positives": metadata.get("falsepositives", []),
         "immutable": False,
+        "version": 1,
     }
 
     kibana_base = elastic_url.replace(":9200", ":5601")
@@ -104,7 +105,7 @@ def deploy_to_kibana(rule_path):
         print(f"SUCCESS: Deployed '{metadata.get('title')}' to Kibana")
     elif response.status_code == 409:
         rule_id = metadata.get("id", "")
-        put_url = f"{url}?rule_id={rule_id}"
+        put_url = f"{url}?rule_id={rule_id}&overwrite=true"
         response = requests.put(put_url, headers=headers, json=kibana_rule, verify=False)
         if response.status_code in [200, 201]:
             print(f"SUCCESS: Updated '{metadata.get('title')}' in Kibana")
