@@ -88,5 +88,15 @@
     "rule_id": "0ba73e8e-e872-4067-ac92-e53d7af7b7f1",
     "filepath": "detections/sigma/T1555-004-credentials-from-password-stores:-windows-credential-manager-autogen.yml",
     "lookback": 21
+  },
+  {
+    "timestamp": "2026-05-10T17:28:21.536890+00:00",
+    "result": "deployed",
+    "technique_id": "T1560.001",
+    "technique_name": "Archive Collected Data: Archive via Utility",
+    "confidence": "high",
+    "rule_id": "83e6d320-4d0e-4b8c-95fc-4e5c7fe4afda",
+    "filepath": "detections/sigma/T1560-001-archive-collected-data:-archive-via-utility-autogen.yml",
+    "lookback": 43
   }
 ]

@@ -61,5 +61,12 @@
     "rule_id": "0ba73e8e-e872-4067-ac92-e53d7af7b7f1",
     "deployed_at": "2026-05-10T16:49:35.563902+00:00",
     "confidence": "high"
+  },
+  "T1560.001": {
+    "technique_name": "Archive Collected Data: Archive via Utility",
+    "tactic": "collection",
+    "rule_id": "83e6d320-4d0e-4b8c-95fc-4e5c7fe4afda",
+    "deployed_at": "2026-05-10T17:28:21.536890+00:00",
+    "confidence": "high"
   }
 }
