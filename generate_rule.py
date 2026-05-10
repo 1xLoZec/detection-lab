@@ -23,69 +23,152 @@ from pathlib import Path
 import requests
 import anthropic
 from dotenv import load_dotenv
-from rich.console import Console
-
-_console = Console(highlight=False)
-
-# ── Rich output helpers ───────────────────────────────────────────────────────
-def _ok(label, detail=""):
-    """Print a completed step with green checkmark using Rich."""
-    detail_str = f"  {detail}" if detail else ""
-    _console.print(f"  [bold green]✓[/bold green]  [bold]{label}[/bold]{detail_str}")
-
-def _skip(label, detail=""):
-    """Print a skipped step with yellow arrow using Rich."""
-    detail_str = f"  {detail}" if detail else ""
-    _console.print(f"  [bold yellow]↷[/bold yellow]  [bold]{label}[/bold]{detail_str}")
 
 load_dotenv()
-warnings.filterwarnings("ignore", message="Unverified HTTPS request")
 
-# ── Configuration ──────────────────────────────────────────────────────────────
-ELASTIC_URL        = os.getenv("ELASTIC_URL", "https://10.0.0.1:9200")
-ELASTIC_API_KEY    = os.getenv("ELASTIC_API_KEY", "")
-ANTHROPIC_API_KEY  = os.getenv("ANTHROPIC_API_KEY", "")
-GMAIL_FROM         = os.getenv("GMAIL_FROM", "")
-GMAIL_TO           = os.getenv("GMAIL_TO", "")
+# ── Config ────────────────────────────────────────────────────────────────────
+ELASTIC_URL        = os.getenv("ELASTIC_URL",        "https://10.0.0.1:9200")
+ELASTIC_API_KEY    = os.getenv("ELASTIC_API_KEY",    "")
+ANTHROPIC_API_KEY  = os.getenv("ANTHROPIC_API_KEY",  "")
+GMAIL_FROM         = os.getenv("GMAIL_FROM",         "")
+GMAIL_TO           = os.getenv("GMAIL_TO",           "")
 GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD", "")
-TARGET_HOST        = os.getenv("TARGET_HOST", "*")
+TARGET_HOST        = os.getenv("TARGET_HOST",        "*")
 SIGMA_OUTPUT_DIR   = "detections/sigma"
 STATE_DIR          = Path("state")
+STOP_H4VOC_WATER   = os.getenv("STOP_H4VOC_WATER", "false").lower() == "true"
 
-STOP_H4VOC_WATER = os.getenv("STOP_H4VOC_WATER", "false").lower() == "true"
-
-ALL_TACTICS = [
-    "initial-access", "execution", "persistence", "privilege-escalation",
-    "defense-evasion", "credential-access", "discovery", "lateral-movement",
-    "collection", "command-and-control", "exfiltration", "impact",
-    "reconnaissance", "resource-development"
-]
-
-SYSMON_EVENT_IDS = ["1","3","7","8","10","11","12","13","14","15","17","18","22","23","25"]
-
+# Sysmon ECS fields to pull from Elasticsearch
 SYSMON_ECS_FIELDS = [
-    "@timestamp","event.code","event.category","event.type","event.action",
-    "winlog.channel","host.name",
-    "process.executable","process.name","process.command_line","process.args",
-    "process.pid","process.entity_id","process.hash.sha256","process.hash.sha1",
-    "process.hash.md5","process.pe.original_file_name","process.pe.description",
-    "process.pe.company","process.parent.executable","process.parent.name",
-    "process.parent.command_line","process.parent.pid","process.parent.entity_id",
-    "user.name","user.domain","winlog.event_data.IntegrityLevel",
-    "winlog.event_data.CurrentDirectory",
-    "destination.ip","destination.port","destination.domain",
-    "source.ip","source.port","network.transport","network.protocol",
-    "winlog.event_data.ImageLoaded","winlog.event_data.Signed",
-    "winlog.event_data.Signature","winlog.event_data.SignatureStatus",
-    "file.hash.sha256","file.path","file.name","file.extension","file.directory",
-    "winlog.event_data.SourceImage","winlog.event_data.TargetImage",
-    "winlog.event_data.StartModule","winlog.event_data.StartFunction",
-    "winlog.event_data.GrantedAccess","winlog.event_data.CallTrace",
-    "registry.key","registry.value","registry.path","registry.data.strings",
-    "dns.question.name","dns.question.type",
-    "winlog.event_data.PipeName","winlog.event_data.TargetFilename",
-    "related.hash","related.ip","related.user",
+    "@timestamp", "host.name", "host.hostname",
+    "event.code", "event.action", "event.category", "event.type",
+    "process.pid", "process.name", "process.executable",
+    "process.command_line", "process.args", "process.parent.name",
+    "process.parent.executable", "process.parent.command_line",
+    "user.name", "user.domain",
+    "file.path", "file.name", "file.extension",
+    "file.hash.md5", "file.hash.sha256",
+    "network.direction", "network.protocol",
+    "destination.ip", "destination.port", "destination.domain",
+    "source.ip", "source.port",
+    "dns.question.name", "dns.question.type",
+    "registry.path", "registry.key", "registry.value",
+    "winlog.event_id", "winlog.provider_name",
+    "message",
 ]
+
+# Sysmon event IDs 1-29
+SYSMON_EVENT_IDS = [str(i) for i in range(1, 30)]
+
+# All 14 MITRE ATT&CK tactics for coverage calculation
+ALL_TACTICS = [
+    "reconnaissance", "resource-development", "initial-access",
+    "execution", "persistence", "privilege-escalation",
+    "defense-evasion", "credential-access", "discovery",
+    "lateral-movement", "collection", "command-and-control",
+    "exfiltration", "impact",
+]
+
+from rich.console import Console
+from rich.panel import Panel
+from rich import box
+from rich.logging import RichHandler
+import logging
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+# ── Terminal output ────────────────────────────────────────────────────────────
+# Color hierarchy — one job per color:
+#   green    → checkmark only (success signal)
+#   cyan     → data/details, header rule, panel border
+#   red      → HIGH severity
+#   yellow   → MEDIUM severity, deployed text, next arrow
+#   white    → LOW severity, body text, labels
+#   magenta  → confidence (unique — nothing else uses it)
+#   dim      → timing, secondary info
+
+_con = Console(highlight=False)
+
+# RichHandler: timestamps without file/path references
+logging.basicConfig(
+    level="INFO",
+    format="%(message)s",
+    datefmt="[%X]",
+    handlers=[RichHandler(
+        console=_con,
+        show_path=False,
+        show_level=False,
+        markup=True,
+        rich_tracebacks=False,
+    )]
+)
+_log = logging.getLogger("h4voc")
+
+def _step_ok(label, detail="", duration=None):
+    """Completed step — green checkmark, white label, cyan detail, dim timing."""
+    parts = f"[green]✓[/]  [bold white]{label}[/]"
+    if detail:
+        parts += f"  [cyan]{detail}[/]"
+    if duration is not None:
+        parts += f"  [dim]{duration:.1f}s[/]"
+    _log.info(parts)
+
+def _step_skip(label, detail=""):
+    """Skipped step — yellow arrow."""
+    parts = f"[yellow]↷[/]  [bold white]{label}[/]"
+    if detail:
+        parts += f"  [white]{detail}[/]"
+    _log.info(parts)
+
+def _sev_color(sev):
+    return {"high": "red", "medium": "yellow", "low": "white"}.get(
+        sev.lower(), "white"
+    )
+
+def _print_header(lookback, mins_since=None):
+    _con.print()
+    _con.rule(
+        "[bold cyan]💧 h4voc_water  ·  1xLoZec Detection Lab[/]",
+        style="cyan"
+    )
+    if mins_since is not None:
+        _con.print(
+            f"  [dim]↳ {mins_since}m since last run · scanning {lookback}m window[/]"
+        )
+    else:
+        _con.print(f"  [dim]↳ first run · scanning {lookback}m window[/]")
+    _con.print()
+
+def _print_panel(analysis, events, iocs, lookback, seen, next_fmt, pct):
+    """Print the final summary panel."""
+    ti  = analysis["technique_id"]
+    tn  = analysis["technique_name"]
+    sv  = analysis.get("severity", "?").upper()
+    sc  = _sev_color(analysis.get("severity", "low"))
+    cf  = analysis.get("confidence", "?").upper()
+    pe  = analysis.get("plain_english_summary", "")
+
+    lines = [
+        f"  [green]✓[/]  [white]Elasticsearch[/]  [cyan]{len(events)} events · {lookback}m lookback[/]",
+        f"  [green]✓[/]  [white]Preprocessing[/]  [cyan]{len(iocs)} IOC categories extracted[/]",
+        f"  [green]✓[/]  [white]{ti}[/]  [{sc}]{sv}[/]  [magenta]{cf} confidence[/]",
+        f"  [white]  {pe}[/]",
+        "",
+        f"  [green]✓[/]  [white]Deployed[/]  [yellow]pushed to GitHub · CI/CD validating[/]",
+        "",
+        f"  [bold white]Coverage[/] [green]{pct}%[/]  [white]· {len(seen)} techniques[/]",
+        f"  [bold white]Next[/] [yellow]→[/]  [white]{next_fmt}[/]",
+    ]
+
+    content = chr(10).join(lines)
+    _con.print(Panel(
+        content,
+        title="[bold cyan]💧 h4voc_water  ·  1xLoZec Detection Lab[/]",
+        title_align="left",
+        border_style="cyan",
+        box=box.ROUNDED,
+        padding=(1, 2),
+    ))
 
 
 # ── State ──────────────────────────────────────────────────────────────────────
@@ -309,9 +392,9 @@ def save_and_push(sigma_yaml, analysis, rule_id):
         print(f"  {r.stdout.strip()}")
         subprocess.run(["git","pull","--rebase"], check=True, capture_output=True)
         subprocess.run(["git","push"], check=True, capture_output=True)
-
+        print("  Pushed to GitHub. CI/CD pipeline is validating and deploying to Kibana.")
     except subprocess.CalledProcessError as e:
-        _console.print(f"  [yellow]Git failed:[/yellow] {e}")
+        print(f"  Git failed: {e}")
     return filepath
 
 
@@ -555,12 +638,39 @@ def email_rule_deployed(analysis, iocs, sigma_yaml, rule_id, events_count, lookb
 
 # ── Email: nothing new ─────────────────────────────────────────────────────────
 def email_nothing_new(events_count, lookback, analysis, seen):
-    now = datetime.now(timezone.utc).strftime("%B %d, %Y at %I:%M %p UTC")
+    now  = datetime.now(timezone.utc).strftime("%B %d, %Y at %I:%M %p UTC")
     covered, total, pct, _ = coverage_stats(seen)
-    bar = _bar(pct)
+    bar  = _bar(pct)
 
-    reason   = analysis.get("skip_reason") or "This technique already has a detection rule."
-    next_sim = analysis.get("next_simulation","")
+    ti     = analysis.get("technique_id", "")
+    tn     = analysis.get("technique_name", "")
+    sev    = analysis.get("severity", "medium").capitalize()
+    conf   = analysis.get("confidence", "unknown").capitalize()
+    fp     = analysis.get("false_positive_risk", "medium").capitalize()
+    tactic = analysis.get("tactic", "").title()
+
+    sev_color = {"High": RED, "Medium": YELLOW, "Low": GREEN}.get(sev, MUTED)
+    fp_color  = {"Low": GREEN, "Medium": YELLOW, "High": RED}.get(fp, MUTED)
+
+    sev_badge = (
+        f'<span style="display:inline-block;background:{sev_color}22;color:{sev_color};'
+        f'border:1px solid {sev_color}55;border-radius:4px;padding:2px 8px;'
+        f'font-size:11px;font-weight:700;letter-spacing:1px;font-family:monospace;">{sev.upper()}</span>'
+    )
+    conf_badge = (
+        '<span style="display:inline-block;background:#388bfd22;color:#388bfd;'
+        'border:1px solid #388bfd55;border-radius:4px;padding:2px 8px;'
+        f'font-size:11px;font-weight:700;letter-spacing:1px;font-family:monospace;">{conf.upper()}</span>'
+    )
+    fp_badge = (
+        f'<span style="display:inline-block;background:{fp_color}22;color:{fp_color};'
+        f'border:1px solid {fp_color}55;border-radius:4px;padding:2px 8px;'
+        f'font-size:11px;font-weight:700;letter-spacing:1px;font-family:monospace;">{fp.upper()}</span>'
+    )
+
+    next_sim = analysis.get("next_simulation", "")
+    reason   = "Already covered" if analysis.get("already_covered") else "Confidence too low"
+    summary  = analysis.get("plain_english_summary", "")
 
     covered_rows = "".join(
         f'<tr><td style="padding:7px 14px;font-size:12px;color:{MUTED};font-family:monospace;'
@@ -568,30 +678,61 @@ def email_nothing_new(events_count, lookback, analysis, seen):
         for t in seen
     ) or f'<tr><td style="padding:12px 14px;font-size:13px;color:{FAINT};">None yet.</td></tr>'
 
+    stat_row = ""
+    if ti:
+        stat_row = f"""<tr><td style="padding:0 36px 20px;">
+  <table width="100%" cellpadding="0" cellspacing="0"
+         style="border:1px solid {BORDER};border-radius:6px;overflow:hidden;background:{BG};">
+  <tr>
+    <td style="padding:12px 8px;border-right:1px solid {BORDER};text-align:center;">
+      <p style="margin:0 0 4px;font-size:9px;letter-spacing:1.5px;color:{MUTED};text-transform:uppercase;">Technique</p>
+      <p style="margin:0;font-size:13px;font-weight:700;color:{GREEN};font-family:monospace;">{ti}</p>
+    </td>
+    <td style="padding:12px 8px;border-right:1px solid {BORDER};text-align:center;">
+      <p style="margin:0 0 5px;font-size:9px;letter-spacing:1.5px;color:{MUTED};text-transform:uppercase;">Severity</p>
+      <p style="margin:0;">{sev_badge}</p>
+    </td>
+    <td style="padding:12px 8px;border-right:1px solid {BORDER};text-align:center;">
+      <p style="margin:0 0 5px;font-size:9px;letter-spacing:1.5px;color:{MUTED};text-transform:uppercase;">Confidence</p>
+      <p style="margin:0;">{conf_badge}</p>
+    </td>
+    <td style="padding:12px 8px;border-right:1px solid {BORDER};text-align:center;">
+      <p style="margin:0 0 4px;font-size:9px;letter-spacing:1.5px;color:{MUTED};text-transform:uppercase;">Tactic</p>
+      <p style="margin:0;font-size:11px;font-weight:600;color:{TEXT};">{tactic}</p>
+    </td>
+    <td style="padding:12px 8px;text-align:center;">
+      <p style="margin:0 0 5px;font-size:9px;letter-spacing:1.5px;color:{MUTED};text-transform:uppercase;">FP Risk</p>
+      <p style="margin:0;">{fp_badge}</p>
+    </td>
+  </tr>
+  </table>
+</td></tr>"""
+
     content = f"""
 <tr><td style="padding:20px 36px;">
   <p style="margin:0;font-size:13px;color:{MUTED};">{now}</p>
-  <h1 style="margin:6px 0 0;font-size:20px;font-weight:700;color:{TEXT};">Hunt Complete</h1>
+  <h1 style="margin:6px 0 0;font-size:20px;font-weight:700;color:{TEXT};">Hunt Complete — Nothing New</h1>
 </td></tr>
 
 <tr><td style="padding:0 36px 20px;">
-  <p style="margin:0;font-size:14px;color:{TEXT};line-height:1.7;">
-    Reviewed {events_count} events from the last {lookback} minutes. {reason} No new rule was generated.
+  <p style="margin:0;font-size:14px;color:{TEXT};line-height:1.7;padding:14px 16px;
+     background:{BG};border-left:3px solid {YELLOW};border-radius:0 6px 6px 0;">
+    Reviewed {events_count} events from the last {lookback} minutes. {reason}. No new rule was generated.{"<br><br>" + summary if summary else ""}
   </p>
 </td></tr>
+
+{stat_row}
 
 <tr><td style="padding:0 36px 20px;">
   {_section_label("ATT&amp;CK Coverage")}
-  <p style="margin:0 0 6px;font-size:14px;">{bar} &nbsp;{pct}%</p>
-  <p style="margin:0;font-size:12px;color:{MUTED};">
-    {covered} of {total} attack categories covered &nbsp;·&nbsp; {len(seen)} techniques in library
-  </p>
+  <p style="margin:0 0 6px;font-size:14px;line-height:1;">{bar} &nbsp;<span style="font-weight:600;">{pct}%</span></p>
+  <p style="margin:0;font-size:12px;color:{MUTED};">{covered} of {total} attack categories have at least one detection rule</p>
 </td></tr>
 
 <tr><td style="padding:0 36px 20px;">
   {_section_label("Recommended Next Step")}
-  <p style="margin:0;font-size:14px;color:{TEXT};padding:14px 16px;
-     background:{GREEN_D};border:1px solid {GREEN}44;border-radius:6px;line-height:1.7;">
+  <p style="margin:0;font-size:14px;color:{TEXT};line-height:1.7;padding:14px 16px;
+     background:{GREEN_D};border:1px solid {GREEN}44;border-radius:6px;">
     {_fmt_next(next_sim)}
   </p>
 </td></tr>
@@ -604,14 +745,16 @@ def email_nothing_new(events_count, lookback, analysis, seen):
   </table>
 </td></tr>
 """
-    send_email("💧 h4voc_water — Hunt complete — no new techniques found", _wrapper(content))
+    ti_label = f" — {ti} {tn}" if ti else ""
+    reason_short = "already-covered" if analysis.get("already_covered") else "low-confidence"
+    send_email(f"[Hunt Complete]{ti_label} · {reason_short}", _wrapper(content))
 
 
 # ── Email: weekly digest ───────────────────────────────────────────────────────
 def email_weekly_digest(seen, log):
-    now = datetime.now(timezone.utc).strftime("%B %d, %Y")
+    now  = datetime.now(timezone.utc).strftime("%B %d, %Y")
     covered, total, pct, uncovered = coverage_stats(seen)
-    bar = _bar(pct)
+    bar  = _bar(pct)
 
     week_ago = datetime.now(timezone.utc) - timedelta(days=7)
     week_log = [e for e in log if datetime.fromisoformat(e["timestamp"]) > week_ago]
@@ -619,8 +762,7 @@ def email_weekly_digest(seen, log):
 
     deployed_rows = "".join(
         f'<tr>'
-        f'<td style="padding:8px 14px;font-size:12px;color:{GREEN};font-family:monospace;'
-        f'border-bottom:1px solid {BORDER};">{e["technique_id"]}</td>'
+        f'<td style="padding:8px 14px;font-size:12px;color:{GREEN};font-family:monospace;border-bottom:1px solid {BORDER};">{e["technique_id"]}</td>'
         f'<td style="padding:8px 14px;font-size:13px;color:{TEXT};border-bottom:1px solid {BORDER};">{e["technique_name"]}</td>'
         f'<td style="padding:8px 14px;font-size:11px;color:{MUTED};border-bottom:1px solid {BORDER};text-align:right;">{e["confidence"].upper()}</td>'
         f'</tr>'
@@ -629,8 +771,7 @@ def email_weekly_digest(seen, log):
 
     uncovered_tags = "".join(
         f'<span style="display:inline-block;margin:3px;padding:4px 10px;background:{BG};'
-        f'border:1px solid {BORDER};border-radius:4px;font-size:12px;color:{MUTED};">'
-        f'{t.replace("-"," ").title()}</span>'
+        f'border:1px solid {BORDER};border-radius:4px;font-size:12px;color:{MUTED};">{t.replace("-"," ").title()}</span>'
         for t in uncovered
     ) or f'<span style="font-size:13px;color:{GREEN};">All major tactics covered.</span>'
 
@@ -661,8 +802,8 @@ def email_weekly_digest(seen, log):
 </td></tr>
 
 <tr><td style="padding:0 36px 20px;">
-  {_section_label("Overall Coverage")}
-  <p style="margin:0 0 6px;font-size:14px;">{bar} &nbsp;{pct}%</p>
+  {_section_label("ATT&amp;CK Coverage")}
+  <p style="margin:0 0 6px;font-size:14px;line-height:1;">{bar} &nbsp;<span style="font-weight:600;">{pct}%</span></p>
   <p style="margin:0;font-size:12px;color:{MUTED};">{covered} of {total} attack categories &nbsp;·&nbsp; {len(seen)} techniques</p>
 </td></tr>
 
@@ -676,10 +817,20 @@ def email_weekly_digest(seen, log):
 
 <tr><td style="padding:0 36px 28px;">
   {_section_label("Attack Categories Without Coverage")}
-  <div>{uncovered_tags}</div>
+  <div style="margin-top:8px;">{uncovered_tags}</div>
+</td></tr>
+
+<tr><td style="padding:0 36px 28px;">
+  <table cellpadding="0" cellspacing="0"><tr><td>
+    <a href="https://github.com/1xLoZec/detection-lab/actions"
+       style="display:inline-block;background:{GREEN};color:#000000;text-decoration:none;
+              padding:10px 20px;border-radius:6px;font-size:13px;font-weight:700;">
+      CI/CD Pipeline
+    </a>
+  </td></tr></table>
 </td></tr>
 """
-    send_email(f"💧 h4voc_water — Weekly Report — {pct}% coverage", _wrapper(content))
+    send_email(f"[Weekly Report] {pct}% ATT&CK Coverage — {len(deployed)} rules deployed", _wrapper(content))
 
 
 # ── Email: stopped ─────────────────────────────────────────────────────────────
@@ -690,131 +841,20 @@ def email_stopped():
   <p style="margin:0;font-size:13px;color:{MUTED};">{now}</p>
   <h1 style="margin:6px 0 0;font-size:20px;font-weight:700;color:{TEXT};">Pipeline Paused</h1>
 </td></tr>
+
 <tr><td style="padding:0 36px 28px;">
-  <p style="margin:0;font-size:14px;color:{TEXT};line-height:1.7;">
-    h4voc_water ran but STOP_H4VOC_WATER is set to true in your .env file.
-    No data was queried and no rules were generated.
-    Set it to false to resume.
+  <p style="margin:0;font-size:14px;color:{TEXT};line-height:1.7;padding:14px 16px;
+     background:{BG};border-left:3px solid {YELLOW};border-radius:0 6px 6px 0;">
+    h4voc_water is currently paused.<br><br>
+    Set <code style="font-family:monospace;background:{BG};padding:2px 6px;border-radius:3px;color:{GREEN};">STOP_H4VOC_WATER=false</code>
+    in your <code style="font-family:monospace;background:{BG};padding:2px 6px;border-radius:3px;color:{GREEN};">.env</code>
+    file to resume autonomous detection.
   </p>
 </td></tr>
 """
-    send_email("💧 h4voc_water — Pipeline is paused", _wrapper(content))
+    send_email("[Pipeline Paused] h4voc_water is stopped", _wrapper(content))
 
 
-# ── Main ───────────────────────────────────────────────────────────────────────
-def main():
-    print()
-    _console.print("  [bold green]💧 h4voc_water[/bold green]  [white]·  1xLoZec Detection Lab[/white]")
-    _console.print("  [dim]" + "─"*40 + "[/dim]")
-
-    if not ANTHROPIC_API_KEY:
-        print("Error: ANTHROPIC_API_KEY not set. Check your .env file.")
-        sys.exit(1)
-
-    if STOP_H4VOC_WATER:
-        _console.print("  [yellow]Pipeline paused.[/yellow] [dim]STOP_H4VOC_WATER=true in .env[/dim]")
-        email_stopped()
-        sys.exit(0)
-
-    seen, last, log, digest = load_state()
-    now_ts = datetime.now(timezone.utc).isoformat()
-
-    if should_send_weekly_digest(digest):
-        print("Sending weekly digest...")
-        email_weekly_digest(seen, log)
-        digest["week_start"] = now_ts
-
-    last_run_ts = last.get("timestamp")
-    if last_run_ts:
-        mins_since = int((datetime.now(timezone.utc) - datetime.fromisoformat(last_run_ts)).total_seconds() / 60)
-        lookback   = max(10, min(mins_since + 5, 1440))
-        _console.print(f"  ↳ {mins_since}m since last run · scanning {lookback}m window")
-    else:
-        lookback = 60
-        _console.print(f"  ↳ first run · scanning {lookback}m window")
-
-    _console.print()
-    with _console.status("[green]Querying Elasticsearch...[/green]", spinner="dots", spinner_style="bold green"):
-        events = query_elasticsearch(lookback)
-    _ok("Elasticsearch", f"{len(events)} events · {lookback}m lookback")
-
-    if not events:
-        _console.print("  [yellow]No events found.[/yellow] [dim]Run an Atomic Red Team simulation first.[/dim]")
-        log.append({"timestamp":now_ts,"result":"no_events","lookback":lookback})
-        last["timestamp"] = now_ts
-        save_state(seen, last, log, digest)
-        git_push_state()
-        sys.exit(0)
-
-    iocs = preprocess_events(events)
-    _ok("Preprocessing", f"{len(iocs)} IOC categories extracted")
-
-    with _console.status("[green]Claude is analyzing...[/green]", spinner="dots", spinner_style="bold green"):
-        analysis = analyze_with_claude(iocs, len(events), seen, lookback)
-    _sev = analysis.get("severity", "medium").lower()
-    _sev_color = {"high": "red", "medium": "yellow", "low": "green"}.get(_sev, "white")
-    _ok(
-        f"{analysis['technique_id']} — {analysis['technique_name']}",
-        f"[{_sev_color}]{analysis.get('severity','?').upper()}[/{_sev_color}]  [blue]{analysis.get('confidence','?').upper()} confidence[/blue]"
-    )
-    _console.print(f"    {analysis.get('plain_english_summary','')}")
-
-    last["timestamp"] = now_ts
-
-    if analysis["already_covered"] or analysis["confidence"] == "low":
-        reason = "already covered" if analysis["already_covered"] else "confidence too low"
-        _skip("Skipped", reason)
-        log.append({"timestamp":now_ts,"result":reason.replace(" ","_"),
-                    "technique_id":analysis["technique_id"],
-                    "technique_name":analysis["technique_name"],
-                    "confidence":analysis["confidence"],"lookback":lookback})
-        save_state(seen, last, log, digest)
-        git_push_state()
-        email_nothing_new(len(events), lookback, analysis, seen)
-        covered, total, pct, _ = coverage_stats(seen)
-        print(f"\n{'='*60}")
-        print(f"h4voc_water complete. Nothing new to deploy.")
-        print(f"Coverage: {pct}% — {len(seen)} techniques in library.")
-        print("="*60)
-        return
-
-    with _console.status("[green]Generating Sigma rule...[/green]", spinner="dots", spinner_style="bold green"):
-        sigma_yaml, rule_id = generate_sigma_rule(iocs, analysis)
-
-    if not all(f in sigma_yaml for f in ["title:","id:","logsource:","detection:","condition:"]):
-        _console.print("[red]✗  Rule failed validation.[/red]")
-        sys.exit(1)
-
-    with _console.status("[green]Pushing to GitHub...[/green]", spinner="dots", spinner_style="bold green"):
-        filepath = save_and_push(sigma_yaml, analysis, rule_id)
-
-
-    seen[analysis["technique_id"]] = {
-        "technique_name": analysis["technique_name"],
-        "tactic":         analysis["tactic"],
-        "rule_id":        rule_id,
-        "deployed_at":    now_ts,
-        "confidence":     analysis["confidence"],
-    }
-    log.append({"timestamp":now_ts,"result":"deployed",
-                "technique_id":analysis["technique_id"],
-                "technique_name":analysis["technique_name"],
-                "confidence":analysis["confidence"],
-                "rule_id":rule_id,"filepath":filepath,"lookback":lookback})
-
-    save_state(seen, last, log, digest)
-    git_push_state()
-    email_rule_deployed(analysis, iocs, sigma_yaml, rule_id, len(events), lookback, filepath, seen)
-
-    covered, total, pct, _ = coverage_stats(seen)
-    next_parts = analysis.get('next_simulation','').split(' — ', 2)
-    next_fmt = f"{next_parts[0]} — {next_parts[1]}" if len(next_parts) >= 2 else analysis.get('next_simulation','')
-    print()
-    _ok("Deployed", "pushed to GitHub · CI/CD validating")
-    _console.print(f"  Coverage {pct}% · {len(seen)} techniques")
-    _console.print(f"  Next → {next_fmt}")
-    print()
-
-
+# ── Entry point ────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     main()
