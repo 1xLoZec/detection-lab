@@ -58,5 +58,15 @@
     "rule_id": "0f2928af-3955-4131-ae07-2a35ad02725e",
     "filepath": "detections/sigma/T1055-process-injection-autogen.yml",
     "lookback": 10
+  },
+  {
+    "timestamp": "2026-05-10T15:53:26.098559+00:00",
+    "result": "deployed",
+    "technique_id": "T1547.001",
+    "technique_name": "Boot or Logon Autostart Execution: Registry Run Keys / Startup Folder",
+    "confidence": "medium",
+    "rule_id": "0fb1a2d5-180c-471d-827c-8bdc4b0a03b9",
+    "filepath": "detections/sigma/T1547-001-boot-or-logon-autostart-execution:-registry-run-keys---startup-folder-autogen.yml",
+    "lookback": 424
   }
 ]
