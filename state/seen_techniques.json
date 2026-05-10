@@ -103,5 +103,12 @@
     "rule_id": "c2664794-610c-4732-ba19-2782eacd278f",
     "deployed_at": "2026-05-10T17:57:01.558767+00:00",
     "confidence": "high"
+  },
+  "T1112": {
+    "technique_name": "Modify Registry",
+    "tactic": "defense-evasion",
+    "rule_id": "ec96bb5c-362a-4a2a-b306-ec3f189432bb",
+    "deployed_at": "2026-05-10T18:00:51.426451+00:00",
+    "confidence": "high"
   }
 }

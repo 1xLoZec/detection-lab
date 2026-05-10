@@ -156,5 +156,15 @@
     "rule_id": "c2664794-610c-4732-ba19-2782eacd278f",
     "filepath": "detections/sigma/T1564-001-hide-artifacts:-hidden-files-and-directories-autogen.yml",
     "lookback": 10
+  },
+  {
+    "timestamp": "2026-05-10T18:00:51.426451+00:00",
+    "result": "deployed",
+    "technique_id": "T1112",
+    "technique_name": "Modify Registry",
+    "confidence": "high",
+    "rule_id": "ec96bb5c-362a-4a2a-b306-ec3f189432bb",
+    "filepath": "detections/sigma/T1112-modify-registry-autogen.yml",
+    "lookback": 10
   }
 ]
