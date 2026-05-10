@@ -23,6 +23,20 @@ from pathlib import Path
 import requests
 import anthropic
 from dotenv import load_dotenv
+from rich.console import Console
+
+_console = Console(highlight=False)
+
+# ── Rich output helpers ───────────────────────────────────────────────────────
+def _ok(label, detail=""):
+    """Print a completed step with green checkmark using Rich."""
+    detail_str = f"  {detail}" if detail else ""
+    _console.print(f"  [bold green]✓[/bold green]  [bold]{label}[/bold]{detail_str}")
+
+def _skip(label, detail=""):
+    """Print a skipped step with yellow arrow using Rich."""
+    detail_str = f"  {detail}" if detail else ""
+    _console.print(f"  [bold yellow]↷[/bold yellow]  [bold]{label}[/bold]{detail_str}")
 
 load_dotenv()
 warnings.filterwarnings("ignore", message="Unverified HTTPS request")
@@ -236,7 +250,7 @@ Return JSON only:
   "key_indicators": ["the 3 most distinctive things you saw"],
   "detection_focus": "One sentence on what the rule specifically watches for.",
   "next_simulation": "T1XXX — Technique Name — one sentence on why this gap matters for defense.",
-  "severity": "high, medium, or low based on how dangerous this ATT\&CK technique is objectively",
+  "severity": "high, medium, or low based on how dangerous this ATT&CK technique is objectively",
   "false_positive_risk": "low, medium, or high — how likely this rule is to fire on legitimate activity",
   "skip_reason": "Only fill this if already_covered is true, otherwise leave empty."
 }}"""
@@ -295,9 +309,9 @@ def save_and_push(sigma_yaml, analysis, rule_id):
         print(f"  {r.stdout.strip()}")
         subprocess.run(["git","pull","--rebase"], check=True, capture_output=True)
         subprocess.run(["git","push"], check=True, capture_output=True)
-        print("  Pushed to GitHub. CI/CD pipeline is validating and deploying to Kibana.")
+
     except subprocess.CalledProcessError as e:
-        print(f"  Git failed: {e}")
+        _console.print(f"  [yellow]Git failed:[/yellow] {e}")
     return filepath
 
 
@@ -355,7 +369,7 @@ def _bar(pct):
     filled = int(pct / 5)
     return (
         f'<span style="font-family:monospace;font-size:14px;color:{GREEN};">{"█"*filled}</span>'
-        f'<span style="font-family:monospace;font-size:14px;color:#4a5568;">{"░"*(20-filled)}</span>'
+        f'<span style="font-family:monospace;font-size:14px;color:{BORDER};">{"░"*(20-filled)}</span>'
     )
 
 def _section_label(text):
@@ -442,7 +456,7 @@ def email_rule_deployed(analysis, iocs, sigma_yaml, rule_id, events_count, lookb
     content = f"""
 <tr><td style="padding:20px 36px;">
   <p style="margin:0;font-size:13px;color:{MUTED};">{now}</p>
-  <h1 style="margin:6px 0 0;font-size:20px;font-weight:700;color:{TEXT};">Detection Rule Deployed &nbsp;{sev_badge}</h1>
+  <h1 style="margin:6px 0 0;font-size:20px;font-weight:700;color:{TEXT};">Detection Rule Deployed</h1>
 </td></tr>
 
 <tr><td style="padding:0 36px 20px;">
@@ -484,7 +498,7 @@ def email_rule_deployed(analysis, iocs, sigma_yaml, rule_id, events_count, lookb
 
 <tr><td style="padding:0 36px 20px;">
   {_section_label("ATT&amp;CK Coverage")}
-  <p style="margin:0 0 6px;font-size:14px;line-height:1;">{bar} <span style="color:{TEXT};font-weight:600;">{pct}%</span></p>
+  <p style="margin:0 0 6px;font-size:14px;line-height:1;">{bar} &nbsp;{pct}%</p>
   <p style="margin:0;font-size:12px;color:{MUTED};">
     {covered} of {total} attack categories have at least one detection rule
   </p>
@@ -534,7 +548,7 @@ def email_rule_deployed(analysis, iocs, sigma_yaml, rule_id, events_count, lookb
     )
 
     send_email(
-        f"[{sev.capitalize()} Severity] {analysis['technique_id']} — {analysis['technique_name']}",
+        f"New Detection Rule — {analysis['technique_id']} {analysis['technique_name']}",
         _wrapper(content, footer)
     )
 
@@ -568,7 +582,7 @@ def email_nothing_new(events_count, lookback, analysis, seen):
 
 <tr><td style="padding:0 36px 20px;">
   {_section_label("ATT&amp;CK Coverage")}
-  <p style="margin:0 0 6px;font-size:14px;">{bar} <span style="color:{TEXT};font-weight:600;">{pct}%</span></p>
+  <p style="margin:0 0 6px;font-size:14px;">{bar} &nbsp;{pct}%</p>
   <p style="margin:0;font-size:12px;color:{MUTED};">
     {covered} of {total} attack categories covered &nbsp;·&nbsp; {len(seen)} techniques in library
   </p>
@@ -648,7 +662,7 @@ def email_weekly_digest(seen, log):
 
 <tr><td style="padding:0 36px 20px;">
   {_section_label("Overall Coverage")}
-  <p style="margin:0 0 6px;font-size:14px;">{bar} <span style="color:{TEXT};font-weight:600;">{pct}%</span></p>
+  <p style="margin:0 0 6px;font-size:14px;">{bar} &nbsp;{pct}%</p>
   <p style="margin:0;font-size:12px;color:{MUTED};">{covered} of {total} attack categories &nbsp;·&nbsp; {len(seen)} techniques</p>
 </td></tr>
 
@@ -689,16 +703,16 @@ def email_stopped():
 
 # ── Main ───────────────────────────────────────────────────────────────────────
 def main():
-    print("="*60)
-    print("h4voc_water — 1xLoZec Detection Lab")
-    print("="*60)
+    print()
+    _console.print("  [bold green]💧 h4voc_water[/bold green]  [white]·  1xLoZec Detection Lab[/white]")
+    _console.print("  [dim]" + "─"*40 + "[/dim]")
 
     if not ANTHROPIC_API_KEY:
         print("Error: ANTHROPIC_API_KEY not set. Check your .env file.")
         sys.exit(1)
 
     if STOP_H4VOC_WATER:
-        print("Pipeline paused. STOP_H4VOC_WATER=true in .env")
+        _console.print("  [yellow]Pipeline paused.[/yellow] [dim]STOP_H4VOC_WATER=true in .env[/dim]")
         email_stopped()
         sys.exit(0)
 
@@ -714,38 +728,42 @@ def main():
     if last_run_ts:
         mins_since = int((datetime.now(timezone.utc) - datetime.fromisoformat(last_run_ts)).total_seconds() / 60)
         lookback   = max(10, min(mins_since + 5, 1440))
-        print(f"Last run {mins_since} minutes ago. Looking back {lookback} minutes.")
+        _console.print(f"  ↳ {mins_since}m since last run · scanning {lookback}m window")
     else:
         lookback = 60
-        print(f"First run. Looking back {lookback} minutes.")
+        _console.print(f"  ↳ first run · scanning {lookback}m window")
 
-    print(f"\n[1/4] Querying Elasticsearch...")
-    events = query_elasticsearch(lookback)
-    print(f"  Found {len(events)} events.")
+    _console.print()
+    with _console.status("[green]Querying Elasticsearch...[/green]", spinner="dots", spinner_style="bold green"):
+        events = query_elasticsearch(lookback)
+    _ok("Elasticsearch", f"{len(events)} events · {lookback}m lookback")
 
     if not events:
-        print("  No events found. Run an Atomic Red Team simulation first.")
+        _console.print("  [yellow]No events found.[/yellow] [dim]Run an Atomic Red Team simulation first.[/dim]")
         log.append({"timestamp":now_ts,"result":"no_events","lookback":lookback})
         last["timestamp"] = now_ts
         save_state(seen, last, log, digest)
         git_push_state()
         sys.exit(0)
 
-    print(f"\n[2/4] Preprocessing...")
     iocs = preprocess_events(events)
+    _ok("Preprocessing", f"{len(iocs)} IOC categories extracted")
 
-    print(f"\n[3/4] Claude is analyzing...")
-    analysis = analyze_with_claude(iocs, len(events), seen, lookback)
-    print(f"  Technique:  {analysis['technique_id']} — {analysis['technique_name']}")
-    print(f"  Confidence: {analysis['confidence']}")
-    print(f"  Covered:    {analysis['already_covered']}")
-    print(f"  Summary:    {analysis.get('plain_english_summary','')}")
+    with _console.status("[green]Claude is analyzing...[/green]", spinner="dots", spinner_style="bold green"):
+        analysis = analyze_with_claude(iocs, len(events), seen, lookback)
+    _sev = analysis.get("severity", "medium").lower()
+    _sev_color = {"high": "red", "medium": "yellow", "low": "green"}.get(_sev, "white")
+    _ok(
+        f"{analysis['technique_id']} — {analysis['technique_name']}",
+        f"[{_sev_color}]{analysis.get('severity','?').upper()}[/{_sev_color}]  [blue]{analysis.get('confidence','?').upper()} confidence[/blue]"
+    )
+    _console.print(f"    {analysis.get('plain_english_summary','')}")
 
     last["timestamp"] = now_ts
 
     if analysis["already_covered"] or analysis["confidence"] == "low":
         reason = "already covered" if analysis["already_covered"] else "confidence too low"
-        print(f"\n  Skipping ({reason}). Next: {analysis.get('next_simulation','')}")
+        _skip("Skipped", reason)
         log.append({"timestamp":now_ts,"result":reason.replace(" ","_"),
                     "technique_id":analysis["technique_id"],
                     "technique_name":analysis["technique_name"],
@@ -760,14 +778,16 @@ def main():
         print("="*60)
         return
 
-    print(f"\n[4/4] Generating and deploying Sigma rule...")
-    sigma_yaml, rule_id = generate_sigma_rule(iocs, analysis)
+    with _console.status("[green]Generating Sigma rule...[/green]", spinner="dots", spinner_style="bold green"):
+        sigma_yaml, rule_id = generate_sigma_rule(iocs, analysis)
 
     if not all(f in sigma_yaml for f in ["title:","id:","logsource:","detection:","condition:"]):
-        print("  Rule failed validation.")
+        _console.print("[red]✗  Rule failed validation.[/red]")
         sys.exit(1)
 
-    filepath = save_and_push(sigma_yaml, analysis, rule_id)
+    with _console.status("[green]Pushing to GitHub...[/green]", spinner="dots", spinner_style="bold green"):
+        filepath = save_and_push(sigma_yaml, analysis, rule_id)
+
 
     seen[analysis["technique_id"]] = {
         "technique_name": analysis["technique_name"],
@@ -787,13 +807,13 @@ def main():
     email_rule_deployed(analysis, iocs, sigma_yaml, rule_id, len(events), lookback, filepath, seen)
 
     covered, total, pct, _ = coverage_stats(seen)
-    print(f"\n{'='*60}")
-    print(f"h4voc_water complete.")
-    print(f"Technique:  {analysis['technique_id']} — {analysis['technique_name']}")
-    print(f"Confidence: {analysis['confidence']}")
-    print(f"Coverage:   {pct}% — {len(seen)} techniques in library.")
-    print(f"Next:       {analysis.get('next_simulation','')}")
-    print("="*60)
+    next_parts = analysis.get('next_simulation','').split(' — ', 2)
+    next_fmt = f"{next_parts[0]} — {next_parts[1]}" if len(next_parts) >= 2 else analysis.get('next_simulation','')
+    print()
+    _ok("Deployed", "pushed to GitHub · CI/CD validating")
+    _console.print(f"  Coverage {pct}% · {len(seen)} techniques")
+    _console.print(f"  Next → {next_fmt}")
+    print()
 
 
 if __name__ == "__main__":
