@@ -166,5 +166,12 @@
     "rule_id": "eb0dc4a9-2abf-4471-8905-68bcef7c63c8",
     "deployed_at": "2026-05-10T18:43:55.502481+00:00",
     "confidence": "high"
+  },
+  "T1049": {
+    "technique_name": "System Network Connections Discovery",
+    "tactic": "discovery",
+    "rule_id": "7bf6f4b4-b3fc-4563-8f05-9b3d9c62132b",
+    "deployed_at": "2026-05-10T18:50:26.823039+00:00",
+    "confidence": "high"
   }
 }

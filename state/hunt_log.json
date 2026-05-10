@@ -246,5 +246,15 @@
     "rule_id": "eb0dc4a9-2abf-4471-8905-68bcef7c63c8",
     "filepath": "detections/sigma/T1069-002-permission-groups-discovery:-domain-groups-autogen.yml",
     "lookback": 13
+  },
+  {
+    "timestamp": "2026-05-10T18:50:26.823039+00:00",
+    "result": "deployed",
+    "technique_id": "T1049",
+    "technique_name": "System Network Connections Discovery",
+    "confidence": "high",
+    "rule_id": "7bf6f4b4-b3fc-4563-8f05-9b3d9c62132b",
+    "filepath": "detections/sigma/T1049-system-network-connections-discovery-autogen.yml",
+    "lookback": 11
   }
 ]
