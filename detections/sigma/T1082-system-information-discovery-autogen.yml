@@ -1,85 +1,56 @@
-title: System Information Discovery - Chained Network and System Enumeration via CMD and PowerShell
-id: 1e360948-ea2e-4162-9826-0d1afcd35550
+title: System Information Discovery via Chained CMD Enumeration Utilities
+id: 32bcde9b-c3c8-4b34-ae75-89d885cda787
 status: experimental
-description: Detects coordinated system and network discovery sweep using cmd.exe or powershell.exe spawning multiple discovery binaries chained via '&' operators, PowerShell downloading Discovery.bat from raw.githubusercontent.com, and extensive reg.exe queries against Run/Winlogon/SafeBoot registry hives. Consistent with post-compromise situational awareness gathering (T1082, T1016, T1049, T1012).
+description: Detects cmd.exe spawning multiple system and network enumeration utilities in close temporal proximity or as a chained command sequence. Indicative of host reconnaissance activity associated with T1082 System Information Discovery.
 author: 1xLoZec
 date: 2026/05/10
 references:
-  - https://attack.mitre.org/techniques/T1082/
-  - https://attack.mitre.org/techniques/T1016/
-  - https://attack.mitre.org/techniques/T1049/
-  - https://attack.mitre.org/techniques/T1012/
-  - https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1074.001/src/Discovery.bat
+    - https://attack.mitre.org/techniques/T1082/
 tags:
-  - attack.discovery
-  - attack.t1082
-  - attack.t1016
-  - attack.t1049
-  - attack.t1012
-  - attack.t1033
+    - attack.discovery
+    - attack.t1082
 logsource:
-  category: process_creation
-  product: windows
-  definition: Sysmon EventID 1 via Elastic Agent with ECS field mapping
+    category: process_creation
+    product: windows
 detection:
-  selection_chained_network_discovery:
-    process.name:
-      - 'cmd.exe'
-      - 'powershell.exe'
-    process.command_line|contains|all:
-      - 'ipconfig'
-      - 'netsh'
-      - 'arp'
-      - 'nbtstat'
-      - 'net config'
-  selection_chained_sysinfo_reg:
-    process.name:
-      - 'cmd.exe'
-      - 'powershell.exe'
-    process.command_line|contains|all:
-      - 'systeminfo'
-      - 'reg query'
-      - 'Disk\\Enum'
-  selection_powershell_download_discovery:
-    process.name: 'powershell.exe'
-    process.command_line|contains:
-      - 'raw.githubusercontent.com/redcanaryco/atomic-red-team'
-      - 'Discovery.bat'
-  selection_powershell_invoke_maldoc:
-    process.name: 'powershell.exe'
-    process.command_line|contains|all:
-      - 'Invoke-MalDoc'
-      - 'raw.githubusercontent.com'
-      - 'T1055'
-  selection_reg_run_winlogon_hive:
-    process.name: 'reg.exe'
-    process.command_line|contains:
-      - 'CurrentVersion\\Run'
-      - 'CurrentVersion\\RunOnce'
-      - 'Winlogon'
-      - 'SafeBoot'
-      - 'Active Setup\\Installed Components'
-      - 'ShellServiceObjectDelayLoad'
-      - 'Group Policy\\Scripts\\Startup'
-  filter_legitimate_parent:
-    process.parent.name:
-      - 'TrustedInstaller.exe'
-      - 'MoUsoCoreWorker.exe'
-      - 'TiWorker.exe'
-      - 'services.exe'
-      - 'svchost.exe'
-      - 'MicrosoftEdgeUpdate.exe'
-      - 'SecurityHealthHost.exe'
-  filter_system_user:
-    winlog.event_data.IntegrityLevel: 'System'
-    process.parent.name:
-      - 'svchost.exe'
-      - 'services.exe'
-  condition: (1 of selection_chained_* or 1 of selection_powershell_* or selection_reg_run_winlogon_hive) and not 1 of filter_*
+    selection_parent:
+        process.parent.name: 'cmd.exe'
+    selection_enum_processes:
+        process.name|contains:
+            - 'whoami.exe'
+            - 'HOSTNAME.EXE'
+            - 'ipconfig.exe'
+            - 'arp.exe'
+            - 'nbtstat.exe'
+            - 'netsh.exe'
+            - 'net.exe'
+            - 'net1.exe'
+    selection_chained_cmd:
+        process.name: 'cmd.exe'
+        process.command_line|contains|all:
+            - 'ipconfig'
+            - 'netsh'
+            - 'arp'
+            - 'nbtstat'
+            - 'net config'
+    selection_high_integrity:
+        process.name|contains:
+            - 'whoami.exe'
+            - 'HOSTNAME.EXE'
+        winlog.event_data.IntegrityLevel:
+            - 'High'
+            - 'System'
+    condition: selection_chained_cmd or (selection_parent and selection_enum_processes) or selection_high_integrity
 falsepositives:
-  - Legitimate IT administrators running network diagnostic scripts or inventory collection tools that chain ipconfig, netsh, arp, and nbtstat commands
-  - Security assessment tooling or vulnerability scanners executing enumeration commands via cmd.exe with chained operators
-  - System management software (e.g., SCCM, Ansible, PDQ Deploy) invoking systeminfo and reg.exe queries for asset inventory
-  - Automated patch management or compliance scripts querying Run/Winlogon registry keys for baseline auditing
-  - Penetration testing engagements using Atomic Red Team or similar frameworks in authorized lab environments
-level: high
+    - Legitimate system administrators performing manual network diagnostics or inventory collection
+    - Automated IT asset management or monitoring agents that enumerate host information
+    - Help desk scripts executing chained network commands during troubleshooting sessions
+level: medium
+fields:
+    - process.name
+    - process.executable
+    - process.command_line
+    - process.parent.name
+    - process.parent.executable
+    - winlog.event_data.IntegrityLevel
+    - event.code
