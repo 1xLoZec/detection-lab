@@ -89,5 +89,12 @@
     "rule_id": "c413ce24-f558-4226-810b-c52b958638f0",
     "deployed_at": "2026-05-10T17:37:04.496464+00:00",
     "confidence": "high"
+  },
+  "T1048.003": {
+    "technique_name": "Exfiltration Over Alternative Protocol: Exfiltration Over Unencrypted Non-C2 Protocol",
+    "tactic": "exfiltration",
+    "rule_id": "723b2878-ced4-4052-ab1c-05629a5f4127",
+    "deployed_at": "2026-05-10T17:55:16.780740+00:00",
+    "confidence": "high"
   }
 }
