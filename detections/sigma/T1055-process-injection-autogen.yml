@@ -1,78 +1,32 @@
-title: T1055 Process Injection via PowerShell IEX and CreateRemoteThread to Unknown Process
-id: 7a254b3e-7547-4aae-b028-4263188c0031
+title: PowerShell Process Injection via Invoke-MalDoc and Raw GitHub Payload Fetch
+id: 0f2928af-3955-4131-ae07-2a35ad02725e
 status: experimental
-description: Detects PowerShell downloading and executing Invoke-MalDoc via IEX from raw.githubusercontent.com targeting T1055 process injection macro code, corroborated by Sysmon Event ID 8 CreateRemoteThread targeting an unknown process. Also flags sdbinst.exe with shim-based injection arguments as a secondary indicator.
+description: Detects PowerShell spawning with command lines referencing Invoke-MalDoc and fetching T1055 injection payloads from raw.githubusercontent.com, indicative of Atomic Red Team process injection tests or real T1055 activity delivered via Office macro triggers.
 author: 1xLoZec
 date: 2026/05/10
 references:
-  - https://attack.mitre.org/techniques/T1055/
-  - https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1055/T1055.md
-  - https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1204.002/src/Invoke-MalDoc.ps1
+    - https://attack.mitre.org/techniques/T1055/
+    - https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1055/T1055.md
 tags:
-  - attack.defense_evasion
-  - attack.t1055
-  - attack.t1204.002
+    - attack.defense_evasion
+    - attack.t1055
+    - attack.t1204.002
 logsource:
-  product: windows
-  category: process_creation
+    category: process_creation
+    product: windows
 detection:
-  selection_powershell_iex_invokemaldoc:
-    event.code: '1'
-    process.name: 'powershell.exe'
-    process.command_line|contains|all:
-      - 'IEX'
-      - 'Invoke-MalDoc'
-      - 'raw.githubusercontent.com'
-      - 'T1055'
-  selection_powershell_iex_iwr_github:
-    event.code: '1'
-    process.name: 'powershell.exe'
-    process.command_line|contains|all:
-      - 'IEX'
-      - 'iwr'
-      - 'raw.githubusercontent.com'
-      - 'Invoke-MalDoc.ps1'
-  selection_sdbinst_shim_injection:
-    event.code: '1'
-    process.name: 'sdbinst.exe'
-    process.command_line|contains|all:
-      - '-m'
-      - '-bg'
-  condition: selection_powershell_iex_invokemaldoc or selection_powershell_iex_iwr_github or selection_sdbinst_shim_injection
+    selection_process:
+        event.code: '1'
+        process.name: 'powershell.exe'
+    selection_commandline:
+        process.command_line|contains|all:
+            - 'Invoke-MalDoc'
+            - 'T1055'
+            - 'raw.githubusercontent.com'
+    selection_integrity:
+        winlog.event_data.IntegrityLevel: 'High'
+    condition: selection_process and selection_commandline and selection_integrity
 falsepositives:
-  - Security researchers or red team operators running Atomic Red Team tests in authorized lab environments
-  - Legitimate software deployment pipelines that use PowerShell with IEX and GitHub raw content for module loading
-  - IT administrators using sdbinst.exe with -m -bg flags for legitimate application compatibility shim deployment
-level: high
----
-title: T1055 CreateRemoteThread Targeting Unknown Process via Sysmon Event ID 8
-id: 7a254b3e-7547-4aae-b028-4263188c0031
-status: experimental
-description: Detects Sysmon Event ID 8 CreateRemoteThread where the target process is listed as unknown, a strong indicator of process injection into an unresolved or hollowed process. Correlates with high-integrity PowerShell activity performing Atomic Red Team T1055 injection tests.
-author: 1xLoZec
-date: 2026/05/10
-references:
-  - https://attack.mitre.org/techniques/T1055/
-  - https://www.elastic.co/guide/en/ecs/current/ecs-process.html
-tags:
-  - attack.defense_evasion
-  - attack.t1055
-logsource:
-  product: windows
-  category: create_remote_thread
-detection:
-  selection_remote_thread_unknown_target:
-    event.code: '8'
-    winlog.event_data.TargetImage|contains: '<unknown process>'
-  filter_legitimate_system_sources:
-    process.name|in:
-      - 'TrustedInstaller.exe'
-      - 'MoUsoCoreWorker.exe'
-      - 'TiWorker.exe'
-      - 'svchost.exe'
-  condition: selection_remote_thread_unknown_target and not filter_legitimate_system_sources
-falsepositives:
-  - Antivirus or EDR software that injects threads into processes for monitoring purposes may appear as unknown target in some configurations
-  - Virtualization or sandbox software performing legitimate cross-process operations
-  - Debugging tools such as WinDbg or x64dbg attaching to processes during development or incident response
+    - Authorized red team or penetration testing exercises using Atomic Red Team framework
+    - Security researchers executing T1055 simulations in lab environments
 level: high
