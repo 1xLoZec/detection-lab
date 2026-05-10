@@ -1,0 +1,42 @@
+title: Registry Value Set to COM DelegateExecute Key Under User SID Hive
+id: da3d7d73-325d-4fd8-b3ec-3d7e01dcd0b3
+status: experimental
+description: Detects Sysmon Event ID 13 registry value set operations targeting DelegateExecute values under CLSID shell command keys within a user SID class hive. This pattern is consistent with adversaries enumerating or manipulating COM object registrations for discovery or COM hijacking opportunities, particularly when correlated with broader reconnaissance activity.
+author: 1xLoZec
+date: 2026/05/10
+references:
+    - https://attack.mitre.org/techniques/T1012/
+    - https://attack.mitre.org/techniques/T1546/015/
+tags:
+    - attack.discovery
+    - attack.t1012
+    - attack.persistence
+    - attack.t1546.015
+logsource:
+    product: windows
+    category: registry_set
+detection:
+    selection_event:
+        event.code: '13'
+    selection_registry:
+        registry.key|contains|all:
+            - '_Classes\CLSID\'
+            - '\shell\'
+            - '\command'
+        registry.key|endswith: '\DelegateExecute'
+    selection_sid_hive:
+        registry.key|re: 'S-1-5-21-[0-9]+-[0-9]+-[0-9]+-[0-9]+_Classes\\CLSID\\'
+    condition: selection_event and selection_registry and selection_sid_hive
+falsepositives:
+    - Legitimate software installers or shell extension registrations that write DelegateExecute values to per-user CLSID hives
+    - Windows Explorer or shell component updates modifying COM verb command entries
+    - Group Policy or profile management tooling applying per-user COM settings
+level: medium
+fields:
+    - registry.key
+    - process.name
+    - process.executable
+    - process.command_line
+    - process.parent.name
+    - process.parent.executable
+    - winlog.event_data.IntegrityLevel
