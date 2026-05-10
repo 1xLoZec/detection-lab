@@ -1,0 +1,44 @@
+title: Registry Run Key Persistence via reg.exe (T1547.001)
+id: 6d7bd734-ebdb-4625-ab08-62dd11e2a5cf
+status: experimental
+description: Detects the use of reg.exe to add a value to the Windows CurrentVersion\Run or RunOnce registry keys for persistence, particularly when spawned from cmd.exe or powershell.exe with a target executable path outside standard Windows directories. This matches the Atomic Red Team T1547.001 test pattern.
+author: 1xLoZec
+date: 2026/05/10
+references:
+    - https://attack.mitre.org/techniques/T1547/001/
+    - https://github.com/redcanaryco/atomic-red-team/blob/master/atomics/T1547.001/T1547.001.md
+tags:
+    - attack.persistence
+    - attack.t1547.001
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_process:
+        process.name: 'reg.exe'
+    selection_args_run_key:
+        process.command_line|contains|all:
+            - 'ADD'
+            - 'CurrentVersion\\Run'
+    selection_suspicious_parent:
+        process.parent.name:
+            - 'cmd.exe'
+            - 'powershell.exe'
+    filter_standard_paths:
+        process.command_line|contains:
+            - 'C:\\Windows\\'
+            - 'C:\\Program Files\\'
+            - 'C:\\Program Files (x86)\\'
+    condition: selection_process and selection_args_run_key and selection_suspicious_parent and not filter_standard_paths
+fields:
+    - process.name
+    - process.command_line
+    - process.executable
+    - process.parent.name
+    - process.parent.executable
+    - winlog.event_data.IntegrityLevel
+falsepositives:
+    - Legitimate software installers that register themselves in Run keys via cmd.exe or powershell.exe wrappers during setup
+    - System administration scripts that programmatically add startup entries using reg.exe for managed software deployment
+    - Software update mechanisms that use reg.exe called from a shell to persist update agents in non-standard directories
+level: high
