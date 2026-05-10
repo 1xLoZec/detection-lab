@@ -96,5 +96,12 @@
     "rule_id": "723b2878-ced4-4052-ab1c-05629a5f4127",
     "deployed_at": "2026-05-10T17:55:16.780740+00:00",
     "confidence": "high"
+  },
+  "T1564.001": {
+    "technique_name": "Hide Artifacts: Hidden Files and Directories",
+    "tactic": "defense-evasion",
+    "rule_id": "c2664794-610c-4732-ba19-2782eacd278f",
+    "deployed_at": "2026-05-10T17:57:01.558767+00:00",
+    "confidence": "high"
   }
 }
