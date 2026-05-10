@@ -392,7 +392,7 @@ def save_and_push(sigma_yaml, analysis, rule_id):
         subprocess.run(["git","add",filepath], check=True, capture_output=True)
         commit_msg = f"auto-generate: {analysis['technique_id']} {analysis['technique_name']} [{rule_id[:8]}]"
         r = subprocess.run(["git","commit","-m",commit_msg], check=True, capture_output=True, text=True)
-        print(f"  {r.stdout.strip()}")
+        pass  # git stdout suppressed
         subprocess.run(["git","pull","--rebase"], check=True, capture_output=True)
         subprocess.run(["git","push"], check=True, capture_output=True)
 
