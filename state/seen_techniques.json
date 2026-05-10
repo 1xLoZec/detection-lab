@@ -110,5 +110,12 @@
     "rule_id": "ec96bb5c-362a-4a2a-b306-ec3f189432bb",
     "deployed_at": "2026-05-10T18:00:51.426451+00:00",
     "confidence": "high"
+  },
+  "T1564.003": {
+    "technique_name": "Hide Artifacts: Hidden Window",
+    "tactic": "defense-evasion",
+    "rule_id": "aea83186-6d3e-4623-aa2d-e7f2a21a088e",
+    "deployed_at": "2026-05-10T18:04:32.985037+00:00",
+    "confidence": "medium"
   }
 }
