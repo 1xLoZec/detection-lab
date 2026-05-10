@@ -196,5 +196,15 @@
     "rule_id": "62ed787d-48b7-4072-bca6-2a9048ed8bec",
     "filepath": "detections/sigma/T1059-003-command-and-scripting-interpreter:-windows-command-shell-autogen.yml",
     "lookback": 14
+  },
+  {
+    "timestamp": "2026-05-10T18:22:28.268979+00:00",
+    "result": "deployed",
+    "technique_id": "T1003.002",
+    "technique_name": "OS Credential Dumping: Security Account Manager",
+    "confidence": "high",
+    "rule_id": "c5830d3b-c4fb-465d-8540-44e6b09fc8e7",
+    "filepath": "detections/sigma/T1003-002-os-credential-dumping:-security-account-manager-autogen.yml",
+    "lookback": 10
   }
 ]
