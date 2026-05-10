@@ -126,5 +126,15 @@
     "technique_name": "Supply Chain Compromise: Compromise Software Supply Chain",
     "confidence": "low",
     "lookback": 10
+  },
+  {
+    "timestamp": "2026-05-10T17:37:04.496464+00:00",
+    "result": "deployed",
+    "technique_id": "T1021.002",
+    "technique_name": "Remote Services: SMB/Windows Admin Shares",
+    "confidence": "high",
+    "rule_id": "c413ce24-f558-4226-810b-c52b958638f0",
+    "filepath": "detections/sigma/T1021-002-remote-services:-smb-windows-admin-shares-autogen.yml",
+    "lookback": 10
   }
 ]

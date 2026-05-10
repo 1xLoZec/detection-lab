@@ -82,5 +82,12 @@
     "rule_id": "36b76eed-fe01-4c10-a2d2-c97f8bcc01fa",
     "deployed_at": "2026-05-10T17:31:50.986599+00:00",
     "confidence": "high"
+  },
+  "T1021.002": {
+    "technique_name": "Remote Services: SMB/Windows Admin Shares",
+    "tactic": "lateral-movement",
+    "rule_id": "c413ce24-f558-4226-810b-c52b958638f0",
+    "deployed_at": "2026-05-10T17:37:04.496464+00:00",
+    "confidence": "high"
   }
 }
