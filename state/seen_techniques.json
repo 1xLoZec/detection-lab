@@ -187,5 +187,12 @@
     "rule_id": "f7f59eb3-ad8b-4d57-b1cc-fe60a5418b39",
     "deployed_at": "2026-05-10T19:47:07.925416+00:00",
     "confidence": "high"
+  },
+  "T1482": {
+    "technique_name": "Domain Trust Discovery",
+    "tactic": "discovery",
+    "rule_id": "cb9127a0-e005-4aff-a599-dd2dff0eec62",
+    "deployed_at": "2026-05-10T19:52:26.775991+00:00",
+    "confidence": "high"
   }
 }

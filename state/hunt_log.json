@@ -292,5 +292,15 @@
     "rule_id": "f7f59eb3-ad8b-4d57-b1cc-fe60a5418b39",
     "filepath": "detections/sigma/T1016-001-system-network-configuration-discovery:-internet-connection-discovery-autogen.yml",
     "lookback": 23
+  },
+  {
+    "timestamp": "2026-05-10T19:52:26.775991+00:00",
+    "result": "deployed",
+    "technique_id": "T1482",
+    "technique_name": "Domain Trust Discovery",
+    "confidence": "high",
+    "rule_id": "cb9127a0-e005-4aff-a599-dd2dff0eec62",
+    "filepath": "detections/sigma/T1482-domain-trust-discovery-autogen.yml",
+    "lookback": 10
   }
 ]
