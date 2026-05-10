@@ -1,0 +1,66 @@
+title: Masquerading System Utilities via Path Mismatch or Suspicious Parent
+id: 68a6befc-d840-4c30-8e8f-6b21ecd6d4d5
+status: experimental
+description: Detects system utility binaries (whoami.exe, hostname.exe, svchost.exe, etc.) executing from paths outside their expected system directories or spawned by PowerShell, indicating potential masquerading or post-exploitation reconnaissance consistent with T1036.005.
+author: 1xLoZec
+date: 2026/05/10
+references:
+    - https://attack.mitre.org/techniques/T1036/005/
+tags:
+    - attack.defense_evasion
+    - attack.t1036.005
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_legit_names:
+        process.name|contains:
+            - whoami.exe
+            - hostname.exe
+            - svchost.exe
+            - taskhostw.exe
+            - smartscreen.exe
+    filter_legit_paths:
+        process.executable|startswith:
+            - 'C:\Windows\System32\'
+            - 'C:\Windows\SysWOW64\'
+            - 'C:\Windows\WinSxS\'
+    selection_path_mismatch:
+        process.name|contains:
+            - whoami.exe
+            - hostname.exe
+            - svchost.exe
+            - taskhostw.exe
+            - smartscreen.exe
+    filter_path_mismatch_paths:
+        process.executable|startswith:
+            - 'C:\Windows\System32\'
+            - 'C:\Windows\SysWOW64\'
+            - 'C:\Windows\WinSxS\'
+    selection_powershell_parent:
+        process.parent.name: powershell.exe
+        process.name|contains:
+            - whoami.exe
+            - hostname.exe
+            - svchost.exe
+            - taskhostw.exe
+            - smartscreen.exe
+    selection_medium_integrity_recon:
+        process.name|contains:
+            - whoami.exe
+            - hostname.exe
+        winlog.event_data.IntegrityLevel: Medium
+    condition: (selection_path_mismatch and not filter_path_mismatch_paths) or selection_powershell_parent or selection_medium_integrity_recon
+falsepositives:
+    - Penetration testing tools or red team exercises invoking system utilities via PowerShell
+    - Developer environments where PowerShell scripts legitimately call whoami.exe or hostname.exe
+    - Security tooling running system utilities at Medium integrity for inventory or compliance checks
+level: high
+fields:
+    - process.name
+    - process.executable
+    - process.command_line
+    - process.parent.name
+    - process.parent.executable
+    - winlog.event_data.IntegrityLevel
+    - event.code
