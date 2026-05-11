@@ -342,5 +342,15 @@
     "rule_id": "85b96de7-a91c-4938-846f-1853ee7e39d9",
     "filepath": "detections/sigma/T1012-query-registry-autogen.yml",
     "lookback": 801
+  },
+  {
+    "timestamp": "2026-05-11T18:19:28.396993+00:00",
+    "result": "deployed",
+    "technique_id": "T1614.001",
+    "technique_name": "System Location Discovery: System Language Discovery",
+    "confidence": "medium",
+    "rule_id": "b8765da9-bc02-4c22-8b48-01096420d98a",
+    "filepath": "detections/sigma/T1614-001-system-location-discovery:-system-language-discovery-autogen.yml",
+    "lookback": 528
   }
 ]

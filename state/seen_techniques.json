@@ -194,5 +194,12 @@
     "rule_id": "85b96de7-a91c-4938-846f-1853ee7e39d9",
     "deployed_at": "2026-05-11T09:35:56.759390+00:00",
     "confidence": "high"
+  },
+  "T1614.001": {
+    "technique_name": "System Location Discovery: System Language Discovery",
+    "tactic": "discovery",
+    "rule_id": "b8765da9-bc02-4c22-8b48-01096420d98a",
+    "deployed_at": "2026-05-11T18:19:28.396993+00:00",
+    "confidence": "medium"
   }
 }
