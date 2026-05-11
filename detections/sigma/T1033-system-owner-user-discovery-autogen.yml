@@ -1,0 +1,31 @@
+title: System Owner/User Discovery via Scripting Engine Parent Process
+id: 0d36e12f-4b63-4cf0-8483-8552b1d57090
+status: experimental
+description: Detects whoami.exe or HOSTNAME.EXE spawned by common scripting engines such as powershell.exe, wscript.exe, cscript.exe, or cmd.exe, indicative of system owner and user discovery activity.
+author: 1xLoZec
+date: 2026/05/11
+references:
+    - https://attack.mitre.org/techniques/T1033/
+tags:
+    - attack.discovery
+    - attack.t1033
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_image:
+        process.name|contains:
+            - 'whoami.exe'
+            - 'HOSTNAME.EXE'
+    selection_parent:
+        process.parent.name|contains:
+            - 'powershell.exe'
+            - 'wscript.exe'
+            - 'cscript.exe'
+            - 'cmd.exe'
+    condition: selection_image and selection_parent
+falsepositives:
+    - Legitimate administrative scripts that enumerate user or host identity as part of logging or inventory routines
+    - IT automation frameworks such as Ansible or SCCM that invoke whoami.exe or hostname.exe through PowerShell wrappers
+    - Developer tooling or CI/CD pipeline agents running diagnostics via scripting engines
+level: medium
