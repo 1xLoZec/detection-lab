@@ -1,0 +1,40 @@
+title: Sdbinst Silent Machine-Wide Shim Installation
+id: 5c8ea8be-7a0e-4809-b65a-2d26f91ee077
+status: experimental
+description: Detects sdbinst.exe executing with -m and -bg flags indicating silent machine-wide shim database installation, a technique used for application shimming persistence and defense evasion (T1546.011). Also detects associated registry writes to AppCompatFlags\SdbUpdates.
+author: 1xLoZec
+date: 2026/05/11
+references:
+    - https://attack.mitre.org/techniques/T1546/011/
+    - https://attack.mitre.org/techniques/T1218/011/
+tags:
+    - attack.defense_evasion
+    - attack.persistence
+    - attack.t1546.011
+    - attack.t1218.011
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_process:
+        event.code: '1'
+        process.name: 'sdbinst.exe'
+        process.command_line|contains|all:
+            - '-m'
+            - '-bg'
+    selection_registry:
+        event.code: '13'
+        registry.key|contains: 'SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\SdbUpdates'
+    condition: selection_process or selection_registry
+falsepositives:
+    - Legitimate Windows Update or patch management processes may invoke sdbinst.exe with these flags during application compatibility updates
+    - Enterprise software deployment tools (SCCM, Intune) may register shim databases silently as part of application packaging
+level: high
+fields:
+    - process.name
+    - process.executable
+    - process.command_line
+    - process.parent.name
+    - process.parent.executable
+    - registry.key
+    - winlog.event_data.IntegrityLevel
