@@ -212,8 +212,8 @@
   "T1012": {
     "technique_name": "Query Registry",
     "tactic": "discovery",
-    "rule_id": "da3d7d73-325d-4fd8-b3ec-3d7e01dcd0b3",
-    "deployed_at": "2026-05-10T20:19:42.154280+00:00",
-    "confidence": "medium"
+    "rule_id": "85b96de7-a91c-4938-846f-1853ee7e39d9",
+    "deployed_at": "2026-05-11T09:35:56.759390+00:00",
+    "confidence": "high"
   }
 }

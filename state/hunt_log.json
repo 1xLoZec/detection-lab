@@ -332,5 +332,15 @@
     "rule_id": "da3d7d73-325d-4fd8-b3ec-3d7e01dcd0b3",
     "filepath": "detections/sigma/T1012-query-registry-autogen.yml",
     "lookback": 10
+  },
+  {
+    "timestamp": "2026-05-11T09:35:56.759390+00:00",
+    "result": "deployed",
+    "technique_id": "T1012",
+    "technique_name": "Query Registry",
+    "confidence": "high",
+    "rule_id": "85b96de7-a91c-4938-846f-1853ee7e39d9",
+    "filepath": "detections/sigma/T1012-query-registry-autogen.yml",
+    "lookback": 801
   }
 ]
