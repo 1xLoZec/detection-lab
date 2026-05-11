@@ -65,7 +65,8 @@ What happens next, without any human input:
 7. pySigma converts the Sigma YAML to Elasticsearch DSL and deploys via API to Kibana
 8. A formatted HTML email lands in my inbox with technique stats, strongest signals, and the recommended next simulation
 
-Slowly building ATT&CK Coverage
+
+## Slowly building ATT&CK Coverage
 ## 🗺️ [View Live ATT&CK Coverage Heatmap →](https://mitre-attack.github.io/attack-navigator/#layerURL=https://raw.githubusercontent.com/1xLoZec/detection-lab/main/docs/coverage_layer.json)
 
 ## Progress
