@@ -34,13 +34,6 @@
     "deployed_at": "2026-05-10T08:49:56.330051+00:00",
     "confidence": "high"
   },
-  "T1055": {
-    "technique_name": "Process Injection",
-    "tactic": "defense-evasion",
-    "rule_id": "0f2928af-3955-4131-ae07-2a35ad02725e",
-    "deployed_at": "2026-05-10T08:53:51.098208+00:00",
-    "confidence": "high"
-  },
   "T1547.001": {
     "technique_name": "Boot or Logon Autostart Execution: Registry Run Keys / Startup Folder",
     "tactic": "persistence",
