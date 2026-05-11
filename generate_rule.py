@@ -368,6 +368,7 @@ winlog.event_data.ImageLoaded, winlog.event_data.GrantedAccess,
 winlog.event_data.IntegrityLevel, winlog.event_data.PipeName
 
 Rules: ECS field names only. Most distinctive indicators only. Realistic false positives. Correct severity.
+BANNED modifiers — NEVER use: |in, |lowercasefield, |re — not supported by pySigma 0.11.23. Use |contains, |startswith, |endswith, or exact match only.
 Required: id: {rule_id}, date: {today}, author: 1xLoZec, status: experimental
 
 Return valid Sigma YAML only. No markdown. No explanation."""
