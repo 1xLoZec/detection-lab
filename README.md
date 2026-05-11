@@ -65,20 +65,8 @@ What happens next, without any human input:
 7. pySigma converts the Sigma YAML to Elasticsearch DSL and deploys via API to Kibana
 8. A formatted HTML email lands in my inbox with technique stats, strongest signals, and the recommended next simulation
 
-Current coverage: **57% of MITRE ATT&CK tactics · 31 custom rules deployed**
-
-**[View Live Coverage Heatmap →](https://mitre-attack.github.io/attack-navigator/#layerURL=https://raw.githubusercontent.com/1xLoZec/detection-lab/main/docs/coverage_layer.json)**
-
-| Tactic | Coverage |
-|--------|----------|
-| Discovery | T1016, T1016.001, T1018, T1033, T1049, T1057, T1069.001, T1069.002, T1082, T1083, T1087.001, T1482 |
-| Defense Evasion | T1036.005, T1112, T1195.002, T1216, T1218.007, T1564.001, T1564.003 |
-| Execution | T1059.001, T1059.003 |
-| Persistence | T1053.005, T1547.001 |
-| Credential Access | T1003.002, T1555.004 |
-| Lateral Movement | T1021.001, T1021.002 |
-| Collection | T1056.001, T1560.001 |
-| Exfiltration | T1048.003 |
+Slowly building ATT&CK Coverage
+## 🗺️ [View Live ATT&CK Coverage Heatmap →](https://mitre-attack.github.io/attack-navigator/#layerURL=https://raw.githubusercontent.com/1xLoZec/detection-lab/main/docs/coverage_layer.json)
 
 ## Progress
 
