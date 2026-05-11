@@ -41,3 +41,4 @@ falsepositives:
   - Group Policy-based shim deployments managed by domain administrators for application compatibility purposes
 level: high
 
+

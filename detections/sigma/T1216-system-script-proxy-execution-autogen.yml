@@ -49,3 +49,4 @@ fields:
     - event.code
     - winlog.event_data.IntegrityLevel
 
+

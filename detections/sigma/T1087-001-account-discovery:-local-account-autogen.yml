@@ -37,3 +37,4 @@ falsepositives:
     - Software deployment frameworks or monitoring agents running under interactive user sessions
 level: medium
 
+

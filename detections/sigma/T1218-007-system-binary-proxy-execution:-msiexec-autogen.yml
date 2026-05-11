@@ -37,3 +37,4 @@ falsepositives:
     - Third-party patch management or RMM tools that stage MSI files outside standard directories
 level: high
 
+

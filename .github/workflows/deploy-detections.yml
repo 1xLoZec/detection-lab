@@ -78,14 +78,18 @@ jobs:
               echo "=========================================="
               echo "Validating: $file"
               echo "=========================================="
+              set +e
               python3 validate_rule.py "$file"
-              if [ $? -ne 0 ]; then
-                echo "FAIL: $file could not be validated or healed"
+              EXIT_CODE=$?
+              set -e
+              if [ $EXIT_CODE -ne 0 ]; then
+                echo "CIRCUIT BREAKER: $file could not be validated or healed — skipping"
                 FAILED=1
               fi
             fi
           done
           if [ $FAILED -ne 0 ]; then
+            echo "One or more rules failed validation — check circuit breaker emails"
             exit 1
           fi
 
