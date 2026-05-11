@@ -44,3 +44,4 @@ fields:
     - winlog.event_data.IntegrityLevel
     - dns.question.name
 level: high
+

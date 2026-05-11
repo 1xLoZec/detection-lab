@@ -36,3 +36,4 @@ falsepositives:
     - Administrative scripts invoking msiexec silently from non-default paths during provisioning or imaging
     - Third-party patch management or RMM tools that stage MSI files outside standard directories
 level: high
+

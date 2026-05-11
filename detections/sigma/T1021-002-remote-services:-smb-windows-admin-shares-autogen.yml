@@ -33,3 +33,4 @@ falsepositives:
   - Legitimate administrators testing or configuring SMB over QUIC in lab or pilot environments
   - Automated provisioning scripts that map SMB shares using QUIC transport with self-signed certificates
 level: high
+

@@ -35,3 +35,4 @@ falsepositives:
     - IT automation tools or configuration management agents executing network enumeration as part of health checks
     - Helpdesk or support scripts that gather network information for troubleshooting purposes
 level: high
+

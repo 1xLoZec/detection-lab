@@ -31,3 +31,4 @@ falsepositives:
     - System management tools or deployment frameworks that automate task scheduling
     - IT automation scripts run by administrators during provisioning workflows
 level: high
+

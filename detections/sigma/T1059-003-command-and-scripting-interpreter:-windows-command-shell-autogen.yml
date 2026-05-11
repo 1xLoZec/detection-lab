@@ -39,3 +39,4 @@ falsepositives:
     - Software installers or deployment tools that chain PowerShell with batch file execution
     - Developer tooling or build systems invoking batch files via PowerShell from project directories
 level: high
+

@@ -61,3 +61,4 @@ fields:
     - winlog.event_data.GrantedAccess
     - winlog.event_data.IntegrityLevel
 level: medium
+

@@ -35,3 +35,4 @@ falsepositives:
     - Legitimate backup scripts or administrative tools that use archive utilities to compress files from user profile directories
     - Scheduled tasks or deployment pipelines that invoke archive utilities with recursive flags
 level: high
+

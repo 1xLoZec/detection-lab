@@ -35,3 +35,4 @@ fields:
     - process.parent.name
     - process.parent.executable
     - winlog.event_data.IntegrityLevel
+

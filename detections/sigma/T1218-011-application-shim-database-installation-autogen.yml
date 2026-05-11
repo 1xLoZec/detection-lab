@@ -50,3 +50,4 @@ fields:
     - winlog.event_data.IntegrityLevel
     - process.executable
 level: high
+

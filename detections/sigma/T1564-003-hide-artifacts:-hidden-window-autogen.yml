@@ -35,3 +35,4 @@ falsepositives:
     - Group Policy or configuration management tools applying Explorer settings
     - IT provisioning automation tools that configure default user environment settings
 level: medium
+

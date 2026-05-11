@@ -30,3 +30,4 @@ falsepositives:
     - Legitimate administrative scripts or Group Policy configurations that manage Explorer visual settings
     - Software deployment tools that configure user interface preferences
 level: high
+

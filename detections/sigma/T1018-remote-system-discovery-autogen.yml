@@ -34,3 +34,4 @@ falsepositives:
   - Automated inventory or asset management scripts executed under user context
   - Network monitoring tools that enumerate domain resources on behalf of users
 level: medium
+

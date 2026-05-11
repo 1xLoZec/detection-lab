@@ -38,3 +38,4 @@ falsepositives:
     - Security testing or red team exercises involving HTTP data transmission
     - Monitoring or telemetry agents that use Invoke-WebRequest to send diagnostics
 level: high
+

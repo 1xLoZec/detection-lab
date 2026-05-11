@@ -30,3 +30,4 @@ falsepositives:
     - Authorized red team or penetration testing exercises using Atomic Red Team framework
     - Security researchers executing T1055 simulations in lab environments
 level: high
+

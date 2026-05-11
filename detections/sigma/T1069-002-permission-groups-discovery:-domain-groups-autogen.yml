@@ -33,3 +33,4 @@ falsepositives:
   - Automated IT management or helpdesk tooling that enumerates domain groups using net.exe under elevated credentials
   - Security assessment or penetration testing activity authorized within the environment
 level: medium
+

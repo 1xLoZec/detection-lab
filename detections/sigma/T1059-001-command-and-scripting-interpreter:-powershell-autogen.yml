@@ -53,3 +53,4 @@ fields:
     - file.path
     - winlog.event_data.IntegrityLevel
 level: high
+

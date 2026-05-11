@@ -36,3 +36,4 @@ falsepositives:
     - Legitimate administrative scripts or IT automation tools that invoke whoami or hostname for inventory or diagnostic purposes
     - Software deployment frameworks or monitoring agents running under interactive user sessions
 level: medium
+

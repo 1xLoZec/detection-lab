@@ -48,3 +48,4 @@ fields:
     - process.parent.executable
     - event.code
     - winlog.event_data.IntegrityLevel
+

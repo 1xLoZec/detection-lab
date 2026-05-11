@@ -40,3 +40,4 @@ falsepositives:
   - Enterprise application compatibility toolkits (e.g., Microsoft ACT) used by IT administrators to deploy shims for legacy software
   - Group Policy-based shim deployments managed by domain administrators for application compatibility purposes
 level: high
+
