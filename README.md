@@ -67,6 +67,8 @@ What happens next, without any human input:
 
 Current coverage: **57% of MITRE ATT&CK tactics · 31 custom rules deployed**
 
+**[View Live Coverage Heatmap →](https://mitre-attack.github.io/attack-navigator/#layerURL=https://raw.githubusercontent.com/1xLoZec/detection-lab/main/docs/coverage_layer.json)**
+
 | Tactic | Coverage |
 |--------|----------|
 | Discovery | T1016, T1016.001, T1018, T1033, T1049, T1057, T1069.001, T1069.002, T1082, T1083, T1087.001, T1482 |
