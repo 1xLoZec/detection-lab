@@ -1,0 +1,13 @@
+es_host: 10.0.0.1
+es_port: 9200
+use_ssl: true
+verify_certs: false
+es_api_key: cUNQS0Y1NEJTcHRIZm9pTklVbHo6TFRSd29ZcGJfeVBvMEV4SVRlUENKZw==
+rules_folder: /Users/albundy/detection-lab/elastalert/rules
+run_every:
+  minutes: 5
+buffer_time:
+  minutes: 15
+writeback_index: elastalert_status
+alert_time_limit:
+  days: 2

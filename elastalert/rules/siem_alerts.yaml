@@ -1,0 +1,41 @@
+name: SIEM Detection Alert
+type: any
+index: .alerts-security.alerts-default
+
+filter:
+  - term:
+      kibana.alert.status: "active"
+
+alert:
+  - email
+
+email:
+  - 1xlozec@gmail.com
+
+smtp_host: smtp.gmail.com
+smtp_port: 465
+smtp_ssl: true
+smtp_auth_file: /Users/albundy/detection-lab/elastalert/smtp_auth.yaml
+from_addr: 1xlozec@gmail.com
+
+alert_subject: "[Detection Alert] {0} — {1}"
+alert_subject_args:
+  - kibana.alert.rule.name
+  - kibana.alert.severity
+
+alert_text: |
+  Rule: {0}
+  Severity: {1}
+  Host: {2}
+  Time: {3}
+
+alert_text_args:
+  - kibana.alert.rule.name
+  - kibana.alert.severity
+  - host.name
+  - "@timestamp"
+
+realert:
+  minutes: 60
+
+timestamp_field: "@timestamp"

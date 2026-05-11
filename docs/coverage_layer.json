@@ -1,12 +1,12 @@
 {
-  "name": "1xLoZec Detection Lab \u2014 29 Techniques Covered (15%)",
+  "name": "1xLoZec Detection Lab \u2014 30 Techniques Covered (16%)",
   "versions": {
     "attack": "16",
     "navigator": "4.9",
     "layer": "4.5"
   },
   "domain": "enterprise-attack",
-  "description": "Auto-generated from h4voc_water detection pipeline. 29 techniques covered as of 2026-05-11. Green = HIGH confidence, Orange = MEDIUM, Blue = LOW.",
+  "description": "Auto-generated from h4voc_water detection pipeline. 30 techniques covered as of 2026-05-11. Green = HIGH confidence, Orange = MEDIUM, Blue = LOW.",
   "filters": {
     "platforms": [
       "Windows",
@@ -43,14 +43,6 @@
     },
     {
       "techniqueID": "T1087.001",
-      "color": "#4caf50",
-      "comment": "Deployed: 2026-05-10 | Confidence: HIGH | Tactic: Discovery",
-      "enabled": true,
-      "score": 1,
-      "metadata": []
-    },
-    {
-      "techniqueID": "T1016",
       "color": "#4caf50",
       "comment": "Deployed: 2026-05-10 | Confidence: HIGH | Tactic: Discovery",
       "enabled": true,
@@ -261,6 +253,22 @@
       "techniqueID": "T1012",
       "color": "#4caf50",
       "comment": "Deployed: 2026-05-11 | Confidence: HIGH | Tactic: Discovery",
+      "enabled": true,
+      "score": 1,
+      "metadata": []
+    },
+    {
+      "techniqueID": "T1614.001",
+      "color": "#ff9800",
+      "comment": "Deployed: 2026-05-11 | Confidence: MEDIUM | Tactic: Discovery",
+      "enabled": true,
+      "score": 1,
+      "metadata": []
+    },
+    {
+      "techniqueID": "T1218.011",
+      "color": "#ff9800",
+      "comment": "Deployed: 2026-05-11 | Confidence: MEDIUM | Tactic: Defense-Evasion",
       "enabled": true,
       "score": 1,
       "metadata": []
