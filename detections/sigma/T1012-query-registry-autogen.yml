@@ -1,0 +1,36 @@
+title: Registry Query Against HotPatch Key by Non-SYSTEM User
+id: 85b96de7-a91c-4938-846f-1853ee7e39d9
+status: experimental
+description: Detects reg.exe executing a query against HKLM\SYSTEM\CurrentControlSet\Control\HotPatch under a non-SYSTEM user context, indicative of T1012 registry enumeration for patch management reconnaissance.
+author: 1xLoZec
+date: 2026/05/11
+references:
+  - https://attack.mitre.org/techniques/T1012/
+tags:
+  - attack.discovery
+  - attack.t1012
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_process:
+    event.code: '1'
+    process.name: 'reg.exe'
+  selection_commandline:
+    process.command_line|contains|all:
+      - 'query'
+      - 'HotPatch'
+  filter_system_user:
+    winlog.event_data.IntegrityLevel: 'System'
+  condition: selection_process and selection_commandline and not filter_system_user
+falsepositives:
+  - Legitimate administrative scripts querying HotPatch registry settings under a user account
+  - Security or patch management tooling running under interactive user context
+level: medium
+fields:
+  - process.name
+  - process.executable
+  - process.command_line
+  - process.parent.name
+  - process.parent.executable
+  - winlog.event_data.IntegrityLevel
