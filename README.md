@@ -139,6 +139,8 @@ configured. SSL certificate installed. Kibana is live.
   
   If it fails, Claude rewrites it using each validator's feedback and tries again. Three attempts max. If it still fails, a circuit breaker emails me and stops. Nothing broken makes it to Kibana.
 
+- May 11 2026 — 31 custom detection rules deployed to Kibana and firing live alerts. Full pipeline confirmed end to end: simulation → telemetry → AI analysis → rule generation → CI/CD validation → deployment → alert. Three high severity alerts generated from T1059.001, T1082, and T1016 simulations.
+
 ## Roadmap
 
 - [ ] Public read-only Kibana at `training.1xlozec.com`
