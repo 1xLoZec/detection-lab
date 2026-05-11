@@ -126,6 +126,18 @@ configured. SSL certificate installed. Kibana is live.
 
 <img width="862" height="754" alt="image" src="https://github.com/user-attachments/assets/4e82b198-a59d-4191-aa6a-6a5759ae9c79" />
 
+- May 11 2026 — Two big things today.
+
+  First, `demo.1xlozec.com` is live. Public read-only Kibana dashboard. SSL, rate limiting, dedicated viewer account. Anyone can see the lab without VPN.
+
+  Second, the CI/CD pipeline is now self-healing. Every Sigma rule runs through four automated stages before it touches Kibana:
+
+  1. YAML lint — catches malformed rules before wasting API calls
+  2. Conversion — pySigma translates Sigma to Elastic DSL
+  3. Backtest — query runs against live Elasticsearch to confirm it matches real data
+  4. Three-AI gate — Claude, Gemini, and Ollama each score the rule independently
+  
+  If it fails, Claude rewrites it using each validator's feedback and tries again. Three attempts max. If it still fails, a circuit breaker emails me and stops. Nothing broken makes it to Kibana.
 
 ## Roadmap
 
@@ -141,7 +153,7 @@ configured. SSL certificate installed. Kibana is live.
 
 ## Lab Access
 
-Live Kibana dashboard: https://1xlozec.com
+Live Kibana dashboard: `demo.1xlozec.com`
 
 ---
 
