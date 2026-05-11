@@ -201,5 +201,12 @@
     "rule_id": "b8765da9-bc02-4c22-8b48-01096420d98a",
     "deployed_at": "2026-05-11T18:19:28.396993+00:00",
     "confidence": "medium"
+  },
+  "T1218.011": {
+    "technique_name": "System Binary Proxy Execution: Rundll32",
+    "tactic": "defense-evasion",
+    "rule_id": "5c8ea8be-7a0e-4809-b65a-2d26f91ee077",
+    "deployed_at": "2026-05-11T18:44:59.364279+00:00",
+    "confidence": "medium"
   }
 }

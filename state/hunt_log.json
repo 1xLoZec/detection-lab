@@ -352,5 +352,15 @@
     "rule_id": "b8765da9-bc02-4c22-8b48-01096420d98a",
     "filepath": "detections/sigma/T1614-001-system-location-discovery:-system-language-discovery-autogen.yml",
     "lookback": 528
+  },
+  {
+    "timestamp": "2026-05-11T18:44:59.364279+00:00",
+    "result": "deployed",
+    "technique_id": "T1218.011",
+    "technique_name": "System Binary Proxy Execution: Rundll32",
+    "confidence": "medium",
+    "rule_id": "5c8ea8be-7a0e-4809-b65a-2d26f91ee077",
+    "filepath": "detections/sigma/T1218-011-system-binary-proxy-execution:-rundll32-autogen.yml",
+    "lookback": 30
   }
 ]
