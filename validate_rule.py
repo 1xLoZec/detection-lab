@@ -23,7 +23,15 @@ def parse_llm_response(text):
 
 
 def ask_ollama(rule_text, query):
-    prompt = f"""You are a detection engineering expert. Analyze this Sigma rule and Elastic query.
+    prompt = f"""You are a detection engineering expert reviewing a Sigma rule for a home detection lab.
+Score this rule 1-10 using these exact criteria:
+- 8-10: Valid logsource, correct ECS fields, logical detection condition, ATT&CK tags present, would realistically fire on attacker behavior
+- 5-7: Minor issues like slightly broad conditions or missing optional fields, but functionally sound
+- 1-4: Wrong field names, impossible logic, would never fire, or is dangerously noisy with no filters
+
+This is a lab environment with Sysmon + Elastic Agent on Windows. Be practical, not academic.
+A score of 6+ with approve=true means deploy it. Do not fail rules for being imperfect — fail them only if they are fundamentally broken.
+
 Rule: {rule_text}
 Elastic Query: {query}
 Respond with JSON only: {{"score": 1-10, "approve": true/false, "issues": [], "reasoning": ""}}"""
@@ -35,9 +43,21 @@ Respond with JSON only: {{"score": 1-10, "approve": true/false, "issues": [], "r
 
 
 def ask_claude(rule_text, query):
-    prompt = f"""You are a detection engineering expert. Analyze this Sigma rule and Elastic query for quality and false positive risk.
-Rule: {rule_text}
-Elastic Query: {query}
+    prompt = f"""You are a detection engineering expert reviewing a Sigma rule for a home detection lab.
+Score this rule 1-10 using these exact criteria:
+- 8-10: Valid logsource, correct ECS fields, logical detection condition, ATT&CK tags present, would realistically fire on attacker behavior
+- 5-7: Minor issues like slightly broad conditions or missing optional fields, but functionally sound
+- 1-4: Wrong field names, impossible logic, would never fire, or is dangerously noisy with no filters
+
+This is a lab environment with Sysmon + Elastic Agent on Windows. Be practical, not academic.
+A score of 6+ with approve=true means deploy it. Do not fail rules for being imperfect — fail them only if they are fundamentally broken.
+
+Rule:
+{rule_text}
+
+Elastic Query:
+{query}
+
 Respond with JSON only: {{"score": 1-10, "approve": true/false, "issues": [], "reasoning": ""}}"""
     response = requests.post(
         "https://api.anthropic.com/v1/messages",
@@ -56,7 +76,15 @@ Respond with JSON only: {{"score": 1-10, "approve": true/false, "issues": [], "r
 
 
 def ask_gemini(rule_text, query):
-    prompt = f"""You are a detection engineering expert. Analyze this Sigma rule and Elastic query.
+    prompt = f"""You are a detection engineering expert reviewing a Sigma rule for a home detection lab.
+Score this rule 1-10 using these exact criteria:
+- 8-10: Valid logsource, correct ECS fields, logical detection condition, ATT&CK tags present, would realistically fire on attacker behavior
+- 5-7: Minor issues like slightly broad conditions or missing optional fields, but functionally sound
+- 1-4: Wrong field names, impossible logic, would never fire, or is dangerously noisy with no filters
+
+This is a lab environment with Sysmon + Elastic Agent on Windows. Be practical, not academic.
+A score of 6+ with approve=true means deploy it. Do not fail rules for being imperfect — fail them only if they are fundamentally broken.
+
 Rule: {rule_text}
 Elastic Query: {query}
 Respond with JSON only: {{"score": 1-10, "approve": true/false, "issues": [], "reasoning": ""}}"""
