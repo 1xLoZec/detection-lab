@@ -90,7 +90,7 @@ def deploy_to_kibana(rule_path):
         "version": 1,
     }
 
-    kibana_base = elastic_url.replace(":9200", ":5601")
+    kibana_base = elastic_url.replace(":9200", ":5601").replace("https://", "http://")
     url = f"{kibana_base}/api/detection_engine/rules"
 
     headers = {
