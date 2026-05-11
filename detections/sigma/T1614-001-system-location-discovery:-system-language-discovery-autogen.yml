@@ -1,0 +1,35 @@
+title: System Language Discovery via Chained Systeminfo and Disk Enum Registry Query
+id: b8765da9-bc02-4c22-8b48-01096420d98a
+status: experimental
+description: Detects cmd.exe executing a chained command combining systeminfo with reg query against HKLM\SYSTEM\CurrentControlSet\Services\Disk\Enum, which can reveal storage layout and virtualization indicators used for environment fingerprinting.
+author: 1xLoZec
+date: 2026/05/11
+references:
+    - https://attack.mitre.org/techniques/T1614/001/
+tags:
+    - attack.discovery
+    - attack.t1614.001
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_cmd_chained:
+        event.code: '1'
+        process.name: 'cmd.exe'
+        process.command_line|contains|all:
+            - 'systeminfo'
+            - 'reg'
+            - 'Disk\Enum'
+    selection_reg_direct:
+        event.code: '1'
+        process.name: 'reg.exe'
+        process.command_line|contains|all:
+            - 'HKLM'
+            - 'Disk\Enum'
+        process.parent.name: 'cmd.exe'
+    condition: selection_cmd_chained or selection_reg_direct
+falsepositives:
+    - Legitimate system administrators running hardware inventory or diagnostic scripts
+    - Automated asset management tools that query disk device enumeration
+    - IT operations scripts combining system information gathering utilities
+level: medium
