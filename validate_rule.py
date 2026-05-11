@@ -152,7 +152,7 @@ def ask_claude(rule_text, query):
 def ask_gemini(rule_text, query):
     prompt = VALIDATION_PROMPT.format(rule_text=rule_text, query=query)
     response = requests.post(
-        f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={os.environ['GEMINI_API_KEY']}",
+        f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={os.environ['GEMINI_API_KEY']}",
         json={"contents": [{"parts": [{"text": prompt}]}]},
         timeout=60,
     )
@@ -287,40 +287,72 @@ def heal_rule(rule_text, query, backtest_count, feedback_by_validator, attempt):
 # ── Circuit breaker email ─────────────────────────────────────────────────────
 
 def send_circuit_breaker_email(rule_path, attempts, feedback_history):
-    """Email when self-healing gives up after max attempts."""
+    """Email when self-healing gives up — HTML design matching h4voc_water emails."""
     gmail_from = os.environ.get("GMAIL_FROM", "")
     gmail_to   = os.environ.get("GMAIL_TO", "")
     gmail_pass = os.environ.get("GMAIL_APP_PASSWORD", "")
-
     if not all([gmail_from, gmail_to, gmail_pass]):
         print("  [circuit breaker] email credentials not set — skipping notification")
         return
 
-    summary = ""
+    from datetime import datetime, timezone
+    now       = datetime.now(timezone.utc).strftime("%B %d, %Y at %I:%M %p UTC")
+    rule_name = rule_path.split("/")[-1].replace(".yml", "").replace("-", " ").title()
+
+    BG    = "#0d1117"
+    CARD  = "#161b22"
+    BORD  = "#21262d"
+    TEXT  = "#e6edf3"
+    MUTED = "#8b949e"
+    RED   = "#f85149"
+
+    feedback_rows = ""
     for i, fb in enumerate(feedback_history, 1):
-        summary += f"\nAttempt {i}:\n"
+        feedback_rows += f"""<tr><td colspan="4" style="padding:8px 14px 2px;font-size:11px;font-weight:700;letter-spacing:1px;color:{MUTED};text-transform:uppercase;background:{CARD};">Attempt {i}</td></tr>"""
         for validator, result in fb.items():
-            summary += f"  {validator}: score={result.get('score')} approve={result.get('approve')}\n"
-            if result.get("reasoning"):
-                summary += f"    → {result.get('reasoning')[:200]}\n"
+            score     = result.get("score", "?")
+            approved  = result.get("approve", False)
+            reasoning = (result.get("reasoning") or "")[:180]
+            a_color   = "#4caf50" if approved else RED
+            a_label   = "APPROVED" if approved else "REJECTED"
+            s_color   = "#4caf50" if (isinstance(score, int) and score >= 7) else "#ff9800" if (isinstance(score, int) and score >= 5) else RED
+            feedback_rows += f"""<tr style="border-bottom:1px solid {BORD};"><td style="padding:8px 14px;font-size:13px;color:{TEXT};font-weight:600;">{validator}</td><td style="padding:8px 14px;text-align:center;"><span style="background:{s_color}22;color:{s_color};border:1px solid {s_color}55;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700;font-family:monospace;">{score}/10</span></td><td style="padding:8px 14px;text-align:center;"><span style="background:{a_color}22;color:{a_color};border:1px solid {a_color}55;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700;font-family:monospace;">{a_label}</span></td><td style="padding:8px 14px;font-size:12px;color:{MUTED};font-style:italic;">{reasoning}</td></tr>"""
+
+    html = f"""<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>h4voc_water</title></head>
+<body style="margin:0;padding:0;background:{BG};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:{BG};"><tr><td align="center" style="padding:32px 16px;">
+<table width="580" cellpadding="0" cellspacing="0" style="background:{CARD};border-radius:10px;border:1px solid {BORD};overflow:hidden;">
+<tr><td style="padding:22px 36px 16px;border-bottom:1px solid {BORD};"><p style="margin:0;font-size:10px;font-weight:600;letter-spacing:2px;color:{MUTED};text-transform:uppercase;">1xLoZec Detection Lab</p></td></tr>
+<tr><td style="padding:20px 36px;"><p style="margin:0;font-size:13px;color:{MUTED};">{now}</p><h1 style="margin:6px 0 0;font-size:20px;font-weight:700;color:{TEXT};">Circuit Breaker Fired</h1></td></tr>
+<tr><td style="padding:0 36px 20px;"><p style="margin:0;font-size:14px;color:{TEXT};line-height:1.7;padding:14px 16px;background:{BG};border-left:3px solid {RED};border-radius:0 6px 6px 0;">The self-healing pipeline tried to fix this rule <strong>{attempts} times</strong> and failed every attempt. Manual review or deletion required.</p></td></tr>
+<tr><td style="padding:0 36px 20px;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid {BORD};border-radius:6px;overflow:hidden;background:{BG};"><tr>
+    <td style="padding:12px 8px;border-right:1px solid {BORD};text-align:center;"><p style="margin:0 0 4px;font-size:9px;letter-spacing:1.5px;color:{MUTED};text-transform:uppercase;">Rule</p><p style="margin:0;font-size:11px;font-weight:700;color:{RED};font-family:monospace;">{rule_name}</p></td>
+    <td style="padding:12px 8px;border-right:1px solid {BORD};text-align:center;"><p style="margin:0 0 4px;font-size:9px;letter-spacing:1.5px;color:{MUTED};text-transform:uppercase;">Attempts</p><p style="margin:0;font-size:20px;font-weight:700;color:{RED};">{attempts}</p></td>
+    <td style="padding:12px 8px;text-align:center;"><p style="margin:0 0 4px;font-size:9px;letter-spacing:1.5px;color:{MUTED};text-transform:uppercase;">Status</p><p style="margin:0;font-size:11px;font-weight:700;color:{RED};font-family:monospace;">FAILED</p></td>
+  </tr></table>
+</td></tr>
+<tr><td style="padding:0 36px 20px;">
+  <p style="margin:0 0 10px;font-size:10px;font-weight:600;letter-spacing:1.5px;color:{MUTED};text-transform:uppercase;">Validator Feedback</p>
+  <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid {BORD};border-radius:6px;overflow:hidden;background:{BG};">
+  <tr style="background:{CARD};"><td style="padding:8px 14px;font-size:10px;font-weight:700;letter-spacing:1px;color:{MUTED};text-transform:uppercase;">Validator</td><td style="padding:8px 14px;font-size:10px;font-weight:700;letter-spacing:1px;color:{MUTED};text-transform:uppercase;text-align:center;">Score</td><td style="padding:8px 14px;font-size:10px;font-weight:700;letter-spacing:1px;color:{MUTED};text-transform:uppercase;text-align:center;">Result</td><td style="padding:8px 14px;font-size:10px;font-weight:700;letter-spacing:1px;color:{MUTED};text-transform:uppercase;">Reasoning</td></tr>
+  {feedback_rows}
+  </table>
+</td></tr>
+<tr><td style="padding:0 36px 28px;">
+  <p style="margin:0 0 10px;font-size:10px;font-weight:600;letter-spacing:1.5px;color:{MUTED};text-transform:uppercase;">Action Required</p>
+  <p style="margin:0;font-size:14px;color:{TEXT};line-height:1.7;padding:14px 16px;background:{BG};border:1px solid {BORD};border-radius:6px;">Delete <code style="font-family:monospace;background:{CARD};padding:2px 6px;border-radius:3px;color:{RED};">{rule_path}</code> and let h4voc_water regenerate, or manually fix the Sigma YAML.</p>
+  <br>
+  <table cellpadding="0" cellspacing="0"><tr><td><a href="https://github.com/1xLoZec/detection-lab/blob/main/{rule_path}" style="display:inline-block;background:{RED};color:#ffffff;text-decoration:none;padding:10px 20px;border-radius:6px;font-size:13px;font-weight:700;">View Rule on GitHub</a></td></tr></table>
+</td></tr>
+</table></td></tr></table></body></html>"""
 
     msg = EmailMessage()
-    msg["Subject"] = f"[Circuit Breaker] Rule failed after {attempts} attempts — manual review needed"
+    msg["Subject"] = f"[Circuit Breaker] {rule_name} — failed after {attempts} attempts"
     msg["From"]    = gmail_from
     msg["To"]      = gmail_to
-    msg.set_content(f"""h4voc_water self-healing pipeline has given up on this rule.
-
-Rule: {rule_path}
-Attempts: {attempts}
-
-The AI tried to fix this rule {attempts} times and it still failed validation.
-Action required: review and fix manually, or delete it and let h4voc_water regenerate.
-
-Validator feedback history:
-{summary}
-
-— h4voc_water
-""")
+    msg.set_content(f"Circuit breaker fired on {rule_path} after {attempts} attempts.")
+    msg.add_alternative(html, subtype="html")
 
     try:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as s:
@@ -330,8 +362,6 @@ Validator feedback history:
     except Exception as e:
         print(f"  [circuit breaker] email failed: {e}")
 
-
-# ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
     import urllib3

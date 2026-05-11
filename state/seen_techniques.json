@@ -13,13 +13,6 @@
     "deployed_at": "2026-05-10T08:01:43.617305+00:00",
     "confidence": "high"
   },
-  "T1016": {
-    "technique_name": "System Network Configuration Discovery",
-    "tactic": "discovery",
-    "rule_id": "c480bbba-f460-498b-94cb-9921a52d9ec9",
-    "deployed_at": "2026-05-10T08:13:55.059141+00:00",
-    "confidence": "high"
-  },
   "T1082": {
     "technique_name": "System Information Discovery",
     "tactic": "discovery",
