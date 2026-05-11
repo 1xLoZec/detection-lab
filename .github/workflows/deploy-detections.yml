@@ -94,7 +94,7 @@ jobs:
           fi
 
       - name: Commit any self-healed rules back to repo
-        if: steps.changed-files.outputs.any_changed == 'true' && github.event_name == 'push'
+        if: ${{ !cancelled() && steps.changed-files.outputs.any_changed == 'true' && github.event_name == 'push' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -112,10 +112,7 @@ jobs:
           fi
 
       - name: Deploy approved rules to Kibana
-        if: |
-          steps.changed-files.outputs.any_changed == 'true' &&
-          github.event_name == 'push' &&
-          github.ref == 'refs/heads/main'
+        if: ${{ !cancelled() && steps.changed-files.outputs.any_changed == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         env:
           ELASTIC_URL: ${{ secrets.ELASTIC_URL }}
           ELASTIC_API_KEY: ${{ secrets.ELASTIC_API_KEY }}
