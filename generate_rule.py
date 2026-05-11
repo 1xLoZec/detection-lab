@@ -676,11 +676,6 @@ def email_nothing_new(events_count, lookback, analysis, seen):
     reason   = "Already covered" if analysis.get("already_covered") else "Confidence too low"
     summary  = analysis.get("plain_english_summary", "")
 
-    covered_rows = "".join(
-        f'<tr><td style="padding:7px 14px;font-size:12px;color:{MUTED};font-family:monospace;'
-        f'border-bottom:1px solid {BORDER};">{t} — {seen[t].get("technique_name","")}</td></tr>'
-        for t in seen
-    ) or f'<tr><td style="padding:12px 14px;font-size:13px;color:{FAINT};">None yet.</td></tr>'
 
     stat_row = ""
     if ti:
@@ -741,13 +736,7 @@ def email_nothing_new(events_count, lookback, analysis, seen):
   </p>
 </td></tr>
 
-<tr><td style="padding:0 36px 28px;">
-  {_section_label("Techniques Already Covered")}
-  <table width="100%" cellpadding="0" cellspacing="0"
-         style="border:1px solid {BORDER};border-radius:6px;overflow:hidden;background:{BG};">
-  {covered_rows}
-  </table>
-</td></tr>
+
 """
     ti_label = f" — {ti} {tn}" if ti else ""
     reason_short = "already-covered" if analysis.get("already_covered") else "low-confidence"
