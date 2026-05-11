@@ -978,6 +978,10 @@ def main():
     save_state(seen, last, log, digest)
     git_push_state()
 
+    # Update ATT&CK heatmap
+    import subprocess as _sp
+    _sp.run(["python3", "generate_heatmap.py"], capture_output=True)
+
     # Email
     email_rule_deployed(analysis, iocs, sigma_yaml, rule_id, len(events), lookback, filepath, seen)
 
