@@ -233,7 +233,7 @@ RULES FOR YOUR REWRITE:
 1. Valid ECS fields ONLY: process.name, process.executable, process.command_line,
    process.parent.name, process.parent.executable, registry.key, registry.value,
    network.destination.ip, file.path, file.name, event.code, user.name, host.name
-2. NO regex (|re:) — use contains, startswith, endswith, or exact match
+2. BANNED modifiers — NEVER use: |in, |lowercasefield, |re — not supported by pySigma 0.11.23. Use contains, startswith, endswith, or exact match instead
 3. Simple, single selection block — one clear detection condition
 4. Keep the same ATT&CK technique ID in tags
 5. Keep the same rule id (UUID)
