@@ -1,7 +1,7 @@
-title: System Information Discovery via Chained CMD Enumeration Utilities
+title: System Information Discovery via CMD Enumeration Utilities
 id: 99975fcf-52cb-4595-a905-0c45242c30db
 status: experimental
-description: Detects cmd.exe spawning multiple system and network enumeration utilities in close temporal proximity or as a chained command sequence. Indicative of host reconnaissance activity associated with T1082 System Information Discovery.
+description: Detects cmd.exe spawning common system and network enumeration utilities indicative of host reconnaissance activity associated with T1082 System Information Discovery.
 author: 1xLoZec
 date: 2026/05/10
 references:
@@ -13,34 +13,17 @@ logsource:
     category: process_creation
     product: windows
 detection:
-    selection_parent:
+    selection:
         process.parent.name: 'cmd.exe'
-    selection_enum_processes:
         process.name|contains:
-            - 'whoami.exe'
-            - 'HOSTNAME.EXE'
-            - 'ipconfig.exe'
-            - 'arp.exe'
-            - 'nbtstat.exe'
-            - 'netsh.exe'
-            - 'net.exe'
-            - 'net1.exe'
-    selection_chained_cmd:
-        process.name: 'cmd.exe'
-        process.command_line|contains|all:
+            - 'whoami'
+            - 'hostname'
             - 'ipconfig'
-            - 'netsh'
             - 'arp'
             - 'nbtstat'
-            - 'net config'
-    selection_high_integrity:
-        process.name|contains:
-            - 'whoami.exe'
-            - 'HOSTNAME.EXE'
-        winlog.event_data.IntegrityLevel:
-            - 'High'
-            - 'System'
-    condition: selection_chained_cmd or (selection_parent and selection_enum_processes) or selection_high_integrity
+            - 'netsh'
+            - 'net1'
+    condition: selection
 falsepositives:
     - Legitimate system administrators performing manual network diagnostics or inventory collection
     - Automated IT asset management or monitoring agents that enumerate host information
@@ -52,10 +35,3 @@ fields:
     - process.command_line
     - process.parent.name
     - process.parent.executable
-    - winlog.event_data.IntegrityLevel
-    - event.code
-
-
-
-
-

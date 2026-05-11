@@ -1,7 +1,7 @@
 title: PowerShell Launching .bat/.cmd File via Start-Process or Invoke-Expression
 id: e6f5978e-b45f-4713-a7a2-104d1217ffa1
 status: experimental
-description: Detects PowerShell using Start-Process or Invoke-Expression to execute .bat or .cmd files from user-writable or non-standard directories, indicative of T1059.003 Windows Command Shell chaining.
+description: Detects PowerShell using Start-Process or Invoke-Expression to execute .bat or .cmd files, indicative of T1059.003 Windows Command Shell chaining.
 author: 1xLoZec
 date: 2026/05/10
 references:
@@ -13,34 +13,22 @@ logsource:
     category: process_creation
     product: windows
 detection:
-    selection_process:
-        event.code: '1'
-        process.name: 'powershell.exe'
-    selection_cmdline_method:
+    selection:
+        process.name: powershell.exe
         process.command_line|contains:
             - 'Start-Process'
             - 'Invoke-Expression'
-    selection_cmdline_extension:
+    selection_ext:
         process.command_line|contains:
             - '.bat'
             - '.cmd'
-    selection_cmdline_path:
-        process.command_line|contains:
-            - '\Users\'
-            - '\AppData\'
-            - '\Temp\'
-            - '\Public\'
-            - '\ExternalPayloads\'
-            - '\Downloads\'
-            - '\Desktop\'
-    condition: selection_process and selection_cmdline_method and selection_cmdline_extension and selection_cmdline_path
+    condition: selection and selection_ext
 falsepositives:
-    - Legitimate administrative scripts using PowerShell to launch batch files from user profile directories
+    - Legitimate administrative scripts using PowerShell to launch batch files
     - Software installers or deployment tools that chain PowerShell with batch file execution
-    - Developer tooling or build systems invoking batch files via PowerShell from project directories
+    - Developer tooling or build systems invoking batch files via PowerShell
 level: high
-
-
-
-
-
+fields:
+    - process.name
+    - process.command_line
+    - process.parent.name
