@@ -1,5 +1,5 @@
 title: Msiexec Silent Install from Non-Standard Path via CMD
-id: d134f553-f48a-471e-b593-05e99a4f57d6
+id: c1ced7af-9d77-402a-aebd-b93426ebec3a
 status: experimental
 description: Detects msiexec.exe invoked with silent install flags (/q /i) targeting an MSI file outside standard software deployment directories, launched from cmd.exe. This behavior is consistent with T1218.007 abuse where a signed Windows binary is used to proxy execution of a malicious MSI payload.
 author: 1xLoZec

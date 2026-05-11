@@ -1,5 +1,5 @@
 title: Cmdkey Credential Store Followed by MSTSC RDP Lateral Movement
-id: e02cc050-88ca-459a-8b12-b17d384eeb00
+id: 43846fcf-f24e-420e-8469-6a61e6201646
 status: experimental
 description: Detects cmdkey.exe storing TERMSRV credentials followed by mstsc.exe launching an RDP connection, indicative of scripted lateral movement via RDP. This pattern matches T1021.001 where credentials are pre-staged via cmdkey before initiating Remote Desktop sessions.
 author: 1xLoZec

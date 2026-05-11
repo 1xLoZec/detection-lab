@@ -1,5 +1,5 @@
 title: System Network Connections Discovery via Chained CMD Commands
-id: 7bf6f4b4-b3fc-4563-8f05-9b3d9c62132b
+id: 1b7ee4dd-14c6-4538-aa6b-c64169bb6018
 status: experimental
 description: Detects cmd.exe or powershell.exe spawning netstat.exe, net.exe, or net1.exe with discovery-oriented arguments such as -ano, sessions, or use. Particularly suspicious when chained in a single command line, indicating active enumeration of network connections, mapped drives, and SMB sessions consistent with T1049.
 author: 1xLoZec

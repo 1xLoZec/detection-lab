@@ -1,5 +1,5 @@
 title: Domain Group Enumeration Chain via Net.exe at High Integrity
-id: eb0dc4a9-2abf-4471-8905-68bcef7c63c8
+id: 10edaa6c-50ec-48e8-af0f-8d2a19f0c9a1
 status: experimental
 description: Detects net.exe or net1.exe executing domain group enumeration commands including 'group /domain', 'domain admins', or 'enterprise admins' arguments, particularly when chained via cmd.exe and executed at High integrity level by a non-SYSTEM user. Indicative of T1069.002 post-compromise domain reconnaissance.
 author: 1xLoZec

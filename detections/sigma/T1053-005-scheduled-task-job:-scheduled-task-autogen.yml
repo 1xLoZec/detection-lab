@@ -1,5 +1,5 @@
 title: Scheduled Task Creation via Schtasks with Logon or Startup Triggers
-id: fe6d1f50-c1bc-4a22-ac80-c9712bab85c7
+id: 9aa53a2b-66bc-4f8d-a40f-b6962cf9c927
 status: experimental
 description: Detects schtasks.exe creating scheduled tasks with onlogon or onstart triggers, particularly when spawned from cmd.exe or non-administrative user sessions. This behavior is associated with persistence establishment via T1053.005.
 author: 1xLoZec

@@ -1,5 +1,5 @@
 title: PowerShell Invoke-WebRequest Download to Temp Directory
-id: ae4b60ce-b6c0-4ca8-82df-9469de001220
+id: 28a2bef3-af7f-4b3a-8e7f-08616e25b694
 status: experimental
 description: Detects powershell.exe invoking Invoke-WebRequest or similar download cmdlets targeting external domains and writing output to user-writable or temp directories. This pattern is consistent with T1059.001 staged payload delivery.
 author: 1xLoZec

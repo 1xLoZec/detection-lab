@@ -1,5 +1,5 @@
 title: Remote System Discovery via Net View with Domain Enumeration
-id: 7d5e8bb8-a144-4791-a605-fd4a955ddc89
+id: e82c8c54-344a-4bf5-92dd-ad324a5e1f98
 status: experimental
 description: Detects net.exe invocations with 'view' arguments including the '/domain' flag, especially when spawned from cmd.exe or powershell.exe under a standard user account. This pattern is consistent with T1018 Remote System Discovery used to enumerate domain-joined hosts and visible network shares for lateral movement planning.
 author: 1xLoZec

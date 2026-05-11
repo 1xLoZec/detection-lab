@@ -1,5 +1,5 @@
 title: CMD Chaining Multiple Network Discovery Utilities - T1016
-id: c480bbba-f460-498b-94cb-9921a52d9ec9
+id: 0f25ac42-e761-4274-ac36-8aa29738c506
 status: experimental
 description: Detects cmd.exe spawning three or more network discovery utilities (ipconfig, arp, nbtstat, netsh, net) within a short time window or chained via & operators in a single command line, consistent with post-exploitation network reconnaissance.
 author: 1xLoZec

@@ -1,5 +1,5 @@
 title: Process Discovery via Scripting Interpreter - whoami and hostname Execution
-id: a43bd367-b5b5-4a03-b2b4-f3053b2eef83
+id: 446e7f75-e0c5-48f7-a701-807d8b0a481c
 status: experimental
 description: Detects whoami.exe or HOSTNAME.EXE spawned by scripting interpreters such as powershell.exe or cmd.exe, indicating potential post-exploitation process discovery consistent with ATT&CK T1057.
 author: 1xLoZec

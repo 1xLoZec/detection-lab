@@ -1,5 +1,5 @@
 title: Application Shim Database Installation via sdbinst.exe
-id: 8bee2d0f-3f88-46cc-842a-75e51e197d65
+id: 9d19c38d-a376-4e18-a517-db535a8322be
 status: experimental
 description: Detects the installation of application shim databases via sdbinst.exe with suspicious flags (-m -bg) and associated registry writes to AppCompatFlags SdbUpdates keys, indicative of T1218.011 shim-based defense evasion or persistence.
 author: 1xLoZec

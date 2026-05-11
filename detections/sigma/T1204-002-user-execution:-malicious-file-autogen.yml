@@ -1,5 +1,5 @@
 title: PowerShell IEX Remote Download Targeting Office Macro Execution via raw.githubusercontent.com
-id: e998f335-c133-40a1-b6dd-8dab20e774ae
+id: 27b56c7b-ad80-4099-8416-bdb353facd67
 status: experimental
 description: Detects PowerShell processes using IEX to download and execute scripts from raw.githubusercontent.com that reference Office product names or macro execution functions, consistent with Atomic Red Team T1204.002 test execution involving Invoke-MalDoc targeting Word documents.
 author: 1xLoZec

@@ -1,5 +1,5 @@
 title: HideFileExt Registry Modification via reg.exe
-id: ec96bb5c-362a-4a2a-b306-ec3f189432bb
+id: 0acbfe83-9428-4eda-8c9c-6482e4d60c0a
 status: experimental
 description: Detects reg.exe setting HideFileExt to 1 under the Explorer Advanced registry key, which hides file extensions in Windows Explorer. This technique is used by attackers to disguise malicious executables as benign files to support phishing and execution stages.
 author: 1xLoZec

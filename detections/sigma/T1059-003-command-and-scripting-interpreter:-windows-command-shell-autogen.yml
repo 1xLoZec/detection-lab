@@ -1,5 +1,5 @@
 title: PowerShell Launching .bat/.cmd File via Start-Process or Invoke-Expression
-id: 62ed787d-48b7-4072-bca6-2a9048ed8bec
+id: e6f5978e-b45f-4713-a7a2-104d1217ffa1
 status: experimental
 description: Detects PowerShell using Start-Process or Invoke-Expression to execute .bat or .cmd files from user-writable or non-standard directories, indicative of T1059.003 Windows Command Shell chaining.
 author: 1xLoZec

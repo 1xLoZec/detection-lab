@@ -1,5 +1,5 @@
 title: Domain Trust Discovery via Net View Command Chaining
-id: cb9127a0-e005-4aff-a599-dd2dff0eec62
+id: 61399e8c-6e6d-46d7-8257-ada4b2f3ea76
 status: experimental
 description: Detects cmd.exe or powershell.exe spawning net.exe with arguments containing 'view' and '/domain' consistent with domain trust discovery activity (T1482). Observed pattern includes chained commands 'net view /domain & net view' executed under user context.
 author: 1xLoZec

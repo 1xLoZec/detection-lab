@@ -1,5 +1,5 @@
 title: File and Directory Discovery via Recursive Dir and Tree Commands
-id: bdade355-a931-4fba-b349-eedb384f8993
+id: 86f471c5-c658-4531-a4b6-2ddc0b1de64e
 status: experimental
 description: Detects execution of recursive directory enumeration commands (dir /s or tree /F) commonly used for file and directory discovery reconnaissance consistent with T1083.
 author: 1xLoZec
