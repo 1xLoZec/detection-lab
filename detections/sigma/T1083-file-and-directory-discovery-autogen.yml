@@ -1,7 +1,7 @@
 title: File and Directory Discovery via Recursive Dir and Tree Commands
 id: bdade355-a931-4fba-b349-eedb384f8993
 status: experimental
-description: Detects cmd.exe spawning recursive dir /s commands across multiple sensitive paths with output redirection to a temp file, combined with tree /F execution, consistent with T1083 pre-exfiltration reconnaissance.
+description: Detects execution of recursive directory enumeration commands (dir /s or tree /F) commonly used for file and directory discovery reconnaissance consistent with T1083.
 author: 1xLoZec
 date: 2026/05/10
 references:
@@ -13,38 +13,24 @@ logsource:
     category: process_creation
     product: windows
 detection:
-    selection_cmd_dir:
-        event.code: '1'
+    selection_dir:
         process.name: 'cmd.exe'
         process.command_line|contains|all:
-            - 'dir /s'
-            - 'T1083Test1.txt'
+            - 'dir'
+            - '/s'
             - '>>'
     selection_tree:
-        event.code: '1'
         process.name: 'tree.com'
         process.command_line|contains: '/F'
-    selection_sensitive_paths:
-        event.code: '1'
-        process.name: 'cmd.exe'
-        process.command_line|contains:
-            - 'c:\\'
-            - 'Program Files'
-            - 'AppData\\Roaming\\Microsoft\\Windows\\Recent'
-            - 'Documents and Settings'
-    condition: (selection_cmd_dir and selection_sensitive_paths) or selection_tree
+    condition: selection_dir or selection_tree
 falsepositives:
     - Legitimate administrative scripts performing directory audits or inventory collection
     - Backup or asset management tools that enumerate directory structures
+    - Developers or system administrators using tree or dir for troubleshooting
 fields:
     - process.name
     - process.executable
     - process.command_line
     - process.parent.name
     - process.parent.executable
-level: high
-
-
-
-
-
+level: medium

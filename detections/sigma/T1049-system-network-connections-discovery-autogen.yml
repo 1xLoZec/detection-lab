@@ -19,20 +19,13 @@ detection:
             - 'powershell.exe'
     selection_process:
         process.name|contains:
-            - 'netstat.exe'
-            - 'net.exe'
-            - 'net1.exe'
-            - 'NETSTAT.EXE'
+            - 'netstat'
+            - 'net1'
     selection_args:
         process.command_line|contains:
             - '-ano'
             - 'sessions'
-            - 'use'
-    selection_chained:
-        process.command_line|contains|all:
-            - 'netstat'
-            - 'net'
-    condition: (selection_parent and selection_process and selection_args) or selection_chained
+    condition: selection_parent and selection_process and selection_args
 falsepositives:
     - Legitimate administrative scripts that enumerate network connections or mapped drives
     - IT monitoring tools that invoke netstat or net commands as part of diagnostics
@@ -44,9 +37,3 @@ fields:
     - process.command_line
     - process.parent.name
     - process.parent.executable
-    - winlog.event_data.IntegrityLevel
-
-
-
-
-

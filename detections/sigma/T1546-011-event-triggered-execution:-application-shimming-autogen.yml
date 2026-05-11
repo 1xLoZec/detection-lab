@@ -1,7 +1,7 @@
-title: Application Shimming via sdbinst.exe with AppCompatFlags Registry Write
+title: Application Shimming via AppCompatFlags Registry Write
 id: 575160f3-5822-495e-afce-54fee80dca9a
 status: experimental
-description: Detects execution of sdbinst.exe with machine-wide install flags combined with registry writes to HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\SdbUpdates, indicating potential Application Shimming persistence (T1546.011). The -m flag installs shims machine-wide and the registry path is the canonical location where shim database installations are recorded.
+description: Detects registry writes to HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\SdbUpdates by processes other than sdbinst.exe, indicating potential Application Shimming persistence (T1546.011). Legitimate shim installations are performed by sdbinst.exe; writes from other processes may indicate abuse.
 author: 1xLoZec
 date: 2026/05/10
 references:
@@ -15,17 +15,12 @@ logsource:
   product: windows
   category: registry_set
 detection:
-  selection_registry:
+  selection:
     event.code: '13'
-    registry.key|contains: 'SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\SdbUpdates'
-    registry.value: 'FriendlyName'
-  filter_legitimate_sdbinst:
+    registry.key|contains: 'AppCompatFlags\SdbUpdates'
+  filter_sdbinst:
     process.name: 'sdbinst.exe'
-    process.command_line|contains:
-      - '-m -bg'
-      - '-m'
-    winlog.event_data.IntegrityLevel: 'System'
-  condition: selection_registry and filter_legitimate_sdbinst
+  condition: selection and not filter_sdbinst
 fields:
   - process.name
   - process.executable
@@ -33,15 +28,8 @@ fields:
   - process.parent.name
   - registry.key
   - registry.value
-  - winlog.event_data.IntegrityLevel
 falsepositives:
   - Legitimate Windows Update operations may install shim databases via sdbinst.exe during OS patching cycles
-  - Microsoft Edge or other Microsoft application updates may install compatibility shims as part of their update process
-  - Enterprise application compatibility toolkits (e.g., Microsoft ACT) used by IT administrators to deploy shims for legacy software
+  - Enterprise application compatibility toolkits used by IT administrators to deploy shims for legacy software
   - Group Policy-based shim deployments managed by domain administrators for application compatibility purposes
 level: high
-
-
-
-
-

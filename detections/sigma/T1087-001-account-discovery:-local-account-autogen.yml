@@ -1,7 +1,7 @@
 title: Local Account Discovery via whoami and hostname Spawned by Scripting Engine
 id: 5d9f4578-3ec8-4b4a-902d-62f951b3d28a
 status: experimental
-description: Detects whoami.exe or HOSTNAME.EXE spawned by scripting engines or non-standard parent processes under interactive user accounts at Medium or High integrity level, consistent with post-exploitation local account discovery (T1087.001).
+description: Detects whoami.exe or hostname.exe spawned by scripting engines or non-standard parent processes, consistent with post-exploitation local account discovery (T1087.001).
 author: 1xLoZec
 date: 2026/05/10
 references:
@@ -13,31 +13,23 @@ logsource:
     category: process_creation
     product: windows
 detection:
-    selection_process:
-        event.code: '1'
+    selection:
         process.name|contains:
             - 'whoami.exe'
-            - 'HOSTNAME.EXE'
-    selection_parent:
+            - 'hostname.exe'
         process.parent.name|contains:
             - 'powershell.exe'
-            - 'cmd.exe'
             - 'wscript.exe'
             - 'cscript.exe'
             - 'mshta.exe'
             - 'python.exe'
             - 'pwsh.exe'
-    selection_integrity:
-        winlog.event_data.IntegrityLevel|contains:
-            - 'Medium'
-            - 'High'
-    condition: selection_process and selection_parent and selection_integrity
+    condition: selection
 falsepositives:
     - Legitimate administrative scripts or IT automation tools that invoke whoami or hostname for inventory or diagnostic purposes
     - Software deployment frameworks or monitoring agents running under interactive user sessions
 level: medium
-
-
-
-
-
+fields:
+    - process.name
+    - process.parent.name
+    - process.command_line

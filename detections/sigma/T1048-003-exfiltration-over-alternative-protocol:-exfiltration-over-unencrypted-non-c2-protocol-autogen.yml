@@ -1,9 +1,9 @@
-title: PowerShell HTTP POST Exfiltration via Invoke-WebRequest to External Domain
+title: PowerShell HTTP POST Exfiltration via Invoke-WebRequest
 id: 723b2878-ced4-4052-ab1c-05629a5f4127
 status: experimental
-description: Detects PowerShell processes executing Invoke-WebRequest or Invoke-RestMethod with HTTP POST methods transmitting local file content to external domains, combined with evasion techniques such as disabling Expect100Continue and KeepAlive. Indicative of T1048.003 exfiltration over unencrypted HTTP.
+description: Detects PowerShell processes executing Invoke-WebRequest or Invoke-RestMethod with HTTP POST methods transmitting data, indicative of T1048.003 exfiltration over unencrypted HTTP.
 author: 1xLoZec
-date: 2026/05/10
+date: 2024/05/10
 references:
     - https://attack.mitre.org/techniques/T1048/003/
 tags:
@@ -13,33 +13,22 @@ logsource:
     category: process_creation
     product: windows
 detection:
-    selection_process:
-        process.name|contains:
-            - 'powershell.exe'
-        process.command_line|contains|all:
+    selection_invoke:
+        process.name|endswith: 'powershell.exe'
+        process.command_line|contains:
             - 'Invoke-WebRequest'
-            - 'POST'
-            - 'Body'
-    selection_evasion:
-        process.command_line|contains:
-            - 'Expect100Continue'
-            - 'DisableKeepAlive'
-    selection_file_content:
-        process.command_line|contains:
-            - 'Get-Content'
-            - 'TEMP'
-    selection_dns:
-        event.code: '22'
-        dns.question.name|contains:
-            - 'example.com'
-    condition: (selection_process and selection_evasion) or (selection_process and selection_file_content) or selection_dns
+            - 'Invoke-RestMethod'
+    selection_post:
+        process.command_line|contains: 'POST'
+    selection_body:
+        process.command_line|contains: 'Body'
+    condition: selection_invoke and selection_post and selection_body
 falsepositives:
     - Legitimate automation scripts using PowerShell to POST data to internal or approved external APIs
     - Security testing or red team exercises involving HTTP data transmission
     - Monitoring or telemetry agents that use Invoke-WebRequest to send diagnostics
 level: high
-
-
-
-
-
+fields:
+    - process.name
+    - process.command_line
+    - process.parent.name

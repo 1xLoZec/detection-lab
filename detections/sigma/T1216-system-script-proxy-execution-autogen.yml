@@ -1,7 +1,7 @@
-title: System Script Proxy Execution via CMD Spawning Silent MSI Install with Remote Thread Injection
+title: Silent MSI Execution via CMD or PowerShell Proxy
 id: b8ee8991-c2af-4d5e-9dd8-4702f01a2e14
 status: experimental
-description: Detects cmd.exe or powershell.exe acting as a proxy intermediary spawning msiexec.exe with silent installation flags targeting suspicious MSI paths, combined with subsequent remote thread creation into unknown processes indicating post-execution injection chaining consistent with T1216 proxy execution abuse.
+description: Detects cmd.exe or powershell.exe spawning msiexec.exe with silent installation flags targeting suspicious paths, consistent with T1218.007 proxy execution abuse via system scripting.
 author: 1xLoZec
 date: 2026/05/10
 references:
@@ -15,27 +15,20 @@ logsource:
     category: process_creation
     product: windows
 detection:
-    selection_proxy_parent:
+    selection:
         process.parent.name|contains:
             - 'cmd.exe'
             - 'powershell.exe'
         process.name: 'msiexec.exe'
-    selection_silent_flags:
-        process.command_line|contains|all:
-            - '/q'
-            - '/i'
-    selection_suspicious_path:
         process.command_line|contains:
-            - 'AtomicRedTeam'
+            - '/q'
+    selection_path:
+        process.command_line|contains:
             - '\Users\Public\'
             - '\AppData\Local\Temp\'
             - '\ProgramData\'
             - '\Windows\Temp\'
-            - '.msi'
-    selection_remote_thread:
-        event.code: '8'
-        winlog.event_data.IntegrityLevel: 'High'
-    condition: (selection_proxy_parent and selection_silent_flags and selection_suspicious_path) or selection_remote_thread
+    condition: selection and selection_path
 falsepositives:
     - Legitimate software deployment tools such as SCCM or PDQ Deploy that invoke msiexec via cmd.exe with silent flags for enterprise application installations
     - Administrative scripts performing silent MSI installs from sanctioned directories via cmd.exe during patch management cycles
@@ -46,10 +39,3 @@ fields:
     - process.command_line
     - process.parent.name
     - process.parent.executable
-    - event.code
-    - winlog.event_data.IntegrityLevel
-
-
-
-
-
