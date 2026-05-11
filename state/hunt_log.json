@@ -362,5 +362,13 @@
     "rule_id": "5c8ea8be-7a0e-4809-b65a-2d26f91ee077",
     "filepath": "detections/sigma/T1218-011-system-binary-proxy-execution:-rundll32-autogen.yml",
     "lookback": 30
+  },
+  {
+    "timestamp": "2026-05-11T19:07:11.804947+00:00",
+    "result": "already_covered",
+    "technique_id": "T1218.011",
+    "technique_name": "System Binary Proxy Execution: Rundll32",
+    "confidence": "medium",
+    "lookback": 27
   }
 ]
