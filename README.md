@@ -124,8 +124,8 @@ configured. SSL certificate installed. Kibana is live.
 
 - May 10 2026 — Built the full h4voc_water automation pipeline. One command triggers the entire detection engineering workflow: query Elasticsearch, extract ATT&CK technique with Claude AI, generate a Sigma rule, push to GitHub, validate with three AI models (Claude + Gemini + Ollama), convert to Elastic DSL with pySigma, deploy to Kibana, send a formatted HTML alert to my inbox. 31 rules deployed. 57% ATT&CK tactic coverage. Runs 24/7 with adaptive lookback, weekly digest, and a kill switch. The pipeline is fully operational.
 
+<img width="862" height="754" alt="image" src="https://github.com/user-attachments/assets/4e82b198-a59d-4191-aa6a-6a5759ae9c79" />
 
-<img width="752" height="597" alt="image" src="https://github.com/user-attachments/assets/8ee8ced4-4a1d-4443-b7d8-22682c8532a0" />
 
 ## Roadmap
 
