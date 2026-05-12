@@ -6,6 +6,18 @@ filter:
   - term:
       kibana.alert.status: "active"
 
+include:
+  - "kibana.alert.rule.name"
+  - "kibana.alert.severity"
+  - "kibana.alert.reason"
+  - "kibana.alert.risk_score"
+  - host.name
+  - "@timestamp"
+  - process.name
+  - process.command_line
+  - process.parent.name
+  - user.name
+
 alert:
   - email
 
@@ -18,22 +30,50 @@ smtp_ssl: true
 smtp_auth_file: /Users/albundy/detection-lab/elastalert/smtp_auth.yaml
 from_addr: 1xlozec@gmail.com
 
-alert_subject: "[Detection Alert] {0} — {1}"
+alert_subject: "[{0}] {1} — {2}"
 alert_subject_args:
-  - kibana.alert.rule.name
-  - kibana.alert.severity
+  - "kibana.alert.severity"
+  - "kibana.alert.rule.name"
+  - host.name
 
+alert_text_type: alert_text_only
 alert_text: |
-  Rule: {0}
-  Severity: {1}
-  Host: {2}
-  Time: {3}
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ⚠  DETECTION ALERT  ·  1xLoZec Lab
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Rule:       {0}
+  Severity:   {1}
+  Host:       {2}
+  Time:       {3}
+
+  ──────────────────────────────────────
+  WHAT HAPPENED
+  ──────────────────────────────────────
+  {4}
+
+  ──────────────────────────────────────
+  PROCESS
+  ──────────────────────────────────────
+  Name:       {5}
+  Command:    {6}
+  Parent:     {7}
+  User:       {8}
+
+  ──────────────────────────────────────
+  → https://1xlozec.com
+  ~ h4voc water ~
 
 alert_text_args:
-  - kibana.alert.rule.name
-  - kibana.alert.severity
+  - "kibana.alert.rule.name"
+  - "kibana.alert.severity"
   - host.name
   - "@timestamp"
+  - "kibana.alert.reason"
+  - process.name
+  - process.command_line
+  - process.parent.name
+  - user.name
 
 realert:
   minutes: 60
