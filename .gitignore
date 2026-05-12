@@ -4,3 +4,4 @@ __pycache__/
 *.pyc
 elastalert/smtp_auth.yaml
 elastalert/elastalert.log
+elastalert/elastalert.log
