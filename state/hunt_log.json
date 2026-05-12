@@ -380,5 +380,13 @@
     "rule_id": "0d36e12f-4b63-4cf0-8483-8552b1d57090",
     "filepath": "detections/sigma/T1033-system-owner-user-discovery-autogen.yml",
     "lookback": 21
+  },
+  {
+    "timestamp": "2026-05-12T00:52:18.023311+00:00",
+    "result": "already_covered",
+    "technique_id": "T1218.011",
+    "technique_name": "System Binary Proxy Execution: Rundll32",
+    "confidence": "medium",
+    "lookback": 334
   }
 ]
