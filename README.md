@@ -8,6 +8,7 @@
 [![CI/CD](https://img.shields.io/github/actions/workflow/status/1xLoZec/detection-lab/deploy-detections.yml?label=CI%2FCD&style=flat-square)](https://github.com/1xLoZec/detection-lab/actions)
 [![Detection as Code](https://img.shields.io/badge/Detection-as--Code-success?style=flat-square)](https://github.com/1xLoZec/detection-lab/tree/main/detections/sigma)
 [![Self-Healing CI/CD](https://img.shields.io/badge/CI%2FCD-Self--Healing-orange?style=flat-square)](#h4voc_water)
+[![T-Pot Integrated](https://img.shields.io/badge/T--Pot-Integrated-red?style=flat-square)](#t-pot-integration)
 [![SIEM](https://img.shields.io/badge/SIEM-Elastic%208.19-005571?style=flat-square&logo=elastic)](https://www.elastic.co/)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
 
@@ -40,6 +41,7 @@ Read-only viewer account. Dark mode is on by default. Time range is locked to th
 | Network | UniFi · VLANs (Default/Home/Mgmt/Lab/RedLab) |
 | VPN | WireGuard with split DNS |
 | Threat Simulation | Atomic Red Team (on-demand) |
+| Honeypot | T-Pot Hive · 30+ honeypots · WireGuard tunnel to main ELK |
 | Detection Pipeline | h4voc_water (Claude + Gemini + Ollama) |
 | Detection Rules | Sigma → pySigma → Elastic DSL |
 | CI/CD | GitHub Actions on self-hosted Mac Mini runner · 3-AI validation gate · self-healing |
@@ -53,11 +55,6 @@ Read-only viewer account. Dark mode is on by default. Time range is locked to th
 The center of the lab is a custom autonomous detection engineering pipeline I wrote called **h4voc_water** (named after my dog, Havoc). It runs continuously, because detection engineering never stops.
 
 One command runs the entire workflow:
-
-```
-h4voc_water
-```
-
 <img width="696" height="406" alt="h4voc_water terminal output showing pipeline stages" src="https://github.com/user-attachments/assets/7685c5f7-b7a0-42fa-8b57-0dac7395a310" />
 
 What happens, hands-off:
@@ -79,6 +76,17 @@ What happens, hands-off:
 
 The only point a human enters the loop is when the circuit breaker fires.
 
+## T-Pot Integration
+
+As of May 14 2026, the T-Pot honeypot ships every event it captures to the main ELK over a WireGuard tunnel.
+
+- **Source:** 30+ honeypots on the T-Pot droplet
+- **Transport:** Logstash on T-Pot writes to both its local Elasticsearch (preserving T-Pot's own UI) and to ELK at `10.0.0.1:9200` over the encrypted tunnel
+- **Authentication:** Dedicated `tpot_writer` user with role scoped to `tpot-*` indices only — least privilege
+- **Volume:** Roughly one attack event every 0.5 seconds during a typical hour
+
+The honeypot data feeds the lab's detection coverage from a complementary angle. Endpoint Sysmon shows what attackers do once they're in; T-Pot shows what they're trying everywhere on the internet right now. Real credentials being brute-forced, real CVEs being scanned for, real malware being delivered.
+
 ## ATT&CK Coverage
 
 Live, auto-generated from the deployed rule set.
@@ -86,6 +94,9 @@ Live, auto-generated from the deployed rule set.
 ### [🗺️ View Live ATT&CK Coverage Heatmap →](https://mitre-attack.github.io/attack-navigator/#layerURL=https://raw.githubusercontent.com/1xLoZec/detection-lab/main/docs/coverage_layer.json)
 
 ## Progress
+
+- **May 14 2026** — T-Pot integration complete. WireGuard tunnel up between ELK and T-Pot — both directions, low latency, persistent across reboots. Created a dedicated `tpot_writer` Elasticsearch user scoped to `tpot-*` indices only — least privilege. Patched T-Pot's Logstash config to dual-output: it still writes to its own local ES (so T-Pot's UI keeps working) and now also ships every event to main ELK over the encrypted tunnel. Wall hit: Logstash 8 fully removed the old `ssl_certificate_verification` and `ssl` settings — they're not deprecated, they're obsolete and crash the pipeline on load. Had to use the modern `ssl_enabled` / `ssl_verification_mode` names. Another fun one: container healthcheck reported "healthy" while Logstash was actually in a pipeline crash loop, because the healthcheck only verifies the API port responds. 1974 attack events landed in ELK in the first ten minutes. h4voc_water can now learn from real attackers.
+
 - **May 13 2026** — T-Pot is live. Dedicated cloud droplet running 30+ honeypots. Cowrie was logging real Telnet brute force attempts from Colombia within minutes of the install finishing. Management is locked down behind ELK, honeypot ports wide open. The build wasn't clean.. port conflict put it in a restart loop on the first reboot, took some journal log digging to sort out. Next: pipe the data into the main ELK so h4voc_water can learn from real attackers, not just simulations.
 
 <img width="1145" height="661" alt="image" src="https://github.com/user-attachments/assets/061c7d4e-b2ef-445c-b292-91ea071a9636" />
@@ -139,7 +150,7 @@ Live, auto-generated from the deployed rule set.
 
 - [ ] Active Directory domain controller in Proxmox VLAN 40 — unlocks Kerberoasting, Pass-the-Hash, LDAP enumeration detection
 - [ ] Dedicated Kali Linux attack platform in Proxmox VLAN 40
-- [ ] T-Pot honeypot on a dedicated DigitalOcean droplet — real internet attackers
+- [x] ~~T-Pot honeypot on a dedicated DigitalOcean droplet — real internet attackers~~ *(complete May 14 2026)*
 - [ ] MISP threat intelligence integration — real IOCs feeding h4voc_water
 - [ ] False positive feedback loop — thumbs up/down in the weekly digest feeds back to the pipeline
 - [ ] Incident response playbooks per technique
