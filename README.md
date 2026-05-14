@@ -95,6 +95,10 @@ Live, auto-generated from the deployed rule set.
 
 ## Progress
 
+- **May 14 2026 (later that day)** — Cleaned up Elasticsearch. T-Pot now on a 30-day ILM policy, replicas dropped to 0, best_compression on. Real disk hog was Elastic Agent metrics from the Windows VM, 16M perfmon docs and 1.6M process snapshots that nothing was reading. Turned those off, kept Sysmon and the Windows Security logs. Stack Monitoring rules now watching disk and JVM.
+  
+<img width="891" height="124" alt="image" src="https://github.com/user-attachments/assets/4b8d2867-4b99-44f9-8a8e-8ff465f74ddf" />
+
 - **May 14 2026** — T-Pot integration complete. WireGuard tunnel up between ELK and T-Pot — both directions, low latency, persistent across reboots. Created a dedicated `tpot_writer` Elasticsearch user scoped to `tpot-*` indices only — least privilege. Patched T-Pot's Logstash config to dual-output: it still writes to its own local ES (so T-Pot's UI keeps working) and now also ships every event to main ELK over the encrypted tunnel. Wall hit: Logstash 8 fully removed the old `ssl_certificate_verification` and `ssl` settings — they're not deprecated, they're obsolete and crash the pipeline on load. Had to use the modern `ssl_enabled` / `ssl_verification_mode` names. Another fun one: container healthcheck reported "healthy" while Logstash was actually in a pipeline crash loop, because the healthcheck only verifies the API port responds. 1974 attack events landed in ELK in the first ten minutes. h4voc_water can now learn from real attackers.
 
 - **May 13 2026** — T-Pot is live. Dedicated cloud droplet running 30+ honeypots. Cowrie was logging real Telnet brute force attempts from Colombia within minutes of the install finishing. Management is locked down behind ELK, honeypot ports wide open. The build wasn't clean.. port conflict put it in a restart loop on the first reboot, took some journal log digging to sort out. Next: pipe the data into the main ELK so h4voc_water can learn from real attackers, not just simulations.
