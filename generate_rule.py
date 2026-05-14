@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
 1xLoZec Detection Lab
-h4voc_water — Autonomous Detection Engineering Pipeline
+tallkitchen_water — Autonomous Detection Engineering Pipeline
 
 Named after Havoc the dog and his water bowl.
 Loads credentials from .env automatically.
-Set STOP_H4VOC_WATER=true in .env to pause all auto-deployment.
+Set STOP_TALLKITCHEN_WATER=true in .env to pause all auto-deployment.
 """
 
 import os
@@ -38,7 +38,7 @@ GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD", "")
 TARGET_HOST        = os.getenv("TARGET_HOST",        "*")
 SIGMA_OUTPUT_DIR   = "detections/sigma"
 STATE_DIR          = Path("state")
-STOP_H4VOC_WATER   = os.getenv("STOP_H4VOC_WATER", "false").lower() == "true"
+STOP_TALLKITCHEN_WATER   = os.getenv("STOP_TALLKITCHEN_WATER", "false").lower() == "true"
 
 # Sysmon ECS fields to pull from Elasticsearch
 SYSMON_ECS_FIELDS = [
@@ -105,7 +105,7 @@ logging.basicConfig(
         omit_repeated_times=False,
     )]
 )
-_log = logging.getLogger("h4voc")
+_log = logging.getLogger("tallkitchen")
 
 def _step_ok(label, detail="", duration=None):
     """Completed step — green checkmark, white label, cyan detail, dim timing."""
@@ -131,7 +131,7 @@ def _sev_color(sev):
 def _print_header(lookback, mins_since=None):
     _con.print()
     _con.rule(
-        "[bold cyan]💧 h4voc_water  ·  1xLoZec Detection Lab[/]",
+        "[bold cyan]🥄 tallkitchen_water  ·  1xLoZec Detection Lab[/]",
         style="cyan"
     )
     if mins_since is not None:
@@ -166,7 +166,7 @@ def _print_panel(analysis, events, iocs, lookback, seen, next_fmt, pct):
     content = chr(10).join(lines)
     _con.print(Panel(
         content,
-        title="[bold cyan]💧 h4voc_water  ·  1xLoZec Detection Lab[/]",
+        title="[bold cyan]🥄 tallkitchen_water  ·  1xLoZec Detection Lab[/]",
         title_align="left",
         border_style="cyan",
         box=box.ROUNDED,
@@ -195,7 +195,7 @@ def save_state(seen, last, log, digest):
 def git_push_state():
     try:
         subprocess.run(["git","add","state/"], check=True, capture_output=True)
-        r = subprocess.run(["git","commit","-m","update: h4voc_water state"],
+        r = subprocess.run(["git","commit","-m","update: tallkitchen_water state"],
                            capture_output=True, text=True)
         if "nothing to commit" not in r.stdout:
             subprocess.run(["git","pull","--rebase"], check=True, capture_output=True)
@@ -469,7 +469,7 @@ def _wrapper(content, footer=""):
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>h4voc_water</title></head>
+<title>tallkitchen_water</title></head>
 <body style="margin:0;padding:0;background:{BG};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:{BG};">
 <tr><td align="center" style="padding:32px 16px;">
@@ -838,14 +838,14 @@ def email_stopped():
 <tr><td style="padding:0 36px 28px;">
   <p style="margin:0;font-size:14px;color:{TEXT};line-height:1.7;padding:14px 16px;
      background:{BG};border-left:3px solid {YELLOW};border-radius:0 6px 6px 0;">
-    h4voc_water is currently paused.<br><br>
-    Set <code style="font-family:monospace;background:{BG};padding:2px 6px;border-radius:3px;color:{GREEN};">STOP_H4VOC_WATER=false</code>
+    tallkitchen_water is currently paused.<br><br>
+    Set <code style="font-family:monospace;background:{BG};padding:2px 6px;border-radius:3px;color:{GREEN};">STOP_TALLKITCHEN_WATER=false</code>
     in your <code style="font-family:monospace;background:{BG};padding:2px 6px;border-radius:3px;color:{GREEN};">.env</code>
     file to resume autonomous detection.
   </p>
 </td></tr>
 """
-    send_email("[Pipeline Paused] h4voc_water is stopped", _wrapper(content))
+    send_email("[Pipeline Paused] tallkitchen_water is stopped", _wrapper(content))
 
 
 
@@ -858,8 +858,8 @@ def main():
         _con.print("[red]Error:[/] ANTHROPIC_API_KEY not set. Check your .env file.")
         sys.exit(1)
 
-    if STOP_H4VOC_WATER:
-        _con.print("[yellow]Pipeline paused.[/] [dim]STOP_H4VOC_WATER=true in .env[/]")
+    if STOP_TALLKITCHEN_WATER:
+        _con.print("[yellow]Pipeline paused.[/] [dim]STOP_TALLKITCHEN_WATER=true in .env[/]")
         email_stopped()
         sys.exit(0)
 

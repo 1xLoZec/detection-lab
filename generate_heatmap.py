@@ -56,7 +56,7 @@ def generate_layer():
         },
         "domain":      "enterprise-attack",
         "description": (
-            f"Auto-generated from h4voc_water detection pipeline. "
+            f"Auto-generated from tallkitchen_water detection pipeline. "
             f"{len(seen)} techniques covered as of "
             f"{datetime.now(timezone.utc).strftime('%Y-%m-%d')}. "
             f"Green = HIGH confidence, Orange = MEDIUM, Blue = LOW."

@@ -36,21 +36,21 @@ them. This is not a finished product. It is a live build.
 | Network | UniFi · VLANs (Default/Home/Mgmt/Lab/RedLab) | ✅ Live |
 | VPN | WireGuard | ✅ Live |
 | Threat Simulation | Atomic Red Team | ✅ Live |
-| Detection Pipeline | h4voc_water (Claude + Gemini + Ollama) | ✅ Live |
+| Detection Pipeline | tallkitchen_water (Claude + Gemini + Ollama) | ✅ Live |
 | Detection Rules | Sigma → pySigma → Elastic DSL | ✅ Live |
 | CI/CD | GitHub Actions (self-hosted, 3-AI gate) | ✅ Live |
 | Alerting | HTML email · Rich terminal | ✅ Live |
 | Honeypot Network | T-Pot | 🔜 Planned |
 | Threat Intelligence | MISP | 🔜 Planned |
 
-## h4voc_water
+## tallkitchen_water
 
-The center of the lab is a custom autonomous detection engineering pipeline I wrote called **h4voc_water**. h4voc_water is named after the lab's internal threat simulation agent. It runs continuously, because detection engineering never stops.
+The center of the lab is a custom autonomous detection engineering pipeline I wrote called **tallkitchen_water**. It runs continuously, because detection engineering never stops.
 
 One command runs the entire workflow:
 
 ```
-h4voc_water
+tallkitchen_water
 ```
 <img width="696" height="406" alt="image" src="https://github.com/user-attachments/assets/7685c5f7-b7a0-42fa-8b57-0dac7395a310" />
 
@@ -113,7 +113,7 @@ configured. SSL certificate installed. Kibana is live.
 <img width="510" height="74" alt="image" src="https://github.com/user-attachments/assets/2951a146-6d4c-4349-99db-834555e4c09e" />
 <img width="752" height="140" alt="image" src="https://github.com/user-attachments/assets/dc67a15d-2a6e-44c8-9300-38d44620ef04" />
 
-- May 10 2026 — Built the full h4voc_water automation pipeline. One command triggers the entire detection engineering workflow: query Elasticsearch, extract ATT&CK technique with Claude AI, generate a Sigma rule, push to GitHub, validate with three AI models (Claude + Gemini + Ollama), convert to Elastic DSL with pySigma, deploy to Kibana, send a formatted HTML alert to my inbox. 31 rules deployed. 57% ATT&CK tactic coverage. Runs 24/7 with adaptive lookback, weekly digest, and a kill switch. The pipeline is fully operational.
+- May 10 2026 — Built the full tallkitchen_water automation pipeline. One command triggers the entire detection engineering workflow: query Elasticsearch, extract ATT&CK technique with Claude AI, generate a Sigma rule, push to GitHub, validate with three AI models (Claude + Gemini + Ollama), convert to Elastic DSL with pySigma, deploy to Kibana, send a formatted HTML alert to my inbox. 31 rules deployed. 57% ATT&CK tactic coverage. Runs 24/7 with adaptive lookback, weekly digest, and a kill switch. The pipeline is fully operational.
 
 <img width="862" height="754" alt="image" src="https://github.com/user-attachments/assets/4e82b198-a59d-4191-aa6a-6a5759ae9c79" />
 

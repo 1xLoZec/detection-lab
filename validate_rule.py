@@ -1,5 +1,5 @@
 """
-validate_rule.py — h4voc_water self-healing validation pipeline
+validate_rule.py — tallkitchen_water self-healing validation pipeline
 
 Stages:
   1. YAML lint — catch malformed YAML before burning API calls
@@ -287,7 +287,7 @@ def heal_rule(rule_text, query, backtest_count, feedback_by_validator, attempt):
 # ── Circuit breaker email ─────────────────────────────────────────────────────
 
 def send_circuit_breaker_email(rule_path, attempts, feedback_history):
-    """Email when self-healing gives up — HTML design matching h4voc_water emails."""
+    """Email when self-healing gives up — HTML design matching tallkitchen_water emails."""
     gmail_from = os.environ.get("GMAIL_FROM", "")
     gmail_to   = os.environ.get("GMAIL_TO", "")
     gmail_pass = os.environ.get("GMAIL_APP_PASSWORD", "")
@@ -318,7 +318,7 @@ def send_circuit_breaker_email(rule_path, attempts, feedback_history):
             s_color   = "#4caf50" if (isinstance(score, int) and score >= 7) else "#ff9800" if (isinstance(score, int) and score >= 5) else RED
             feedback_rows += f"""<tr style="border-bottom:1px solid {BORD};"><td style="padding:8px 14px;font-size:13px;color:{TEXT};font-weight:600;">{validator}</td><td style="padding:8px 14px;text-align:center;"><span style="background:{s_color}22;color:{s_color};border:1px solid {s_color}55;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700;font-family:monospace;">{score}/10</span></td><td style="padding:8px 14px;text-align:center;"><span style="background:{a_color}22;color:{a_color};border:1px solid {a_color}55;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700;font-family:monospace;">{a_label}</span></td><td style="padding:8px 14px;font-size:12px;color:{MUTED};font-style:italic;">{reasoning}</td></tr>"""
 
-    html = f"""<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>h4voc_water</title></head>
+    html = f"""<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>tallkitchen_water</title></head>
 <body style="margin:0;padding:0;background:{BG};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:{BG};"><tr><td align="center" style="padding:32px 16px;">
 <table width="580" cellpadding="0" cellspacing="0" style="background:{CARD};border-radius:10px;border:1px solid {BORD};overflow:hidden;">
@@ -341,7 +341,7 @@ def send_circuit_breaker_email(rule_path, attempts, feedback_history):
 </td></tr>
 <tr><td style="padding:0 36px 28px;">
   <p style="margin:0 0 10px;font-size:10px;font-weight:600;letter-spacing:1.5px;color:{MUTED};text-transform:uppercase;">Action Required</p>
-  <p style="margin:0;font-size:14px;color:{TEXT};line-height:1.7;padding:14px 16px;background:{BG};border:1px solid {BORD};border-radius:6px;">Delete <code style="font-family:monospace;background:{CARD};padding:2px 6px;border-radius:3px;color:{RED};">{rule_path}</code> and let h4voc_water regenerate, or manually fix the Sigma YAML.</p>
+  <p style="margin:0;font-size:14px;color:{TEXT};line-height:1.7;padding:14px 16px;background:{BG};border:1px solid {BORD};border-radius:6px;">Delete <code style="font-family:monospace;background:{CARD};padding:2px 6px;border-radius:3px;color:{RED};">{rule_path}</code> and let tallkitchen_water regenerate, or manually fix the Sigma YAML.</p>
   <br>
   <table cellpadding="0" cellspacing="0"><tr><td><a href="https://github.com/1xLoZec/detection-lab/blob/main/{rule_path}" style="display:inline-block;background:{RED};color:#ffffff;text-decoration:none;padding:10px 20px;border-radius:6px;font-size:13px;font-weight:700;">View Rule on GitHub</a></td></tr></table>
 </td></tr>
