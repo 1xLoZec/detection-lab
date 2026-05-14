@@ -86,6 +86,10 @@ Live, auto-generated from the deployed rule set.
 ### [🗺️ View Live ATT&CK Coverage Heatmap →](https://mitre-attack.github.io/attack-navigator/#layerURL=https://raw.githubusercontent.com/1xLoZec/detection-lab/main/docs/coverage_layer.json)
 
 ## Progress
+- **May 13 2026** — T-Pot is live. Dedicated cloud droplet running 30+ honeypots. Cowrie was logging real Telnet brute force attempts from Colombia within minutes of the install finishing. Management is locked down behind ELK, honeypot ports wide open. The build wasn't clean.. port conflict put it in a restart loop on the first reboot, took some journal log digging to sort out. Next: pipe the data into the main ELK so h4voc_water can learn from real attackers, not just simulations.
+
+<img width="1145" height="661" alt="image" src="https://github.com/user-attachments/assets/061c7d4e-b2ef-445c-b292-91ea071a9636" />
+
 
 - **May 12 2026** — Cleaned up the public demo. Fixed Kibana permissions so the demo user can actually see alert data on the dashboard — the role's Security feature privilege needed to be set via the Kibana role API, not the ES role API. Wrong tool for the job. Locked the time range to last 3 months, turned on dark mode, made the dashboard the default landing page. Rewrote the markdown header in plain language. Demo is ready to show.
 
