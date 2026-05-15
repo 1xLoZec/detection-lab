@@ -16,9 +16,11 @@
 
 ---
 
-Professionally I make artisan sandwiches. On my own time I build detection engineering labs from scratch because apparently that is what I do for fun.
+**Professionally I make artisan sandwiches.** On my own time I build detection engineering labs from scratch because apparently that is what I do for fun. 
+This lab is where I go deeper on the infrastructure side of detection engineering. I'm building everything from the ground up so I actually understand what's happening under the hood, not just on the screen. Every piece is documented as I build it including the parts that break, the walls I hit, and how I got through them. This is not a finished product. It is a live build.
 
-This lab is where I go deeper on the infrastructure side of detection engineering — building everything from the ground up so I actually understand what's happening under the hood, not just on the screen. Everything is documented as I build it, including the parts that break, the walls I hit, and how I got through them. This is not a finished product. It is a live build.
+**How this is built.** I leaned on and learned from a stack of AI platforms for this one. Claude was my main collaborator for code and architecture. Cursor was my editor. Gemini and Ollama sit inside Water as two of the three validators that grade every rule before it goes live. The design, the decisions, and the way everything fits together is mine. The typing speed is theirs.
+(And yes, I'm actually a cyber security engineer. The sandwich gig is a long-running joke my friends refuse to let die.)
 
 ## Lab Access
 
