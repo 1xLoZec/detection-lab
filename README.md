@@ -3,16 +3,16 @@
 
 # 1xLoZec Detection Lab
 
-**Autonomous detection engineering pipeline. Built from scratch, documented in real time.**
+**Tall Kitchen detection lab. Built from scratch, documented in real time.**
 
 [![CI/CD](https://img.shields.io/github/actions/workflow/status/1xLoZec/detection-lab/deploy-detections.yml?label=CI%2FCD&style=flat-square)](https://github.com/1xLoZec/detection-lab/actions)
 [![Detection as Code](https://img.shields.io/badge/Detection-as--Code-success?style=flat-square)](https://github.com/1xLoZec/detection-lab/tree/main/detections/sigma)
-[![Self-Healing CI/CD](https://img.shields.io/badge/CI%2FCD-Self--Healing-orange?style=flat-square)](#h4voc_water)
+[![Self-Healing CI/CD](https://img.shields.io/badge/CI%2FCD-Self--Healing-orange?style=flat-square)](#tallkitchen_water)
 [![T-Pot Integrated](https://img.shields.io/badge/T--Pot-Integrated-red?style=flat-square)](#t-pot-integration)
 [![SIEM](https://img.shields.io/badge/SIEM-Elastic%208.19-005571?style=flat-square&logo=elastic)](https://www.elastic.co/)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
 
-**[🖥️ Live Dashboard](https://demo.1xlozec.com) · [🗺️ ATT&CK Coverage Heatmap](https://mitre-attack.github.io/attack-navigator/#layerURL=https://raw.githubusercontent.com/1xLoZec/detection-lab/main/docs/coverage_layer.json) · [⚡ TallKitchenVisual](#h4voc_water)**
+**[🖥️ Live Dashboard](https://demo.1xlozec.com) · [🗺️ ATT&CK Coverage Heatmap](https://mitre-attack.github.io/attack-navigator/#layerURL=https://raw.githubusercontent.com/1xLoZec/detection-lab/main/docs/coverage_layer.json)**
 
 ---
 
@@ -20,7 +20,7 @@
 This lab is where I go deeper on the infrastructure side of detection engineering. I'm building everything from the ground up so I actually understand what's happening under the hood, not just on the screen. Every piece is documented as I build it including the parts that break, the walls I hit, and how I got through them. This is not a finished product. It is a live build.
 
 **How this is built.** I leaned on and learned from a stack of AI platforms for this one. Claude was my main collaborator for code and architecture. Cursor was my editor. Gemini and Ollama sit inside Water as two of the three validators that grade every rule before it goes live. The design, the decisions, and the way everything fits together is mine. The typing speed is theirs.
-(And yes, I'm actually a cyber security engineer. The sandwich gig is a long-running joke my friends refuse to let die.)
+*(And yes — I'm actually a cyber security engineer. The sandwich gig is a long-running joke my friends refuse to let die.)*
 
 ## Lab Access
 
@@ -58,12 +58,12 @@ Read-only viewer account. Dark mode is on by default. Time range is locked to th
 The center of the lab is a custom autonomous detection engineering pipeline I wrote called **tallkitchen_water**. It runs continuously, because detection engineering never stops.
 
 One command runs the entire workflow:
-<img width="696" height="406" alt="h4voc_water terminal output showing pipeline stages" src="https://github.com/user-attachments/assets/7685c5f7-b7a0-42fa-8b57-0dac7395a310" />
 
 ```
 tallkitchen_water
 ```
-<img width="696" height="406" alt="image" src="https://github.com/user-attachments/assets/7685c5f7-b7a0-42fa-8b57-0dac7395a310" />
+
+<img width="696" height="406" alt="tallkitchen_water terminal output showing pipeline stages" src="https://github.com/user-attachments/assets/7685c5f7-b7a0-42fa-8b57-0dac7395a310" />
 
 What happens next, without any human input:
 
@@ -104,37 +104,18 @@ Live, auto-generated from the deployed rule set.
 ## Progress
 
 - **May 14 2026 (later that day)** — Cleaned up Elasticsearch. T-Pot now on a 30-day ILM policy, replicas dropped to 0, best_compression on. Real disk hog was Elastic Agent metrics from the Windows VM, 16M perfmon docs and 1.6M process snapshots that nothing was reading. Turned those off, kept Sysmon and the Windows Security logs. Stack Monitoring rules now watching disk and JVM.
-  
-<img width="891" height="124" alt="image" src="https://github.com/user-attachments/assets/4b8d2867-4b99-44f9-8a8e-8ff465f74ddf" />
 
-- **May 14 2026** — T-Pot integration complete. WireGuard tunnel up between ELK and T-Pot — both directions, low latency, persistent across reboots. Created a dedicated `tpot_writer` Elasticsearch user scoped to `tpot-*` indices only — least privilege. Patched T-Pot's Logstash config to dual-output: it still writes to its own local ES (so T-Pot's UI keeps working) and now also ships every event to main ELK over the encrypted tunnel. Wall hit: Logstash 8 fully removed the old `ssl_certificate_verification` and `ssl` settings — they're not deprecated, they're obsolete and crash the pipeline on load. Had to use the modern `ssl_enabled` / `ssl_verification_mode` names. Another fun one: container healthcheck reported "healthy" while Logstash was actually in a pipeline crash loop, because the healthcheck only verifies the API port responds. 1974 attack events landed in ELK in the first ten minutes. h4voc_water can now learn from real attackers.
+  <img width="891" height="124" alt="Elasticsearch disk usage cleanup after ILM policy change" src="https://github.com/user-attachments/assets/4b8d2867-4b99-44f9-8a8e-8ff465f74ddf" />
 
-- **May 13 2026** — T-Pot is live. Dedicated cloud droplet running 30+ honeypots. Cowrie was logging real Telnet brute force attempts from Colombia within minutes of the install finishing. Management is locked down behind ELK, honeypot ports wide open. The build wasn't clean.. port conflict put it in a restart loop on the first reboot, took some journal log digging to sort out. Next: pipe the data into the main ELK so h4voc_water can learn from real attackers, not just simulations.
+- **May 14 2026** — T-Pot integration complete. WireGuard tunnel up between ELK and T-Pot — both directions, low latency, persistent across reboots. Created a dedicated `tpot_writer` Elasticsearch user scoped to `tpot-*` indices only — least privilege. Patched T-Pot's Logstash config to dual-output: it still writes to its own local ES (so T-Pot's UI keeps working) and now also ships every event to main ELK over the encrypted tunnel. Wall hit: Logstash 8 fully removed the old `ssl_certificate_verification` and `ssl` settings — they're not deprecated, they're obsolete and crash the pipeline on load. Had to use the modern `ssl_enabled` / `ssl_verification_mode` names. Another fun one: container healthcheck reported "healthy" while Logstash was actually in a pipeline crash loop, because the healthcheck only verifies the API port responds. 1974 attack events landed in ELK in the first ten minutes. tallkitchen_water can now learn from real attackers.
 
-<img width="1145" height="661" alt="image" src="https://github.com/user-attachments/assets/061c7d4e-b2ef-445c-b292-91ea071a9636" />
+- **May 13 2026** — T-Pot is live. Dedicated cloud droplet running 30+ honeypots. Cowrie was logging real Telnet brute force attempts from Colombia within minutes of the install finishing. Management is locked down behind ELK, honeypot ports wide open. The build wasn't clean — port conflict put it in a restart loop on the first reboot, took some journal log digging to sort out. Next: pipe the data into the main ELK so tallkitchen_water can learn from real attackers, not just simulations.
 
+  <img width="1145" height="661" alt="T-Pot honeypot dashboard showing real attack events from Colombia" src="https://github.com/user-attachments/assets/061c7d4e-b2ef-445c-b292-91ea071a9636" />
 
 - **May 12 2026** — Cleaned up the public demo. Fixed Kibana permissions so the demo user can actually see alert data on the dashboard — the role's Security feature privilege needed to be set via the Kibana role API, not the ES role API. Wrong tool for the job. Locked the time range to last 3 months, turned on dark mode, made the dashboard the default landing page. Rewrote the markdown header in plain language. Demo is ready to show.
 
 - **May 11 2026** — Two big things today.
-
-- May 7 2026 — Long sessions. Got Proxmox running on the dedicated lab machine and the Windows VM stood up inside it. Built a jump host for secure access to the lab environment. SSH from my PC to the jump host is working with full clipboard support. Still working through network segmentation. Getting closer.
-
-- May 8 2026 — The pipeline is live. Windows VM telemetry flowing into Kibana. Sysmon operational, Windows event logs, PowerShell logs & security events all showing up from VM. Took some work to get here but it's running clean now.
-
-- May 8 2026 — First Atomic Red Team simulation ran today. T1003 credential dumping. Completely isolated, nowhere to go. Telemetry showed up in Kibana immediately. Sysmon caught everything — process creation, registry modifications, logon events. The whole pipeline worked exactly as designed. Writing the first detection rule next.
-
-<img width="558" height="269" alt="image" src="https://github.com/user-attachments/assets/2a654b1a-2d26-4604-ae85-a65a5f95fb2a" />
-<img width="558" height="269" alt="image" src="https://github.com/user-attachments/assets/c20186bc-723b-47cb-aef3-f4cd0dee7068" />\
-
-- May 10 2026 — Full Detection as Code pipeline is live. Push a Sigma rule to GitHub and it automatically gets validated by three AI models, converted to Elastic query language, and deployed to Kibana. No manual steps. First rule deployed successfully — PowerShell Spawning Reconnaissance Commands. Running every 5 minutes.
-
-<img width="510" height="74" alt="image" src="https://github.com/user-attachments/assets/2951a146-6d4c-4349-99db-834555e4c09e" />
-<img width="752" height="140" alt="image" src="https://github.com/user-attachments/assets/dc67a15d-2a6e-44c8-9300-38d44620ef04" />
-
-- May 10 2026 — Built the full tallkitchen_water automation pipeline. One command triggers the entire detection engineering workflow: query Elasticsearch, extract ATT&CK technique with Claude AI, generate a Sigma rule, push to GitHub, validate with three AI models (Claude + Gemini + Ollama), convert to Elastic DSL with pySigma, deploy to Kibana, send a formatted HTML alert to my inbox. 31 rules deployed. 57% ATT&CK tactic coverage. Runs 24/7 with adaptive lookback, weekly digest, and a kill switch. The pipeline is fully operational.
-
-<img width="862" height="754" alt="image" src="https://github.com/user-attachments/assets/4e82b198-a59d-4191-aa6a-6a5759ae9c79" />
 
   First, `demo.1xlozec.com` is live. Public read-only Kibana dashboard with SSL, rate limiting, and a dedicated viewer account. Anyone can see the lab without VPN. Built a Security Overview dashboard with nine live panels covering total alerts, severity distribution, most active rules, ATT&CK coverage, and a live alerts table.
 
@@ -145,13 +126,11 @@ Live, auto-generated from the deployed rule set.
   3. Backtest — query runs against live Elasticsearch to confirm it matches real data
   4. Three-AI gate — Claude, Gemini, and Ollama each score the rule independently
 
-  If it fails, Claude rewrites it using each validator's feedback and tries again. Three attempts max. If it still fails, a circuit breaker emails me and stops. Nothing broken makes it to Kibana.
+  If it fails, Claude rewrites it using each validator's feedback and tries again. Three attempts max. If it still fails, a circuit breaker emails me and stops. Nothing broken makes it to Kibana. 31 custom detection rules deployed to Kibana and firing live alerts. Full pipeline confirmed end to end: simulation → telemetry → AI analysis → rule generation → CI/CD validation → deployment → alert. Three high severity alerts generated from T1059.001, T1082, and T1016 simulations.
 
-- **May 11 2026** — 31 custom detection rules deployed to Kibana and firing live alerts. Full pipeline confirmed end to end: simulation → telemetry → AI analysis → rule generation → CI/CD validation → deployment → alert. Three high severity alerts generated from T1059.001, T1082, and T1016 simulations.
+- **May 10 2026** — Built the full tallkitchen_water automation pipeline. One command triggers the entire detection engineering workflow: query Elasticsearch, extract ATT&CK technique with Claude AI, generate a Sigma rule, push to GitHub, validate with three AI models (Claude + Gemini + Ollama), convert to Elastic DSL with pySigma, deploy to Kibana, send a formatted HTML alert to my inbox. 31 rules deployed. 57% ATT&CK tactic coverage. Runs 24/7 with adaptive lookback, weekly digest, and a kill switch. The pipeline is fully operational.
 
-- **May 10 2026** — Built the full h4voc_water automation pipeline. One command triggers the entire detection engineering workflow: query Elasticsearch, extract ATT&CK technique with Claude, generate a Sigma rule, push to GitHub, validate with three AI models (Claude + Gemini + Ollama), convert to Elastic DSL with pySigma, deploy to Kibana, send a formatted HTML alert to my inbox. Runs 24/7 with adaptive lookback, weekly digest, and a kill switch. The pipeline is fully operational.
-
-  <img width="862" height="754" alt="h4voc_water email report showing technique analysis and deployment summary" src="https://github.com/user-attachments/assets/4e82b198-a59d-4191-aa6a-6a5759ae9c79" />
+  <img width="862" height="754" alt="tallkitchen_water email report showing technique analysis and deployment summary" src="https://github.com/user-attachments/assets/4e82b198-a59d-4191-aa6a-6a5759ae9c79" />
 
 - **May 10 2026** — Full Detection-as-Code pipeline is live. Push a Sigma rule to GitHub and it automatically gets validated by three AI models, converted to Elastic query language, and deployed to Kibana. No manual steps. First rule deployed successfully — PowerShell Spawning Reconnaissance Commands. Running every 5 minutes.
 
@@ -176,12 +155,13 @@ Live, auto-generated from the deployed rule set.
   <img width="1076" height="873" alt="Elasticsearch cluster 1xlozec-lab verified responding via Kibana Dev Tools" src="https://github.com/user-attachments/assets/65e011c9-47b2-4088-a3f0-cd9c70e389b1" />
   <img width="1076" height="873" alt="First live telemetry documents flowing into Kibana Discover from Elastic Agent" src="https://github.com/user-attachments/assets/4f297393-48c5-4416-97bf-e804358a2aaa" />
 
+
 ## Roadmap
 
 - [ ] Active Directory domain controller in Proxmox VLAN 40 — unlocks Kerberoasting, Pass-the-Hash, LDAP enumeration detection
 - [ ] Dedicated Kali Linux attack platform in Proxmox VLAN 40
 - [x] ~~T-Pot honeypot on a dedicated DigitalOcean droplet — real internet attackers~~ *(complete May 14 2026)*
-- [ ] MISP threat intelligence integration — real IOCs feeding h4voc_water
+- [ ] MISP threat intelligence integration — real IOCs feeding tallkitchen_water
 - [ ] False positive feedback loop — thumbs up/down in the weekly digest feeds back to the pipeline
 - [ ] Incident response playbooks per technique
 - [ ] Documentation site at `docs.1xlozec.com`
