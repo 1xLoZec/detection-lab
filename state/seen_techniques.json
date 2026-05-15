@@ -215,5 +215,12 @@
     "rule_id": "0d36e12f-4b63-4cf0-8483-8552b1d57090",
     "deployed_at": "2026-05-11T19:23:14.657042+00:00",
     "confidence": "high"
+  },
+  "T1574.010": {
+    "technique_name": "Hijack Execution Flow: Services File Permissions Weakness",
+    "tactic": "persistence",
+    "rule_id": "63a6f63d-043a-4ddc-9f24-febd436a77f5",
+    "deployed_at": "2026-05-15T18:02:48.222893+00:00",
+    "confidence": "medium"
   }
 }

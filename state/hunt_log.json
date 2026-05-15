@@ -388,5 +388,22 @@
     "technique_name": "System Binary Proxy Execution: Rundll32",
     "confidence": "medium",
     "lookback": 334
+  },
+  {
+    "timestamp": "2026-05-15T18:02:48.408457+00:00",
+    "result": "hunt_triggered_generation_failed",
+    "ioc": "77.83.240.70",
+    "triggered_by_hunt_id": "c5a527c7-fb72-4fc4-9b23-19c0f2112499",
+    "error": "'detection_focus'"
+  },
+  {
+    "timestamp": "2026-05-15T18:02:48.222893+00:00",
+    "result": "deployed",
+    "technique_id": "T1574.010",
+    "technique_name": "Hijack Execution Flow: Services File Permissions Weakness",
+    "confidence": "medium",
+    "rule_id": "63a6f63d-043a-4ddc-9f24-febd436a77f5",
+    "filepath": "detections/sigma/T1574-010-hijack-execution-flow:-services-file-permissions-weakness-autogen.yml",
+    "lookback": 1440
   }
 ]
