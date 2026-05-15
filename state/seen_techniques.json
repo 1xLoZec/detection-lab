@@ -229,5 +229,12 @@
     "rule_id": "1020dcc4-0817-41c0-ba1e-7d3034e816c6",
     "deployed_at": "2026-05-15T18:20:51.480365+00:00",
     "confidence": "medium"
+  },
+  "T1035": {
+    "technique_name": "Service Execution",
+    "tactic": "execution",
+    "rule_id": "6d060b71-5faf-425c-bf21-bb7751cc0e83",
+    "deployed_at": "2026-05-15T18:24:29.483158+00:00",
+    "confidence": "medium"
   }
 }

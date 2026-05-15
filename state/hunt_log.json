@@ -422,5 +422,41 @@
     "rule_id": "1020dcc4-0817-41c0-ba1e-7d3034e816c6",
     "filepath": "detections/sigma/T1016-system-network-configuration-discovery-autogen.yml",
     "lookback": 23
+  },
+  {
+    "timestamp": "2026-05-15T18:24:36.923867+00:00",
+    "result": "hunt_triggered_pending_review",
+    "ioc": "77.83.240.70",
+    "technique_id": "T1046",
+    "technique_name": "Network Service Scanning",
+    "confidence": "high",
+    "rule_id": "cba69621-c204-439b-b782-2637e1e65097",
+    "filepath": "detections/sigma/hunt-triggered/T1046-c5a527c7-77-83-240-70.yml",
+    "triggered_by_hunt_id": "c5a527c7-fb72-4fc4-9b23-19c0f2112499",
+    "honeypots_seen": [
+      "P0f",
+      "Suricata",
+      "Honeytrap",
+      "Miniprint",
+      "Fatt",
+      "Ipphoney"
+    ],
+    "total_events": 599131,
+    "provenance": {
+      "source": "water",
+      "trust_level": "medium",
+      "tagged_at": "2026-05-15T18:24:36.923887+00:00",
+      "triggered_by_hunt_id": "c5a527c7-fb72-4fc4-9b23-19c0f2112499"
+    }
+  },
+  {
+    "timestamp": "2026-05-15T18:24:29.483158+00:00",
+    "result": "deployed",
+    "technique_id": "T1035",
+    "technique_name": "Service Execution",
+    "confidence": "medium",
+    "rule_id": "6d060b71-5faf-425c-bf21-bb7751cc0e83",
+    "filepath": "detections/sigma/T1035-service-execution-autogen.yml",
+    "lookback": 10
   }
 ]
