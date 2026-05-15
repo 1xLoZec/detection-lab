@@ -1,0 +1,54 @@
+title: Suspicious Svchost Execution with Unusual Service Group Parameter
+id: 6d060b71-5faf-425c-bf21-bb7751cc0e83
+status: experimental
+description: Detects svchost.exe instances spawned by services.exe with unusual or rare -k group parameters that deviate from known legitimate Windows service groups. Attackers may register malicious services to achieve persistence and execution under SYSTEM privileges via T1035.
+author: 1xLoZec
+date: 2026/05/15
+tags:
+    - attack.execution
+    - attack.t1035
+references:
+    - https://attack.mitre.org/techniques/T1035/
+    - https://www.ired.team/offensive-security/persistence/persisting-in-svchost.exe-with-a-custom-service-dll-servicemain
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection:
+        event.code: '1'
+        process.name: 'svchost.exe'
+        process.parent.name: 'services.exe'
+    filter_known_groups:
+        process.command_line|contains:
+            - '-k netsvcs'
+            - '-k LocalServiceNetworkRestricted'
+            - '-k LocalServiceNoNetwork'
+            - '-k LocalService'
+            - '-k NetworkService'
+            - '-k DcomLaunch'
+            - '-k RPCSS'
+            - '-k termsvcs'
+            - '-k secsvcs'
+            - '-k wusvcs'
+            - '-k LocalSystemNetworkRestricted'
+            - '-k UnistackSvcGroup'
+            - '-k ClipboardSvcGroup'
+            - '-k DevicesFlow'
+            - '-k PrintWorkflow'
+            - '-k ICService'
+            - '-k WbioSvcGroup'
+            - '-k GPSvcGroup'
+            - '-k PCASvc'
+            - '-k wsappx'
+            - '-k appmodel'
+            - '-k camera'
+            - '-k imgsvc'
+            - '-k rdxsvc'
+            - '-k StorSvc'
+            - '-k netsvcs -p'
+            - '-k LocalServiceAndNoImpersonation'
+    condition: selection and not filter_known_groups
+falsepositives:
+    - Legitimate but rare or newly introduced Windows service host groups from Windows updates or third-party software
+    - Enterprise software that registers custom svchost service groups during installation
+level: medium
