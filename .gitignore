@@ -10,3 +10,4 @@ state/tallkitchen/*.db-journal
 state/tallkitchen/spamhaus_drop.txt
 state/tallkitchen/spamhaus_drop.txt
 detections/sigma/hunt-triggered/
+elastalert/elastalert.log
