@@ -44,6 +44,7 @@ from dotenv import load_dotenv
 from rich.console import Console
 from rich.table import Table
 from rich.text import Text
+from hunt_water_rules import bucket_rules
 
 # ── Setup ─────────────────────────────────────────────────────────────────────
 load_dotenv()
@@ -1721,6 +1722,61 @@ def render_external(external: dict, ioc: str) -> None:
     console.print()
 
 
+def render_rules(rules_data: dict) -> None:
+    """
+    Render the RULES bucket — what Water detection rules cover this attacker's
+    likely behavior. Read-only metadata view, no execution, no modification.
+    """
+    if not rules_data:
+        return
+
+    techniques = rules_data.get("inferred_techniques", []) or []
+    matches = rules_data.get("matching_rules", []) or []
+    self_triggered = rules_data.get("self_triggered_rules", []) or []
+
+    # If we couldn't even infer a technique, skip the bucket entirely
+    if not techniques:
+        return
+
+    console.print("[bold yellow]RULES[/] [dim](Water detection coverage)[/]")
+    tech_str = ", ".join(techniques[:3])
+    console.print(f"  [dim]Attacker behavior suggests:[/] [bold]{tech_str}[/]")
+
+    if not matches:
+        console.print(f"  [yellow]No existing Water rules cover these techniques.[/] "
+                      f"[dim](coverage gap — consider deploying detection)[/]")
+        console.print()
+        return
+
+    # Group: hunt-triggered (pending_review) first, then production
+    pending = [r for r in matches if r.get("is_hunt_triggered")]
+    production = [r for r in matches if not r.get("is_hunt_triggered")]
+
+    if pending:
+        console.print(f"  [bold magenta]{len(pending)} pending review[/] "
+                      f"[dim](hunt-triggered, awaiting analyst approval)[/]")
+        for rule in pending[:5]:
+            title = (rule.get("title") or "?")[:70]
+            techs = ", ".join(rule.get("techniques") or [])
+            console.print(f"    [magenta]·[/] {title}  [dim]({techs})[/]")
+            if rule.get("triggered_by_ioc"):
+                triggered_ioc = rule["triggered_by_ioc"]
+                hunt_id = (rule.get("triggered_by_hunt_id") or "")[:8]
+                console.print(f"      [dim]triggered by hunt of[/] [bold]{triggered_ioc}[/] [dim]({hunt_id}…)[/]")
+            console.print(f"      [dim]{rule['path']}[/]")
+
+    if production:
+        console.print(f"  [bold green]{len(production)} in production[/]")
+        for rule in production[:5]:
+            title = (rule.get("title") or "?")[:70]
+            techs = ", ".join(rule.get("techniques") or [])
+            level = rule.get("level", "?")
+            console.print(f"    [green]·[/] {title}  [dim]({techs}, level={level})[/]")
+            console.print(f"      [dim]{rule['path']}[/]")
+
+    console.print()
+
+
 def render_pivots(pivots: list) -> None:
     """
     Render the PIVOTS bucket — suggested next-step queries.
@@ -1876,6 +1932,7 @@ def hunt(ioc: str, fresh: bool = False) -> int:
     external = bucket_external_ip(conn, ioc)
     verdict  = bucket_verdict(observed, external)
     pivots   = bucket_pivots(ioc, identity, observed, external)
+    rules    = bucket_rules(observed, ioc)
     duration_ms = int((datetime.now(timezone.utc) - started).total_seconds() * 1000)
 
     # VERDICT renders FIRST — analyst's primary question is "is this bad?"
@@ -1883,6 +1940,7 @@ def hunt(ioc: str, fresh: bool = False) -> int:
     render_identity(identity)
     render_observed(observed)
     render_external(external, ioc)
+    render_rules(rules)
     render_pivots(pivots)
     render_honest_limits(ioc_type)
 
@@ -1893,6 +1951,7 @@ def hunt(ioc: str, fresh: bool = False) -> int:
         "observed": observed,
         "external": external,
         "pivots":   pivots,
+        "rules":    rules,
     }
     hunt_id = memory_record_hunt(conn, ioc, ioc_type, result, duration_ms)
     console.print(f"[dim]hunt_id: {hunt_id}  ·  {duration_ms}ms[/]")
