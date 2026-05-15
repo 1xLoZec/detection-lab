@@ -5,17 +5,26 @@ tallkitchen_hunt — Analyst-facing IOC enrichment companion
 Loads credentials from .env automatically.
 
 Usage:
-    python tallkitchen_hunt.py <ioc>
+    python tallkitchen_hunt.py <ioc>              # hunt an IOC (check memory first)
+    python tallkitchen_hunt.py <ioc> --fresh      # skip memory, re-enrich
+    python tallkitchen_hunt.py --history          # show recent hunts
+    python tallkitchen_hunt.py --history <ioc>    # show past hunts for one IOC
 
-Day-one scope: IPs only. IDENTITY + OBSERVED buckets against tpot-* index.
+Phase 2 scope: Engine + transmission (memory layer).
+Memory layer: SQLite local cache + ES hunt-logs-* canonical record.
 Honest about what it doesn't know yet (every other bucket).
 """
 import os
 import sys
 import re
+import json
+import uuid
+import socket
+import sqlite3
 import argparse
 import warnings
 import urllib3
+from pathlib import Path
 from datetime import datetime, timezone
 
 import requests
@@ -32,7 +41,14 @@ warnings.filterwarnings("ignore", category=urllib3.exceptions.InsecureRequestWar
 ELASTIC_URL     = os.getenv("ELASTIC_URL",     "https://10.0.0.1:9200")
 ELASTIC_API_KEY = os.getenv("ELASTIC_API_KEY", "")
 
-TPOT_INDEX = "tpot-*"
+TPOT_INDEX      = "tpot-*"
+HUNT_LOGS_INDEX = "tk-hunt-logs"   # we write to tk-hunt-logs (no glob); ES creates as-needed
+
+# Memory layer — local SQLite cache, lives next to Water's state but in its own dir
+MEMORY_DIR  = Path(__file__).parent / "state" / "tallkitchen"
+MEMORY_DB   = MEMORY_DIR / "hunt_memory.db"
+HUNTER_ID   = socket.gethostname()  # provenance: which machine ran the hunt
+
 
 # ── Console ───────────────────────────────────────────────────────────────────
 console = Console()
@@ -82,6 +98,121 @@ def elk_search(index: str, query: dict) -> dict:
     )
     r.raise_for_status()
     return r.json()
+
+
+def elk_index_doc(index: str, doc: dict) -> bool:
+    """POST a document to <index>/_doc. Returns True on success, False on failure.
+    Failures are non-fatal — Hunt logs the issue but doesn't block on ES being down."""
+    headers = {"Content-Type": "application/json"}
+    if ELASTIC_API_KEY:
+        headers["Authorization"] = f"ApiKey {ELASTIC_API_KEY}"
+    try:
+        r = requests.post(
+            f"{ELASTIC_URL}/{index}/_doc",
+            headers=headers,
+            json=doc,
+            verify=False,
+            timeout=10,
+        )
+        r.raise_for_status()
+        return True
+    except Exception:
+        return False
+
+
+# ── Memory layer (the transmission) ───────────────────────────────────────────
+# Local SQLite cache for fast "have I seen this before?" lookups.
+# Every hunt also gets shipped to ES tk-hunt-logs index (canonical record + Water-readable).
+
+MEMORY_SCHEMA = """
+CREATE TABLE IF NOT EXISTS hunts (
+    hunt_id        TEXT PRIMARY KEY,
+    timestamp_utc  TEXT NOT NULL,
+    ioc            TEXT NOT NULL,
+    ioc_type       TEXT NOT NULL,
+    result_json    TEXT NOT NULL,
+    notes          TEXT DEFAULT '',
+    source         TEXT NOT NULL,       -- provenance: 'user' for direct CLI hunts
+    trust_level    TEXT NOT NULL,       -- 'high' | 'medium' | 'low'
+    verifier_id    TEXT NOT NULL,       -- machine hostname that ran the hunt
+    duration_ms    INTEGER,
+    es_synced      INTEGER DEFAULT 0    -- 1 if successfully written to ES, 0 if not
+);
+CREATE INDEX IF NOT EXISTS idx_hunts_ioc       ON hunts(ioc);
+CREATE INDEX IF NOT EXISTS idx_hunts_timestamp ON hunts(timestamp_utc);
+"""
+
+
+def memory_init() -> sqlite3.Connection:
+    """Create memory directory and DB if they don't exist, return open connection."""
+    MEMORY_DIR.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(MEMORY_DB)
+    conn.row_factory = sqlite3.Row
+    conn.executescript(MEMORY_SCHEMA)
+    conn.commit()
+    return conn
+
+
+def memory_lookup_ioc(conn: sqlite3.Connection, ioc: str) -> list:
+    """Return all past hunts for this IOC, newest first."""
+    rows = conn.execute(
+        "SELECT hunt_id, timestamp_utc, result_json, notes "
+        "FROM hunts WHERE ioc = ? ORDER BY timestamp_utc DESC",
+        (ioc,),
+    ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def memory_record_hunt(
+    conn: sqlite3.Connection,
+    ioc: str,
+    ioc_type: str,
+    result: dict,
+    duration_ms: int,
+) -> str:
+    """Write a hunt to SQLite and ship a copy to ES. Returns the hunt_id."""
+    hunt_id = str(uuid.uuid4())
+    timestamp = datetime.now(timezone.utc).isoformat()
+    result_json = json.dumps(result, default=str)
+
+    # 1. Local SQLite write
+    conn.execute(
+        "INSERT INTO hunts (hunt_id, timestamp_utc, ioc, ioc_type, result_json, "
+        "source, trust_level, verifier_id, duration_ms, es_synced) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)",
+        (hunt_id, timestamp, ioc, ioc_type, result_json,
+         "user", "high", HUNTER_ID, duration_ms),
+    )
+    conn.commit()
+
+    # 2. ES write (canonical record, Water reads from here)
+    es_doc = {
+        "@timestamp":     timestamp,
+        "hunt_id":        hunt_id,
+        "ioc":            ioc,
+        "ioc_type":       ioc_type,
+        "result":         result,
+        "source":         "user",
+        "trust_level":    "high",
+        "verifier_id":    HUNTER_ID,
+        "duration_ms":    duration_ms,
+        "buckets_populated": [k for k, v in result.items() if v],
+    }
+    if elk_index_doc(HUNT_LOGS_INDEX, es_doc):
+        conn.execute("UPDATE hunts SET es_synced = 1 WHERE hunt_id = ?", (hunt_id,))
+        conn.commit()
+
+    return hunt_id
+
+
+def memory_recent_hunts(conn: sqlite3.Connection, limit: int = 50) -> list:
+    """Return the most recent N hunts across all IOCs."""
+    rows = conn.execute(
+        "SELECT hunt_id, timestamp_utc, ioc, ioc_type, notes "
+        "FROM hunts ORDER BY timestamp_utc DESC LIMIT ?",
+        (limit,),
+    ).fetchall()
+    return [dict(r) for r in rows]
 
 
 # ── IDENTITY bucket ───────────────────────────────────────────────────────────
@@ -155,7 +286,7 @@ def bucket_observed_ip(ip: str) -> dict:
 
     return {
         "event_count": total,
-        "honeypots": [(b["key"], b["doc_count"]) for b in honeypot_buckets],
+        "honeypots": [{"name": b["key"], "count": b["doc_count"]} for b in honeypot_buckets],
         "first_seen": first_seen,
         "last_seen": last_seen,
     }
@@ -202,7 +333,7 @@ def render_observed(observed: dict) -> None:
     table.add_column()
     table.add_row("Events", str(count))
     if observed.get("honeypots"):
-        breakdown = ", ".join(f"{name} ({c})" for name, c in observed["honeypots"])
+        breakdown = ", ".join(f"{h['name']} ({h['count']})" for h in observed["honeypots"])
         table.add_row("Honeypots", breakdown)
     if observed.get("first_seen"):
         table.add_row("First seen", observed["first_seen"])
@@ -212,9 +343,47 @@ def render_observed(observed: dict) -> None:
     console.print()
 
 
+def render_memory(past_hunts: list) -> None:
+    """
+    Show what Hunt has seen for this IOC before. Only renders when there's history.
+    """
+    if not past_hunts:
+        return
+
+    n = len(past_hunts)
+    most_recent = past_hunts[0]
+    ts = most_recent["timestamp_utc"]
+    # Friendly elapsed-time string
+    try:
+        seen = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+        delta = datetime.now(timezone.utc) - seen
+        if delta.total_seconds() < 60:
+            elapsed = f"{int(delta.total_seconds())}s ago"
+        elif delta.total_seconds() < 3600:
+            elapsed = f"{int(delta.total_seconds() / 60)}m ago"
+        elif delta.total_seconds() < 86400:
+            elapsed = f"{int(delta.total_seconds() / 3600)}h ago"
+        else:
+            elapsed = f"{delta.days}d ago"
+    except Exception:
+        elapsed = "previously"
+
+    console.print("[bold yellow]MEMORY[/] [dim](Hunt has seen this before)[/]")
+    table = Table.grid(padding=(0, 2))
+    table.add_column(style="bold")
+    table.add_column()
+    table.add_row("Last hunted", f"{elapsed}  [dim]({ts})[/]")
+    table.add_row("Total hunts", str(n))
+    if most_recent.get("notes"):
+        table.add_row("Last note",  most_recent["notes"])
+    console.print(table)
+    console.print("[dim]  Tip: re-run with --fresh to re-enrich and ignore memory.[/]")
+    console.print()
+
+
 def render_honest_limits(ioc_type: str) -> None:
     """
-    Day-one Hunt is honest about what it can't do yet.
+    Hunt is honest about what it can't do yet.
     Every bucket not implemented becomes a LIMIT line.
     """
     console.print("[bold yellow]LIMITS[/] [dim](what Hunt doesn't know yet)[/]")
@@ -223,48 +392,123 @@ def render_honest_limits(ioc_type: str) -> None:
         "ATT&CK mapping not yet implemented",
         "External enrichment (AbuseIPDB / VirusTotal / URLhaus) not yet wired up",
         "Pattern detection on unknowns not yet implemented",
-        "Hunt history logging to ELK not yet implemented",
+        "Pivot suggestions not yet implemented",
     ]
     for m in msgs:
         console.print(f"  [dim]·[/] {m}")
     console.print()
 
 
+def render_history_list(hunts: list, header: str = "RECENT HUNTS") -> None:
+    """Render a list of past hunts (used by --history command)."""
+    console.print(f"[bold cyan]{header}[/]")
+    if not hunts:
+        console.print("  [dim]No hunts recorded yet.[/]")
+        console.print()
+        return
+    table = Table(show_header=True, header_style="bold", box=None, padding=(0, 2))
+    table.add_column("When")
+    table.add_column("IOC")
+    table.add_column("Type")
+    table.add_column("Notes", overflow="fold")
+    for h in hunts:
+        ts = h["timestamp_utc"]
+        try:
+            seen = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+            delta = datetime.now(timezone.utc) - seen
+            if delta.total_seconds() < 3600:
+                when = f"{int(delta.total_seconds() / 60)}m ago"
+            elif delta.total_seconds() < 86400:
+                when = f"{int(delta.total_seconds() / 3600)}h ago"
+            else:
+                when = f"{delta.days}d ago"
+        except Exception:
+            when = ts[:19]
+        table.add_row(when, h["ioc"], h["ioc_type"], h.get("notes") or "")
+    console.print(table)
+    console.print()
+
+
 # ── Main ──────────────────────────────────────────────────────────────────────
-def hunt(ioc: str) -> int:
+def hunt(ioc: str, fresh: bool = False) -> int:
+    """Run a hunt against an IOC. Returns exit code."""
     ioc_type = detect_ioc_type(ioc)
     render_header(ioc, ioc_type)
 
     if ioc_type != "ipv4":
-        console.print(f"[bold red]Day-one Hunt only supports IPv4 addresses.[/]")
+        console.print(f"[bold red]Hunt currently only supports IPv4 addresses.[/]")
         console.print(f"[dim]Detected type: {ioc_type}. Support for hashes and domains is next.[/]")
         console.print()
         return 2
 
+    conn = memory_init()
+
+    # MEMORY check first — the "have I seen this before?" gate
+    past_hunts = memory_lookup_ioc(conn, ioc)
+    if past_hunts and not fresh:
+        render_memory(past_hunts)
+
+    # Run fresh enrichment (always, for now — Phase 3 may add "show cached" mode)
+    started = datetime.now(timezone.utc)
     identity = bucket_identity_ip(ioc)
     if identity.get("error"):
         console.print(f"[bold red]ELK query failed:[/] {identity['error']}")
+        conn.close()
         return 1
-
     observed = bucket_observed_ip(ioc)
+    duration_ms = int((datetime.now(timezone.utc) - started).total_seconds() * 1000)
 
     render_identity(identity)
     render_observed(observed)
     render_honest_limits(ioc_type)
 
+    # Record this hunt to memory (SQLite + ES)
+    result = {"identity": identity, "observed": observed}
+    hunt_id = memory_record_hunt(conn, ioc, ioc_type, result, duration_ms)
+    console.print(f"[dim]hunt_id: {hunt_id}  ·  {duration_ms}ms[/]")
+    console.print()
+
+    conn.close()
+    return 0
+
+
+def show_history(ioc: str = None, limit: int = 50) -> int:
+    """Show past hunts. Either filtered by IOC or recent across all IOCs."""
+    conn = memory_init()
+    console.print()
+    console.print(f"[bold cyan]🥄 tallkitchen hunt[/]  ·  [dim]history[/]")
+    console.print()
+
+    if ioc:
+        hunts = memory_lookup_ioc(conn, ioc)
+        render_history_list(hunts, header=f"HUNTS FOR {ioc}")
+    else:
+        hunts = memory_recent_hunts(conn, limit=limit)
+        render_history_list(hunts, header=f"LAST {limit} HUNTS")
+
+    conn.close()
     return 0
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(
         prog="tallkitchen_hunt",
-        description="Tall Kitchen Hunt — analyst IOC enrichment companion (day-one).",
+        description="Tall Kitchen Hunt — analyst IOC enrichment companion.",
     )
-    parser.add_argument("ioc", help="The IOC to investigate (IPv4 only in day-one)")
+    parser.add_argument("ioc", nargs="?",
+                        help="The IOC to investigate (IPv4 only currently)")
+    parser.add_argument("--fresh", action="store_true",
+                        help="Skip memory check, re-enrich from scratch")
+    parser.add_argument("--history", action="store_true",
+                        help="Show recent hunts (or pass an IOC to filter)")
     args = parser.parse_args()
 
     try:
-        return hunt(args.ioc.strip())
+        if args.history:
+            return show_history(ioc=args.ioc.strip() if args.ioc else None)
+        if not args.ioc:
+            parser.error("ioc is required unless --history is given")
+        return hunt(args.ioc.strip(), fresh=args.fresh)
     except KeyboardInterrupt:
         console.print("\n[dim]Interrupted.[/]")
         return 130
