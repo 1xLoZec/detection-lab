@@ -7,3 +7,5 @@ elastalert/elastalert.log
 elastalert/elastalert.log
 state/tallkitchen/*.db
 state/tallkitchen/*.db-journal
+state/tallkitchen/spamhaus_drop.txt
+state/tallkitchen/spamhaus_drop.txt

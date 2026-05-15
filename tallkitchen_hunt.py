@@ -10,9 +10,12 @@ Usage:
     python tallkitchen_hunt.py --history          # show recent hunts
     python tallkitchen_hunt.py --history <ioc>    # show past hunts for one IOC
 
-Phase 3 scope: Engine + transmission (memory) + first external source.
+Phase 3 scope: Engine + transmission (memory) + external sources.
 Memory layer: SQLite local cache + ES hunt-logs-* canonical record.
-External: AbuseIPDB (more sources coming in future phases).
+External (IPv4 only currently):
+  - Per-IP API sources: AbuseIPDB, GreyNoise, VirusTotal, OTX, ThreatFox,
+    Shodan InternetDB. Each fails gracefully if its API key is missing.
+  - List-based source: Spamhaus DROP (no key, daily download + local CIDR check).
 Honest about what it doesn't know yet (every other bucket).
 """
 import os
@@ -24,6 +27,7 @@ import socket
 import sqlite3
 import argparse
 import warnings
+import ipaddress
 import urllib3
 from pathlib import Path
 from datetime import datetime, timezone
@@ -43,7 +47,11 @@ ELASTIC_URL     = os.getenv("ELASTIC_URL",     "https://10.0.0.1:9200")
 ELASTIC_API_KEY = os.getenv("ELASTIC_API_KEY", "")
 
 # External source API keys (each optional — Hunt degrades gracefully if missing)
-ABUSEIPDB_API_KEY = os.getenv("ABUSEIPDB_API_KEY", "")
+ABUSEIPDB_API_KEY  = os.getenv("ABUSEIPDB_API_KEY",  "")
+VIRUSTOTAL_API_KEY = os.getenv("VIRUSTOTAL_API_KEY", "")
+GREYNOISE_API_KEY  = os.getenv("GREYNOISE_API_KEY",  "")
+OTX_API_KEY        = os.getenv("OTX_API_KEY",        "")
+ABUSECH_AUTH_KEY   = os.getenv("ABUSECH_AUTH_KEY",   "")   # unlocks URLhaus, MalwareBazaar, ThreatFox, SSLBL
 
 TPOT_INDEX      = "tpot-*"
 HUNT_LOGS_INDEX = "tk-hunt-logs"   # we write to tk-hunt-logs (no glob); ES creates as-needed
@@ -55,7 +63,13 @@ HUNTER_ID   = socket.gethostname()  # provenance: which machine ran the hunt
 
 # Cache TTLs per source (in seconds). Different sources need different freshness.
 CACHE_TTL_SECONDS = {
-    "abuseipdb": 24 * 3600,   # 24h — abuse scores update slowly
+    "abuseipdb":     24 * 3600,   # 24h — abuse scores update slowly
+    "virustotal":    24 * 3600,   # 24h
+    "greynoise":      6 * 3600,   #  6h — classification can change as new data arrives
+    "otx":           24 * 3600,   # 24h
+    "threatfox":     12 * 3600,   # 12h — community DB updates frequently
+    "internetdb":    24 * 3600,   # 24h — Shodan data is daily-ish
+    "spamhaus_drop": 24 * 3600,   # 24h — list itself only changes once per day
 }
 
 
@@ -340,6 +354,438 @@ def abuseipdb_check_ip(conn: sqlite3.Connection, ip: str) -> dict:
     return normalized
 
 
+# ── External source: GreyNoise Community ──────────────────────────────────────
+# Free tier — classifies IPs as internet background noise vs targeted activity.
+# Docs: https://docs.greynoise.io/reference/community-1
+GREYNOISE_URL = "https://api.greynoise.io/v3/community/"
+
+
+def greynoise_check_ip(conn: sqlite3.Connection, ip: str) -> dict:
+    """Query GreyNoise Community API. Returns classification + name (tool/actor) + last seen."""
+    if not GREYNOISE_API_KEY:
+        return {"available": False, "reason": "no API key (GREYNOISE_API_KEY not set)"}
+
+    cached = cache_get(conn, ip, "greynoise")
+    if cached is not None:
+        cached["_cached"] = True
+        return cached
+
+    headers = {"key": GREYNOISE_API_KEY, "Accept": "application/json"}
+    try:
+        r = requests.get(f"{GREYNOISE_URL}{ip}", headers=headers, timeout=10)
+    except Exception as e:
+        return {"available": False, "reason": f"request failed: {type(e).__name__}"}
+
+    # 404 from GreyNoise means "not seen" — that's data, not error
+    if r.status_code == 404:
+        normalized = {
+            "available":      True,
+            "classification": "unknown",
+            "noise":          False,
+            "riot":           False,
+            "name":           None,
+            "last_seen":      None,
+            "message":        "IP not observed by GreyNoise sensors",
+            "_cached":        False,
+            "_status_code":   404,
+        }
+        cache_put(conn, ip, "greynoise", normalized, status_code=404)
+        return normalized
+    if r.status_code == 429:
+        return {"available": False, "reason": "rate limit hit", "_status_code": 429}
+    if r.status_code != 200:
+        return {"available": False, "reason": f"HTTP {r.status_code}",
+                "_status_code": r.status_code}
+
+    try:
+        body = r.json()
+    except Exception:
+        return {"available": False, "reason": "malformed JSON"}
+
+    normalized = {
+        "available":      True,
+        "classification": body.get("classification", "unknown"),  # malicious / benign / unknown
+        "noise":          body.get("noise", False),
+        "riot":           body.get("riot", False),                # RIOT = known legitimate service
+        "name":           body.get("name"),                       # e.g., "Censys", "ZGrab", "Mirai Botnet"
+        "last_seen":      body.get("last_seen"),
+        "message":        body.get("message"),
+        "_cached":        False,
+        "_status_code":   200,
+    }
+    cache_put(conn, ip, "greynoise", normalized, status_code=200)
+    return normalized
+
+
+# ── External source: VirusTotal ───────────────────────────────────────────────
+# Free tier: 4 req/min, 500/day. v3 API.
+# Docs: https://docs.virustotal.com/reference/ip-info
+VT_BASE_URL = "https://www.virustotal.com/api/v3"
+
+
+def virustotal_check_ip(conn: sqlite3.Connection, ip: str) -> dict:
+    """Query VirusTotal for an IP. Returns detection ratio + community votes + reputation."""
+    if not VIRUSTOTAL_API_KEY:
+        return {"available": False, "reason": "no API key (VIRUSTOTAL_API_KEY not set)"}
+
+    cached = cache_get(conn, ip, "virustotal")
+    if cached is not None:
+        cached["_cached"] = True
+        return cached
+
+    headers = {"x-apikey": VIRUSTOTAL_API_KEY, "Accept": "application/json"}
+    try:
+        r = requests.get(f"{VT_BASE_URL}/ip_addresses/{ip}", headers=headers, timeout=10)
+    except Exception as e:
+        return {"available": False, "reason": f"request failed: {type(e).__name__}"}
+
+    if r.status_code == 429:
+        return {"available": False, "reason": "rate limit hit (VT 4/min or 500/day)",
+                "_status_code": 429}
+    if r.status_code == 404:
+        normalized = {
+            "available": True, "malicious": 0, "suspicious": 0, "harmless": 0,
+            "undetected": 0, "total_engines": 0, "reputation": 0, "community_votes": {},
+            "message": "IP not in VirusTotal database",
+            "_cached": False, "_status_code": 404,
+        }
+        cache_put(conn, ip, "virustotal", normalized, status_code=404)
+        return normalized
+    if r.status_code != 200:
+        return {"available": False, "reason": f"HTTP {r.status_code}",
+                "_status_code": r.status_code}
+
+    try:
+        attrs = (r.json().get("data", {}) or {}).get("attributes", {}) or {}
+    except Exception:
+        return {"available": False, "reason": "malformed JSON"}
+
+    stats = attrs.get("last_analysis_stats", {}) or {}
+    normalized = {
+        "available":       True,
+        "malicious":       stats.get("malicious", 0),
+        "suspicious":      stats.get("suspicious", 0),
+        "harmless":        stats.get("harmless", 0),
+        "undetected":      stats.get("undetected", 0),
+        "total_engines":   sum(stats.values()) if stats else 0,
+        "reputation":      attrs.get("reputation", 0),
+        "community_votes": attrs.get("total_votes", {}) or {},
+        "country":         attrs.get("country"),
+        "asn":             attrs.get("asn"),
+        "as_owner":        attrs.get("as_owner"),
+        "_cached":         False,
+        "_status_code":    200,
+    }
+    cache_put(conn, ip, "virustotal", normalized, status_code=200)
+    return normalized
+
+
+# ── External source: AlienVault OTX ───────────────────────────────────────────
+# Free. Returns associated "Pulses" (campaigns/threat reports) for an IOC.
+# Docs: https://otx.alienvault.com/api
+OTX_BASE_URL = "https://otx.alienvault.com/api/v1/indicators"
+
+
+def otx_check_ip(conn: sqlite3.Connection, ip: str) -> dict:
+    """Query OTX for an IP. Returns pulse count + top pulse names."""
+    if not OTX_API_KEY:
+        return {"available": False, "reason": "no API key (OTX_API_KEY not set)"}
+
+    cached = cache_get(conn, ip, "otx")
+    if cached is not None:
+        cached["_cached"] = True
+        return cached
+
+    headers = {"X-OTX-API-KEY": OTX_API_KEY, "Accept": "application/json"}
+    try:
+        r = requests.get(f"{OTX_BASE_URL}/IPv4/{ip}/general",
+                         headers=headers, timeout=10)
+    except Exception as e:
+        return {"available": False, "reason": f"request failed: {type(e).__name__}"}
+
+    if r.status_code != 200:
+        return {"available": False, "reason": f"HTTP {r.status_code}",
+                "_status_code": r.status_code}
+
+    try:
+        body = r.json() or {}
+    except Exception:
+        return {"available": False, "reason": "malformed JSON"}
+
+    pulse_info = body.get("pulse_info", {}) or {}
+    pulses = pulse_info.get("pulses", []) or []
+    normalized = {
+        "available":     True,
+        "pulse_count":   pulse_info.get("count", 0),
+        "top_pulses":    [p.get("name") for p in pulses[:5] if p.get("name")],
+        "related_indicator_types": list((pulse_info.get("related", {}) or {}).keys()),
+        "reputation":    body.get("reputation", 0),
+        "_cached":       False,
+        "_status_code":  200,
+    }
+    cache_put(conn, ip, "otx", normalized, status_code=200)
+    return normalized
+
+
+# ── External source: ThreatFox (abuse.ch) ─────────────────────────────────────
+# Free with abuse.ch Auth-Key. Community DB of malware C2 / payload infrastructure.
+# Docs: https://threatfox.abuse.ch/api/
+THREATFOX_URL = "https://threatfox-api.abuse.ch/api/v1/"
+
+
+def threatfox_check_ioc(conn: sqlite3.Connection, ioc: str, ioc_type: str) -> dict:
+    """
+    Query ThreatFox for any IOC type. Returns matching malware-family associations.
+    ThreatFox accepts IPs, domains, URLs, hashes via the same endpoint.
+    """
+    if not ABUSECH_AUTH_KEY:
+        return {"available": False, "reason": "no Auth-Key (ABUSECH_AUTH_KEY not set)"}
+
+    cached = cache_get(conn, ioc, "threatfox")
+    if cached is not None:
+        cached["_cached"] = True
+        return cached
+
+    headers = {"Auth-Key": ABUSECH_AUTH_KEY, "Content-Type": "application/json"}
+    payload = {"query": "search_ioc", "search_term": ioc}
+    try:
+        r = requests.post(THREATFOX_URL, headers=headers, json=payload, timeout=10)
+    except Exception as e:
+        return {"available": False, "reason": f"request failed: {type(e).__name__}"}
+
+    if r.status_code != 200:
+        return {"available": False, "reason": f"HTTP {r.status_code}",
+                "_status_code": r.status_code}
+
+    try:
+        body = r.json() or {}
+    except Exception:
+        return {"available": False, "reason": "malformed JSON"}
+
+    # ThreatFox returns query_status="no_result" when IOC isn't in their DB
+    if body.get("query_status") == "no_result":
+        normalized = {
+            "available": True, "match_count": 0, "matches": [],
+            "message": "IOC not in ThreatFox database",
+            "_cached": False, "_status_code": 200,
+        }
+        cache_put(conn, ioc, "threatfox", normalized, status_code=200)
+        return normalized
+
+    data = body.get("data", []) or []
+    matches = [
+        {
+            "malware":         m.get("malware_printable"),
+            "malware_alias":   m.get("malware_alias"),
+            "threat_type":     m.get("threat_type"),
+            "confidence":      m.get("confidence_level"),
+            "first_seen":      m.get("first_seen"),
+            "last_seen":       m.get("last_seen"),
+            "tags":            m.get("tags") or [],
+        }
+        for m in data[:10]  # cap at top 10
+    ]
+    normalized = {
+        "available":    True,
+        "match_count":  len(data),
+        "matches":      matches,
+        "_cached":      False,
+        "_status_code": 200,
+    }
+    cache_put(conn, ioc, "threatfox", normalized, status_code=200)
+    return normalized
+
+
+# ── External source: Shodan InternetDB ────────────────────────────────────────
+# Free, no API key required. Lightweight subset of Shodan data: ports, hostnames, CPEs.
+# Docs: https://internetdb.shodan.io/
+INTERNETDB_URL = "https://internetdb.shodan.io"
+
+
+def internetdb_check_ip(conn: sqlite3.Connection, ip: str) -> dict:
+    """Query Shodan InternetDB. No auth needed. Returns open ports + hostnames + CPEs + tags."""
+    cached = cache_get(conn, ip, "internetdb")
+    if cached is not None:
+        cached["_cached"] = True
+        return cached
+
+    try:
+        r = requests.get(f"{INTERNETDB_URL}/{ip}", timeout=10)
+    except Exception as e:
+        return {"available": False, "reason": f"request failed: {type(e).__name__}"}
+
+    if r.status_code == 404:
+        # 404 means not scanned/no info — that's data, not error
+        normalized = {
+            "available": True, "ports": [], "hostnames": [], "cpes": [], "tags": [],
+            "vulns": [], "message": "IP not in Shodan InternetDB",
+            "_cached": False, "_status_code": 404,
+        }
+        cache_put(conn, ip, "internetdb", normalized, status_code=404)
+        return normalized
+    if r.status_code != 200:
+        return {"available": False, "reason": f"HTTP {r.status_code}",
+                "_status_code": r.status_code}
+
+    try:
+        body = r.json() or {}
+    except Exception:
+        return {"available": False, "reason": "malformed JSON"}
+
+    normalized = {
+        "available":    True,
+        "ports":        body.get("ports", []) or [],
+        "hostnames":    body.get("hostnames", []) or [],
+        "cpes":         body.get("cpes", []) or [],
+        "tags":         body.get("tags", []) or [],
+        "vulns":        body.get("vulns", []) or [],
+        "_cached":      False,
+        "_status_code": 200,
+    }
+    cache_put(conn, ip, "internetdb", normalized, status_code=200)
+    return normalized
+
+
+# ── External source: Spamhaus DROP ────────────────────────────────────────────
+# Free, no API key. List of CIDR ranges Spamhaus says "don't route" — entire
+# netblocks operated by professional spam/cybercrime operations. Different
+# pattern from other sources: download list once a day, check IP membership
+# locally instead of one API call per hunt.
+# Docs: https://www.spamhaus.org/drop/
+SPAMHAUS_DROP_URL    = "https://www.spamhaus.org/drop/drop.txt"
+SPAMHAUS_DROP_CACHE  = MEMORY_DIR / "spamhaus_drop.txt"
+SPAMHAUS_DROP_MAX_AGE_SECONDS = 24 * 3600  # Spamhaus asks: don't fetch more than 1x per day
+
+# In-memory parsed copy, populated on first use, refreshed when file is reloaded
+_spamhaus_parsed_ranges = None  # list of (ipaddress.IPv4Network, "SBL12345") tuples
+_spamhaus_loaded_from = None    # filepath we parsed, for cache-bust detection
+
+
+def _spamhaus_drop_refresh_if_stale() -> bool:
+    """
+    Ensure the local DROP cache file is present and fresh.
+    Returns True if a usable file exists after this call, False if not.
+    """
+    try:
+        if SPAMHAUS_DROP_CACHE.exists():
+            age = (datetime.now(timezone.utc).timestamp()
+                   - SPAMHAUS_DROP_CACHE.stat().st_mtime)
+            if age < SPAMHAUS_DROP_MAX_AGE_SECONDS:
+                return True
+        # File is missing or stale — fetch
+        r = requests.get(SPAMHAUS_DROP_URL, timeout=15)
+        if r.status_code == 200 and r.text:
+            SPAMHAUS_DROP_CACHE.parent.mkdir(parents=True, exist_ok=True)
+            SPAMHAUS_DROP_CACHE.write_text(r.text)
+            return True
+    except Exception:
+        pass
+    # If a stale file exists, use it rather than nothing
+    return SPAMHAUS_DROP_CACHE.exists()
+
+
+def _spamhaus_drop_load() -> list:
+    """
+    Parse the local DROP file into a list of (IPv4Network, sbl_id) tuples.
+    Cached in-process; reparses only if the file path or mtime changes.
+    """
+    global _spamhaus_parsed_ranges, _spamhaus_loaded_from
+    if not SPAMHAUS_DROP_CACHE.exists():
+        return []
+    file_marker = (str(SPAMHAUS_DROP_CACHE), SPAMHAUS_DROP_CACHE.stat().st_mtime)
+    if _spamhaus_loaded_from == file_marker and _spamhaus_parsed_ranges is not None:
+        return _spamhaus_parsed_ranges
+
+    parsed = []
+    try:
+        for line in SPAMHAUS_DROP_CACHE.read_text().splitlines():
+            line = line.strip()
+            if not line or line.startswith(";") or line.startswith("#"):
+                continue
+            # Format: "1.10.16.0/20 ; SBL256894"
+            parts = line.split(";", 1)
+            cidr = parts[0].strip()
+            sbl  = parts[1].strip() if len(parts) > 1 else ""
+            try:
+                net = ipaddress.ip_network(cidr, strict=False)
+                if isinstance(net, ipaddress.IPv4Network):
+                    parsed.append((net, sbl))
+            except Exception:
+                continue
+    except Exception:
+        return []
+
+    _spamhaus_parsed_ranges = parsed
+    _spamhaus_loaded_from   = file_marker
+    return parsed
+
+
+def spamhaus_drop_check_ip(conn: sqlite3.Connection, ip: str) -> dict:
+    """
+    Check whether an IPv4 falls inside any DROP range.
+    Uses local file cache + SQLite per-IP result cache.
+    """
+    # Per-IP cache check first — even though the lookup is local-fast,
+    # this keeps the response shape consistent and lets us re-render
+    # the (cached) tag in the renderer.
+    cached = cache_get(conn, ip, "spamhaus_drop")
+    if cached is not None:
+        cached["_cached"] = True
+        return cached
+
+    if not _spamhaus_drop_refresh_if_stale():
+        return {"available": False, "reason": "DROP list not reachable and no local cache"}
+
+    ranges = _spamhaus_drop_load()
+    if not ranges:
+        return {"available": False, "reason": "DROP list is empty or malformed"}
+
+    try:
+        addr = ipaddress.ip_address(ip)
+    except Exception:
+        return {"available": False, "reason": f"not a parseable IP: {ip}"}
+
+    if not isinstance(addr, ipaddress.IPv4Address):
+        # DROP is IPv4 only
+        normalized = {
+            "available":  True,
+            "in_drop":    False,
+            "range":      None,
+            "sbl":        None,
+            "message":    "DROP is IPv4-only; this IP is IPv6",
+            "_cached":    False,
+        }
+        cache_put(conn, ip, "spamhaus_drop", normalized)
+        return normalized
+
+    match = None
+    for net, sbl in ranges:
+        if addr in net:
+            match = (net, sbl)
+            break
+
+    if match:
+        normalized = {
+            "available":  True,
+            "in_drop":    True,
+            "range":      str(match[0]),
+            "sbl":        match[1],
+            "message":    "IP is in Spamhaus DROP — netblock flagged as do-not-route",
+            "_cached":    False,
+        }
+    else:
+        normalized = {
+            "available":  True,
+            "in_drop":    False,
+            "range":      None,
+            "sbl":        None,
+            "message":    f"Not in any of {len(ranges)} DROP ranges",
+            "_cached":    False,
+        }
+    cache_put(conn, ip, "spamhaus_drop", normalized)
+    return normalized
+
+
 # ── EXTERNAL bucket ───────────────────────────────────────────────────────────
 def bucket_external_ip(conn: sqlite3.Connection, ip: str) -> dict:
     """
@@ -347,7 +793,13 @@ def bucket_external_ip(conn: sqlite3.Connection, ip: str) -> dict:
     Adding new sources: just add another call here.
     """
     return {
-        "abuseipdb": abuseipdb_check_ip(conn, ip),
+        "abuseipdb":     abuseipdb_check_ip(conn, ip),
+        "greynoise":     greynoise_check_ip(conn, ip),
+        "virustotal":    virustotal_check_ip(conn, ip),
+        "otx":           otx_check_ip(conn, ip),
+        "threatfox":     threatfox_check_ioc(conn, ip, "ipv4"),
+        "internetdb":    internetdb_check_ip(conn, ip),
+        "spamhaus_drop": spamhaus_drop_check_ip(conn, ip),
     }
 
 
@@ -502,7 +954,6 @@ def render_external(external: dict, ioc: str) -> None:
     else:
         score = ab.get("abuse_score", 0)
         reports = ab.get("total_reports", 0)
-        # Color the score: green if low, yellow medium, red high
         if score >= 75:
             score_str = f"[bold red]{score}/100[/]"
         elif score >= 25:
@@ -515,6 +966,146 @@ def render_external(external: dict, ioc: str) -> None:
         if ab.get("_cached"):
             summary += " [dim](cached)[/]"
         table.add_row("AbuseIPDB", summary, f"[link={ab_link}]open ↗[/]")
+
+    # GreyNoise row
+    gn = external.get("greynoise") or {}
+    gn_link = f"https://viz.greynoise.io/ip/{ioc}"
+    if not gn.get("available"):
+        reason = gn.get("reason") or "no data"
+        table.add_row("GreyNoise", f"[dim]not available — {reason}[/]", f"[link={gn_link}]open ↗[/]")
+    else:
+        cls = gn.get("classification", "unknown")
+        name = gn.get("name")
+        if cls == "malicious":
+            cls_str = "[bold red]malicious[/]"
+        elif cls == "benign":
+            cls_str = "[bold green]benign[/]"
+        else:
+            cls_str = "[dim]unknown[/]"
+        parts = [cls_str]
+        if gn.get("noise"):
+            parts.append("[yellow]noise[/]")
+        if gn.get("riot"):
+            parts.append("[cyan]known service (RIOT)[/]")
+        if name:
+            parts.append(f"\"{name}\"")
+        summary = ", ".join(parts)
+        if gn.get("_cached"):
+            summary += " [dim](cached)[/]"
+        table.add_row("GreyNoise", summary, f"[link={gn_link}]open ↗[/]")
+
+    # VirusTotal row
+    vt = external.get("virustotal") or {}
+    vt_link = f"https://www.virustotal.com/gui/ip-address/{ioc}"
+    if not vt.get("available"):
+        reason = vt.get("reason") or "no data"
+        table.add_row("VirusTotal", f"[dim]not available — {reason}[/]", f"[link={vt_link}]open ↗[/]")
+    else:
+        m = vt.get("malicious", 0)
+        s = vt.get("suspicious", 0)
+        total = vt.get("total_engines", 0)
+        flagged = m + s
+        if total == 0:
+            ratio_str = "[dim]not analyzed[/]"
+        elif flagged == 0:
+            ratio_str = f"[green]0/{total}[/] flagged"
+        elif (flagged / total) >= 0.10:
+            ratio_str = f"[bold red]{flagged}/{total}[/] flagged"
+        elif (flagged / total) >= 0.03:
+            ratio_str = f"[yellow]{flagged}/{total}[/] flagged"
+        else:
+            ratio_str = f"[dim]{flagged}/{total}[/] flagged"
+        rep = vt.get("reputation", 0)
+        summary = ratio_str + (f"  rep: {rep}" if rep else "")
+        if vt.get("_cached"):
+            summary += " [dim](cached)[/]"
+        table.add_row("VirusTotal", summary, f"[link={vt_link}]open ↗[/]")
+
+    # OTX row
+    otx = external.get("otx") or {}
+    otx_link = f"https://otx.alienvault.com/indicator/ip/{ioc}"
+    if not otx.get("available"):
+        reason = otx.get("reason") or "no data"
+        table.add_row("OTX", f"[dim]not available — {reason}[/]", f"[link={otx_link}]open ↗[/]")
+    else:
+        pc = otx.get("pulse_count", 0)
+        if pc == 0:
+            summary = "[dim]0 pulses[/]"
+        elif pc >= 5:
+            summary = f"[bold red]{pc} pulses[/]"
+        elif pc >= 1:
+            summary = f"[yellow]{pc} pulses[/]"
+        top_pulses = otx.get("top_pulses") or []
+        if top_pulses:
+            summary += f" — \"{top_pulses[0]}\""
+            if len(top_pulses) > 1:
+                summary += f" +{len(top_pulses)-1} more"
+        if otx.get("_cached"):
+            summary += " [dim](cached)[/]"
+        table.add_row("OTX", summary, f"[link={otx_link}]open ↗[/]")
+
+    # ThreatFox row
+    tf = external.get("threatfox") or {}
+    tf_link = f"https://threatfox.abuse.ch/browse.php?search=ioc%3A{ioc}"
+    if not tf.get("available"):
+        reason = tf.get("reason") or "no data"
+        table.add_row("ThreatFox", f"[dim]not available — {reason}[/]", f"[link={tf_link}]open ↗[/]")
+    else:
+        mc = tf.get("match_count", 0)
+        matches = tf.get("matches") or []
+        if mc == 0:
+            summary = "[dim]not in DB[/]"
+        else:
+            families = list({m["malware"] for m in matches if m.get("malware")})
+            if families:
+                summary = f"[bold red]{mc} matches[/] — " + ", ".join(families[:3])
+                if len(families) > 3:
+                    summary += f" +{len(families)-3} more"
+            else:
+                summary = f"[bold red]{mc} matches[/]"
+        if tf.get("_cached"):
+            summary += " [dim](cached)[/]"
+        table.add_row("ThreatFox", summary, f"[link={tf_link}]open ↗[/]")
+
+    # InternetDB row
+    idb = external.get("internetdb") or {}
+    idb_link = f"https://internetdb.shodan.io/{ioc}"
+    if not idb.get("available"):
+        reason = idb.get("reason") or "no data"
+        table.add_row("InternetDB", f"[dim]not available — {reason}[/]", f"[link={idb_link}]open ↗[/]")
+    else:
+        ports = idb.get("ports", []) or []
+        vulns = idb.get("vulns", []) or []
+        tags  = idb.get("tags", []) or []
+        if not ports:
+            summary = "[dim]no scan data[/]"
+        else:
+            port_str = ", ".join(str(p) for p in ports[:8])
+            if len(ports) > 8:
+                port_str += f" +{len(ports)-8} more"
+            summary = f"{len(ports)} ports: {port_str}"
+            if vulns:
+                summary += f"  [red]{len(vulns)} CVEs[/]"
+            if tags:
+                summary += f"  [yellow]tags: {', '.join(tags[:3])}[/]"
+        if idb.get("_cached"):
+            summary += " [dim](cached)[/]"
+        table.add_row("InternetDB", summary, f"[link={idb_link}]open ↗[/]")
+
+    # Spamhaus DROP row
+    sh = external.get("spamhaus_drop") or {}
+    sh_link = "https://www.spamhaus.org/drop/"
+    if not sh.get("available"):
+        reason = sh.get("reason") or "no data"
+        table.add_row("Spamhaus DROP", f"[dim]not available — {reason}[/]", f"[link={sh_link}]open ↗[/]")
+    else:
+        if sh.get("in_drop"):
+            summary = f"[bold red on yellow] IN DROP [/]  range {sh.get('range')}  ({sh.get('sbl')})"
+        else:
+            summary = "[dim]not listed[/]"
+        if sh.get("_cached"):
+            summary += " [dim](cached)[/]"
+        table.add_row("Spamhaus DROP", summary, f"[link={sh_link}]open ↗[/]")
 
     console.print(table)
     console.print()
@@ -567,7 +1158,7 @@ def render_honest_limits(ioc_type: str) -> None:
     msgs = [
         "VERDICT not computed — reputation logic not yet implemented",
         "ATT&CK mapping not yet implemented",
-        "External sources wired: AbuseIPDB. Not yet: VirusTotal, GreyNoise, ThreatFox, OTX, others",
+        "Only IPv4 IOCs supported — domains, hashes, URLs not yet routed",
         "Pattern detection on unknowns not yet implemented",
         "Pivot suggestions not yet implemented",
     ]
