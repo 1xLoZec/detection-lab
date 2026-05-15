@@ -60,6 +60,14 @@ GREYNOISE_API_KEY  = os.getenv("GREYNOISE_API_KEY",  "")
 OTX_API_KEY        = os.getenv("OTX_API_KEY",        "")
 ABUSECH_AUTH_KEY   = os.getenv("ABUSECH_AUTH_KEY",   "")   # unlocks URLhaus, MalwareBazaar, ThreatFox, SSLBL
 
+# Self-IPs — IPs that belong to your own infrastructure (droplet, WireGuard mesh,
+# home network). Hunt filters these out of pivot results to reduce noise.
+# Comma-separated list in env: TALLKITCHEN_SELF_IPS="68.183.139.30,10.0.0.1,..."
+SELF_IPS = set(
+    ip.strip() for ip in os.getenv("TALLKITCHEN_SELF_IPS", "").split(",")
+    if ip.strip()
+)
+
 TPOT_INDEX      = "tpot-*"
 HUNT_LOGS_INDEX = "tk-hunt-logs"   # we write to tk-hunt-logs (no glob); ES creates as-needed
 
@@ -1294,6 +1302,11 @@ def bucket_pivots(ip: str, identity: dict, observed: dict, external: dict) -> li
     Generate suggested next-step queries for the analyst. Returns a list of
     pivot dicts. Each pivot only appears if it would yield useful results
     (>= 1 distinct IP other than the current one).
+
+    Self-IP filter (Layer 6 defense for pivots): IPs in TALLKITCHEN_SELF_IPS
+    are filtered out of top_examples. Self-IPs belong to your own infra
+    (droplet running T-Pot, WireGuard endpoints, etc.) — suggesting them as
+    pivots would be noise that erodes analyst trust.
     """
     pivots = []
 
@@ -1312,10 +1325,25 @@ def bucket_pivots(ip: str, identity: dict, observed: dict, external: dict) -> li
     if p:
         pivots.append(p)
 
-    # Same Spamhaus DROP range (only fires if IN DROP)
+    # Same Spamhaus DROP range (only fires if IN DROP; currently disabled
+    # pending T-Pot Logstash mapping fix for IP-typed src_ip)
     p = _pivot_same_drop_range(ip, external)
     if p:
         pivots.append(p)
+
+    # Apply self-IP filter to top_examples in each pivot
+    if SELF_IPS:
+        for p in pivots:
+            originals = p.get("top_examples", []) or []
+            filtered = [ex for ex in originals if ex.get("ip") not in SELF_IPS]
+            n_removed = len(originals) - len(filtered)
+            p["top_examples"] = filtered
+            if n_removed > 0:
+                p["self_ips_filtered"] = n_removed
+                # Note: distinct_count is left as the ES-reported value.
+                # The filter only removes self-IPs from the *top examples*;
+                # the count may slightly overstate by the number of self-IPs
+                # in the result, which is acceptable as long as we annotate.
 
     return pivots
 
@@ -1706,6 +1734,7 @@ def render_pivots(pivots: list) -> None:
         question = p.get("question", "")
         count = p.get("distinct_count", 0)
         examples = p.get("top_examples", []) or []
+        filtered_count = p.get("self_ips_filtered", 0)
 
         # Highlight pivot count if it's substantial
         if count >= 50:
@@ -1716,9 +1745,15 @@ def render_pivots(pivots: list) -> None:
             count_str = f"[bold]{count}[/]"
 
         console.print(f"  [bold cyan]·[/] {question}")
-        console.print(f"    [dim]{count_str} distinct IPs.[/] Top by activity:")
-        for ex in examples[:5]:
-            console.print(f"      [dim]·[/] {ex['ip']:<18} [dim]{ex['events']} events[/]")
+        if examples:
+            console.print(f"    [dim]{count_str} distinct IPs.[/] Top by activity:")
+            for ex in examples[:5]:
+                console.print(f"      [dim]·[/] {ex['ip']:<18} [dim]{ex['events']} events[/]")
+        else:
+            # All top examples were self-IPs and got filtered
+            console.print(f"    [dim]{count_str} distinct IPs (all top examples were filtered as self-IPs)[/]")
+        if filtered_count:
+            console.print(f"    [dim]({filtered_count} self-IPs filtered out)[/]")
         qh = p.get("query_hint")
         if qh:
             console.print(f"    [dim]Kibana KQL:[/] [dim italic]{qh}[/]")
