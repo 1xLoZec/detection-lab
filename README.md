@@ -62,6 +62,7 @@ One command runs the entire workflow:
 ```
 tallkitchen_water
 ```
+<img width="790" height="530" alt="image" src="https://github.com/user-attachments/assets/12746ddf-05a9-4f47-aeef-de38329edc75" />
 
 What happens next, without any human input:
 
