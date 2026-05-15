@@ -63,8 +63,6 @@ One command runs the entire workflow:
 tallkitchen_water
 ```
 
-<img width="696" height="406" alt="tallkitchen_water terminal output showing pipeline stages" src="https://github.com/user-attachments/assets/7685c5f7-b7a0-42fa-8b57-0dac7395a310" />
-
 What happens next, without any human input:
 
 1. Queries Elasticsearch for Sysmon events across the configured lookback window
