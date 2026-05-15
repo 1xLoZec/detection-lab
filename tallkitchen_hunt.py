@@ -10,7 +10,7 @@ Usage:
     python tallkitchen_hunt.py --history          # show recent hunts
     python tallkitchen_hunt.py --history <ioc>    # show past hunts for one IOC
 
-Phase 4 scope: Engine + transmission (memory) + external sources + VERDICT.
+Phase 5 scope: Engine + transmission (memory) + external + VERDICT + PIVOTS.
 Memory layer: SQLite local cache + ES hunt-logs-* canonical record.
 External (IPv4 only currently):
   - Per-IP API sources: AbuseIPDB, GreyNoise, VirusTotal, OTX, ThreatFox,
@@ -20,6 +20,9 @@ Verdict: deterministic weighted scoring across all 7 sources, Mandiant-aligned
   thresholds (benign<40, unknown 40-60, suspicious 60-80, malicious 80+),
   with override rules for IN-DROP and high-volume T-Pot events, plus
   cross-source disagreement detection (Layer 8 hallucination defense).
+Pivots: suggested next-step queries — same ASN, same country/recent, same
+  honeypot toolkit profile, same DROP range. Each pivot is an informational
+  suggestion (count + top examples + Kibana KQL hint), not a command.
 Honest about what it doesn't know yet (every other bucket).
 """
 import os
@@ -1052,6 +1055,271 @@ def bucket_verdict(observed: dict, external: dict) -> dict:
     }
 
 
+# ── PIVOTS bucket ─────────────────────────────────────────────────────────────
+# Pivots are *informational suggestions*, not commands. Each pivot answers
+# "where else should I look?" and gives the analyst a copy-pasteable starting
+# point. The analyst stays in the driver's seat — Hunt is the colleague who
+# noticed something interesting, not a command runner.
+#
+# Design rule: a pivot only gets surfaced if it would return USEFUL results.
+# A pivot with 0 results or 1 result (just the IOC itself) gets suppressed.
+
+def _pivot_same_asn(ip: str, identity: dict, lookback_days: int = 7) -> dict:
+    """Pivot: other IPs from the same ASN seen by your honeypots."""
+    asn = identity.get("asn")
+    asn_org = identity.get("asn_org")
+    if not asn:
+        return None
+
+    # Query T-Pot for distinct IPs in the same ASN, last N days
+    query = {
+        "size": 0,
+        "query": {
+            "bool": {
+                "must": [
+                    {"range": {"@timestamp": {"gte": f"now-{lookback_days}d"}}},
+                    {"bool": {"should": [
+                        {"term": {"geoip.asn": asn}},
+                        {"term": {"geoip_ext.asn": asn}},
+                    ], "minimum_should_match": 1}},
+                ],
+                "must_not": [{"term": {"src_ip": ip}}],
+            }
+        },
+        "aggs": {
+            "distinct_ips": {"cardinality": {"field": "src_ip.keyword"}},
+            "top_ips": {
+                "terms": {"field": "src_ip.keyword", "size": 5,
+                          "order": {"_count": "desc"}}
+            },
+        },
+    }
+    try:
+        result = elk_search(TPOT_INDEX, query)
+    except Exception:
+        return None
+
+    aggs = result.get("aggregations", {}) or {}
+    distinct = (aggs.get("distinct_ips") or {}).get("value", 0)
+    top_buckets = (aggs.get("top_ips") or {}).get("buckets", []) or []
+
+    if distinct < 1:
+        return None  # No siblings in T-Pot, suppress this pivot
+
+    return {
+        "type":     "same_asn",
+        "question": f"Other IPs from ASN {asn} ({asn_org or '?'}) seen by honeypots in last {lookback_days}d",
+        "distinct_count": distinct,
+        "top_examples":   [{"ip": b["key"], "events": b["doc_count"]} for b in top_buckets],
+        "lookback_days":  lookback_days,
+        "query_hint":     f'src_ip:* AND (geoip.asn:{asn} OR geoip_ext.asn:{asn}) AND @timestamp:>=now-{lookback_days}d',
+    }
+
+
+def _pivot_same_country_recent(ip: str, identity: dict, lookback_hours: int = 24) -> dict:
+    """Pivot: other IPs from the same country in a recent time window."""
+    country = identity.get("country")
+    if not country or country == "—":
+        return None
+
+    query = {
+        "size": 0,
+        "query": {
+            "bool": {
+                "must": [
+                    {"range": {"@timestamp": {"gte": f"now-{lookback_hours}h"}}},
+                    {"bool": {"should": [
+                        {"term": {"geoip.country_name.keyword": country}},
+                        {"term": {"geoip_ext.country_name.keyword": country}},
+                    ], "minimum_should_match": 1}},
+                ],
+                "must_not": [{"term": {"src_ip": ip}}],
+            }
+        },
+        "aggs": {
+            "distinct_ips": {"cardinality": {"field": "src_ip.keyword"}},
+            "top_ips": {
+                "terms": {"field": "src_ip.keyword", "size": 5,
+                          "order": {"_count": "desc"}}
+            },
+        },
+    }
+    try:
+        result = elk_search(TPOT_INDEX, query)
+    except Exception:
+        return None
+
+    aggs = result.get("aggregations", {}) or {}
+    distinct = (aggs.get("distinct_ips") or {}).get("value", 0)
+    top_buckets = (aggs.get("top_ips") or {}).get("buckets", []) or []
+
+    if distinct < 1:
+        return None
+
+    return {
+        "type":     "same_country_recent",
+        "question": f"Other IPs from {country} hitting honeypots in last {lookback_hours}h",
+        "distinct_count": distinct,
+        "top_examples":   [{"ip": b["key"], "events": b["doc_count"]} for b in top_buckets],
+        "lookback_hours": lookback_hours,
+        "query_hint":     f'src_ip:* AND (geoip.country_name:"{country}" OR geoip_ext.country_name:"{country}") AND @timestamp:>=now-{lookback_hours}h',
+    }
+
+
+def _pivot_same_honeypot_mix(ip: str, observed: dict, lookback_days: int = 7) -> dict:
+    """Pivot: other IPs that hit the same combination of honeypot types.
+    Useful for finding scanners with similar toolkit profiles."""
+    honeypots = observed.get("honeypots") or []
+    if len(honeypots) < 2:
+        return None  # Single-honeypot scanners aren't distinctive enough
+
+    # Take the top 3 honeypots this IP hit — those are the distinctive toolkit profile
+    top_honeypot_names = [h["name"] for h in honeypots[:3]]
+    if not top_honeypot_names:
+        return None
+
+    # Find other IPs that hit AT LEAST 2 of the same top 3 honeypots
+    # (Exact-match would be too strict; "fuzzy fingerprint" is more useful.)
+    query = {
+        "size": 0,
+        "query": {
+            "bool": {
+                "must": [
+                    {"range": {"@timestamp": {"gte": f"now-{lookback_days}d"}}},
+                    {"terms": {"type.keyword": top_honeypot_names}},
+                ],
+                "must_not": [{"term": {"src_ip": ip}}],
+            }
+        },
+        "aggs": {
+            "distinct_ips": {"cardinality": {"field": "src_ip.keyword"}},
+            "ips_with_multi_honeypots": {
+                "terms": {"field": "src_ip.keyword", "size": 5,
+                          "min_doc_count": 10,
+                          "order": {"_count": "desc"}}
+            },
+        },
+    }
+    try:
+        result = elk_search(TPOT_INDEX, query)
+    except Exception:
+        return None
+
+    aggs = result.get("aggregations", {}) or {}
+    distinct = (aggs.get("distinct_ips") or {}).get("value", 0)
+    top_buckets = (aggs.get("ips_with_multi_honeypots") or {}).get("buckets", []) or []
+
+    if distinct < 1 or not top_buckets:
+        return None
+
+    return {
+        "type":     "same_honeypot_mix",
+        "question": f"Other IPs hitting similar honeypot mix ({', '.join(top_honeypot_names)}) in last {lookback_days}d",
+        "distinct_count": distinct,
+        "top_examples":   [{"ip": b["key"], "events": b["doc_count"]} for b in top_buckets],
+        "honeypot_profile": top_honeypot_names,
+        "lookback_days":    lookback_days,
+        "query_hint":       f'type:({" OR ".join(top_honeypot_names)}) AND @timestamp:>=now-{lookback_days}d',
+    }
+
+
+def _pivot_same_drop_range(ip: str, external: dict, lookback_days: int = 30) -> dict:
+    """Pivot: other IPs from the same Spamhaus DROP range that hit your honeypots.
+    Only fires if the current IP is IN DROP. High-value pivot — same criminal
+    netblock activity is exactly the kind of follow-up an analyst wants.
+
+    CURRENTLY DISABLED: T-Pot's src_ip field is mapped as 'text', not 'ip'.
+    CIDR-range queries require an 'ip'-typed field. Re-enable once we update
+    T-Pot's Logstash index template to map src_ip as type=ip. Until then this
+    pivot would return either zero results or wrong results, so we suppress it
+    rather than show misleading data.
+    """
+    return None
+    # ↓ Original implementation kept for future revival once mapping is fixed ↓
+    sh = external.get("spamhaus_drop") or {}
+    if not sh.get("available") or not sh.get("in_drop"):
+        return None
+
+    drop_range = sh.get("range")
+    sbl = sh.get("sbl")
+    if not drop_range:
+        return None
+
+    # Build a CIDR range query
+    query = {
+        "size": 0,
+        "query": {
+            "bool": {
+                "must": [
+                    {"range": {"@timestamp": {"gte": f"now-{lookback_days}d"}}},
+                    {"term": {"src_ip": drop_range}},  # ES treats CIDR string as range query
+                ],
+                "must_not": [{"term": {"src_ip": ip}}],
+            }
+        },
+        "aggs": {
+            "distinct_ips": {"cardinality": {"field": "src_ip.keyword"}},
+            "top_ips": {
+                "terms": {"field": "src_ip.keyword", "size": 5,
+                          "order": {"_count": "desc"}}
+            },
+        },
+    }
+    try:
+        result = elk_search(TPOT_INDEX, query)
+    except Exception:
+        return None
+
+    aggs = result.get("aggregations", {}) or {}
+    distinct = (aggs.get("distinct_ips") or {}).get("value", 0)
+    top_buckets = (aggs.get("top_ips") or {}).get("buckets", []) or []
+
+    if distinct < 1:
+        return None
+
+    return {
+        "type":     "same_drop_range",
+        "question": f"Other IPs in DROP range {drop_range} ({sbl}) seen by honeypots in last {lookback_days}d",
+        "distinct_count": distinct,
+        "top_examples":   [{"ip": b["key"], "events": b["doc_count"]} for b in top_buckets],
+        "drop_range":     drop_range,
+        "sbl":            sbl,
+        "lookback_days":  lookback_days,
+        "query_hint":     f'src_ip:{drop_range} AND @timestamp:>=now-{lookback_days}d',
+    }
+
+
+def bucket_pivots(ip: str, identity: dict, observed: dict, external: dict) -> list:
+    """
+    Generate suggested next-step queries for the analyst. Returns a list of
+    pivot dicts. Each pivot only appears if it would yield useful results
+    (>= 1 distinct IP other than the current one).
+    """
+    pivots = []
+
+    # Same ASN — usually the highest-signal pivot for honeypot analysis
+    p = _pivot_same_asn(ip, identity)
+    if p:
+        pivots.append(p)
+
+    # Same country, recent window
+    p = _pivot_same_country_recent(ip, identity)
+    if p:
+        pivots.append(p)
+
+    # Same honeypot mix (toolkit profile)
+    p = _pivot_same_honeypot_mix(ip, observed)
+    if p:
+        pivots.append(p)
+
+    # Same Spamhaus DROP range (only fires if IN DROP)
+    p = _pivot_same_drop_range(ip, external)
+    if p:
+        pivots.append(p)
+
+    return pivots
+
+
 # ── IDENTITY bucket ───────────────────────────────────────────────────────────
 def bucket_identity_ip(ip: str) -> dict:
     """
@@ -1425,6 +1693,38 @@ def render_external(external: dict, ioc: str) -> None:
     console.print()
 
 
+def render_pivots(pivots: list) -> None:
+    """
+    Render the PIVOTS bucket — suggested next-step queries.
+    Each pivot is a separate item: question, top examples, ES query hint.
+    """
+    if not pivots:
+        return
+
+    console.print("[bold yellow]PIVOTS[/] [dim](suggested next hunts)[/]")
+    for p in pivots:
+        question = p.get("question", "")
+        count = p.get("distinct_count", 0)
+        examples = p.get("top_examples", []) or []
+
+        # Highlight pivot count if it's substantial
+        if count >= 50:
+            count_str = f"[bold red]{count}[/]"
+        elif count >= 10:
+            count_str = f"[bold yellow]{count}[/]"
+        else:
+            count_str = f"[bold]{count}[/]"
+
+        console.print(f"  [bold cyan]·[/] {question}")
+        console.print(f"    [dim]{count_str} distinct IPs.[/] Top by activity:")
+        for ex in examples[:5]:
+            console.print(f"      [dim]·[/] {ex['ip']:<18} [dim]{ex['events']} events[/]")
+        qh = p.get("query_hint")
+        if qh:
+            console.print(f"    [dim]Kibana KQL:[/] [dim italic]{qh}[/]")
+        console.print()
+
+
 def render_memory(past_hunts: list) -> None:
     """
     Show what Hunt has seen for this IOC before. Only renders when there's history.
@@ -1473,8 +1773,8 @@ def render_honest_limits(ioc_type: str) -> None:
         "ATT&CK mapping not yet implemented",
         "Only IPv4 IOCs supported — domains, hashes, URLs not yet routed",
         "Pattern detection on unknowns not yet implemented",
-        "Pivot suggestions not yet implemented",
         "LLM narrative (STORY, NEXT STEPS) not yet implemented",
+        "Water integration (closing the loop on rule generation) not yet wired",
     ]
     for m in msgs:
         console.print(f"  [dim]·[/] {m}")
@@ -1540,6 +1840,7 @@ def hunt(ioc: str, fresh: bool = False) -> int:
     observed = bucket_observed_ip(ioc)
     external = bucket_external_ip(conn, ioc)
     verdict  = bucket_verdict(observed, external)
+    pivots   = bucket_pivots(ioc, identity, observed, external)
     duration_ms = int((datetime.now(timezone.utc) - started).total_seconds() * 1000)
 
     # VERDICT renders FIRST — analyst's primary question is "is this bad?"
@@ -1547,6 +1848,7 @@ def hunt(ioc: str, fresh: bool = False) -> int:
     render_identity(identity)
     render_observed(observed)
     render_external(external, ioc)
+    render_pivots(pivots)
     render_honest_limits(ioc_type)
 
     # Record this hunt to memory (SQLite + ES)
@@ -1555,6 +1857,7 @@ def hunt(ioc: str, fresh: bool = False) -> int:
         "identity": identity,
         "observed": observed,
         "external": external,
+        "pivots":   pivots,
     }
     hunt_id = memory_record_hunt(conn, ioc, ioc_type, result, duration_ms)
     console.print(f"[dim]hunt_id: {hunt_id}  ·  {duration_ms}ms[/]")
