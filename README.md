@@ -58,12 +58,11 @@ Read-only viewer account. Dark mode is on by default. Time range is locked to th
 The center of the lab is a custom autonomous detection engineering pipeline I wrote called **tallkitchen_water**. It runs continuously, because detection engineering never stops.
 
 One command runs the entire workflow:
-<img width="696" height="406" alt="h4voc_water terminal output showing pipeline stages" src="https://github.com/user-attachments/assets/7685c5f7-b7a0-42fa-8b57-0dac7395a310" />
+
 
 ```
 tallkitchen_water
 ```
-<img width="696" height="406" alt="image" src="https://github.com/user-attachments/assets/7685c5f7-b7a0-42fa-8b57-0dac7395a310" />
 
 What happens next, without any human input:
 
