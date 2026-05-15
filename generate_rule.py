@@ -26,7 +26,7 @@ _logging.getLogger("httpx").setLevel(_logging.WARNING)
 from dotenv import load_dotenv
 
 load_dotenv()
-
+from water_hunt_trigger import process_hunt_triggered_verdicts
 # ── Config ────────────────────────────────────────────────────────────────────
 ELASTIC_URL        = os.getenv("ELASTIC_URL",        "https://10.0.0.1:9200")
 ELASTIC_API_KEY    = os.getenv("ELASTIC_API_KEY",    "")
@@ -864,6 +864,23 @@ def main():
 
     seen, last, log, digest = load_state()
     now_ts = datetime.now(timezone.utc).isoformat()
+
+    # Phase 6.B: hunt-trigger pass — independent of coverage flow below.
+    # Pulls high-confidence verdicts from tk-hunt-logs, applies safety gates,
+    # generates rules for any that pass. Failures here are swallowed so the
+    # normal coverage flow always continues.
+    try:
+        hunt_generated = process_hunt_triggered_verdicts(
+            generate_fn=generate_sigma_rule,
+            save_and_push_fn=save_and_push,
+            log=log,
+            _con=_con,
+        )
+        if hunt_generated > 0:
+            save_state(seen, last, log, digest)
+    except Exception as _hunt_err:
+        _con.print(f"  [yellow]Hunt-trigger pass error (continuing with coverage flow): {_hunt_err}[/]")
+
 
     if should_send_weekly_digest(digest):
         _con.print("[dim]Sending weekly digest...[/]")
