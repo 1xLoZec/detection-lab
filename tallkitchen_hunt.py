@@ -10,12 +10,16 @@ Usage:
     python tallkitchen_hunt.py --history          # show recent hunts
     python tallkitchen_hunt.py --history <ioc>    # show past hunts for one IOC
 
-Phase 3 scope: Engine + transmission (memory) + external sources.
+Phase 4 scope: Engine + transmission (memory) + external sources + VERDICT.
 Memory layer: SQLite local cache + ES hunt-logs-* canonical record.
 External (IPv4 only currently):
   - Per-IP API sources: AbuseIPDB, GreyNoise, VirusTotal, OTX, ThreatFox,
     Shodan InternetDB. Each fails gracefully if its API key is missing.
   - List-based source: Spamhaus DROP (no key, daily download + local CIDR check).
+Verdict: deterministic weighted scoring across all 7 sources, Mandiant-aligned
+  thresholds (benign<40, unknown 40-60, suspicious 60-80, malicious 80+),
+  with override rules for IN-DROP and high-volume T-Pot events, plus
+  cross-source disagreement detection (Layer 8 hallucination defense).
 Honest about what it doesn't know yet (every other bucket).
 """
 import os
@@ -803,6 +807,251 @@ def bucket_external_ip(conn: sqlite3.Connection, ip: str) -> dict:
     }
 
 
+# ── VERDICT bucket ────────────────────────────────────────────────────────────
+# Deterministic weighted scoring across all sources. Designed to be auditable —
+# every score increment is traceable to a specific source's signal strength.
+# Weights derived from industry practice (Mandiant, OpenCTI, Spamhaus docs)
+# plus FalconFeeds research showing internal observations + expert-curated feeds
+# target 99% TPR vs. community feeds at much lower fidelity.
+
+# Source weights, sum = 105. Each source contributes weight × signal_strength (0..1)
+# to a raw score. The raw score is normalized to 0-100 for verdict bands.
+SOURCE_WEIGHTS = {
+    "tpot":          35,   # Your own honeypot ground truth — verified internal observation
+    "spamhaus_drop": 18,   # Tier-1 ISP trust, "extremely low false positives" (Spamhaus docs)
+    "greynoise":     15,   # Direct mass-scanning observation, manually curated benign list
+    "threatfox":     12,   # abuse.ch curated, per-IOC confidence, 6-month expiry
+    "virustotal":    12,   # 90+ engine consensus, but slower for IPs vs files
+    "abuseipdb":      8,   # Community-driven (gameable), threshold ≥75 per OpenCTI default
+    "otx":            5,   # Highest volume / lowest curation — many low-quality pulses
+    # InternetDB intentionally not in this map — it's context, not a verdict vote
+}
+SOURCE_WEIGHTS_TOTAL = sum(SOURCE_WEIGHTS.values())  # 105
+
+# Verdict bands match Mandiant's published thresholds (see blog: alert scoring at machine scale)
+VERDICT_BANDS = [
+    (80, "malicious",  "BLOCK"),
+    (60, "suspicious", "INVESTIGATE"),
+    (40, "unknown",    "MONITOR"),
+    (0,  "benign",     "IGNORE"),
+]
+
+
+def _signal_tpot(observed: dict) -> float:
+    """T-Pot: event_count → signal strength. log scale to avoid overweighting one-offs."""
+    import math
+    if observed.get("error"):
+        return 0.0
+    count = observed.get("event_count", 0) or 0
+    if count <= 0:
+        return 0.0
+    # log10(count) / 4 — so 1 event = 0%, 100 = 50%, 10k = 100%, capped at 1.0
+    return min(1.0, math.log10(count) / 4.0)
+
+
+def _signal_spamhaus_drop(src: dict) -> float:
+    """Spamhaus DROP: binary. In a flagged netblock or not."""
+    if not src or not src.get("available"):
+        return 0.0
+    return 1.0 if src.get("in_drop") else 0.0
+
+
+def _signal_greynoise(src: dict) -> float:
+    """GreyNoise: malicious → +1, benign → anti-signal (-1), unknown → 0.
+    The anti-signal is intentional — RIOT/benign is high-confidence per their curation."""
+    if not src or not src.get("available"):
+        return 0.0
+    cls = (src.get("classification") or "").lower()
+    if cls == "malicious":
+        return 1.0
+    if cls == "benign":
+        return -1.0
+    return 0.0
+
+
+def _signal_threatfox(src: dict) -> float:
+    """ThreatFox: malware family matches. Even one match is meaningful (curated)."""
+    if not src or not src.get("available"):
+        return 0.0
+    matches = src.get("match_count", 0) or 0
+    if matches <= 0:
+        return 0.0
+    return min(1.0, matches / 5.0)
+
+
+def _signal_virustotal(src: dict) -> float:
+    """VirusTotal: detection ratio. Industry rule: <3% likely FP, >10% real threat."""
+    if not src or not src.get("available"):
+        return 0.0
+    flagged = (src.get("malicious", 0) or 0) + (src.get("suspicious", 0) or 0)
+    total = src.get("total_engines", 0) or 0
+    if total == 0:
+        return 0.0
+    ratio = flagged / total
+    if ratio < 0.03:
+        return 0.0
+    if ratio >= 0.10:
+        return 1.0
+    # Linear ramp 3% → 10%
+    return (ratio - 0.03) / (0.10 - 0.03)
+
+
+def _signal_abuseipdb(src: dict) -> float:
+    """AbuseIPDB: score 0-100. OpenCTI defaults to threshold 75 to avoid FPs.
+    Scores below 75 get heavily discounted because community-reportable = gameable."""
+    if not src or not src.get("available"):
+        return 0.0
+    score = src.get("abuse_score", 0) or 0
+    if src.get("is_whitelisted"):
+        return -0.5  # Whitelisted = anti-signal, but weaker than GreyNoise benign
+    if score >= 75:
+        return score / 100.0
+    # Below threshold — discounted by 2x
+    return score / 200.0
+
+
+def _signal_otx(src: dict) -> float:
+    """OTX: pulse_count. High volume / variable quality, so 10+ pulses needed for full signal."""
+    if not src or not src.get("available"):
+        return 0.0
+    pulses = src.get("pulse_count", 0) or 0
+    if pulses <= 0:
+        return 0.0
+    return min(1.0, pulses / 10.0)
+
+
+def _detect_disagreements(external: dict, observed: dict, raw_score: float) -> list:
+    """
+    Identify cross-source disagreements (Layer 8 defense from hallucination stack).
+    Returns a list of human-readable conflict notes for the analyst to weigh.
+    """
+    conflicts = []
+
+    gn = external.get("greynoise") or {}
+    ab = external.get("abuseipdb") or {}
+    vt = external.get("virustotal") or {}
+    sh = external.get("spamhaus_drop") or {}
+    tpot_events = (observed or {}).get("event_count", 0) or 0
+
+    # GreyNoise benign vs. other malicious signals
+    if gn.get("available") and gn.get("classification") == "benign":
+        if ab.get("available") and (ab.get("abuse_score") or 0) >= 75:
+            conflicts.append(f"GreyNoise classifies as benign but AbuseIPDB scores {ab['abuse_score']}/100")
+        if vt.get("available"):
+            flagged = (vt.get("malicious") or 0) + (vt.get("suspicious") or 0)
+            if flagged >= 5:
+                conflicts.append(f"GreyNoise classifies as benign but VirusTotal flagged by {flagged} engines")
+        if tpot_events > 100:
+            conflicts.append(f"GreyNoise classifies as benign but T-Pot has {tpot_events} events from this IP")
+
+    # GreyNoise RIOT (known legit service) vs. honeypot hits
+    if gn.get("available") and gn.get("riot") and tpot_events > 0:
+        name = gn.get("name") or "known service"
+        conflicts.append(f"GreyNoise marks as RIOT ({name}) but honeypot saw {tpot_events} events — possible source IP spoofing or false-RIOT")
+
+    # T-Pot has heavy activity but per-IP sources are silent
+    if tpot_events > 1000:
+        silent_sources = []
+        if ab.get("available") and (ab.get("abuse_score") or 0) < 25:
+            silent_sources.append("AbuseIPDB")
+        if vt.get("available") and ((vt.get("malicious") or 0) + (vt.get("suspicious") or 0)) == 0:
+            silent_sources.append("VirusTotal")
+        if len(silent_sources) >= 2:
+            conflicts.append(f"T-Pot has {tpot_events} events but {' and '.join(silent_sources)} both show no signal — IP may be new/unknown to external community")
+
+    # In DROP but per-IP sources clean (this isn't actually a conflict — it's the value-add of DROP)
+    # so we don't surface it as a conflict; the DROP marker in the renderer already explains.
+
+    # AbuseIPDB whitelist vs. high abuse score (these can co-exist for cloud providers)
+    if ab.get("available") and ab.get("is_whitelisted") and (ab.get("abuse_score") or 0) >= 50:
+        conflicts.append(f"AbuseIPDB lists as whitelisted but abuse score is {ab['abuse_score']}/100 — likely shared/cloud infrastructure")
+
+    return conflicts
+
+
+def _band_for_score(score: float) -> tuple:
+    """Map a 0-100 score to (verdict, action) per Mandiant-aligned bands."""
+    for threshold, verdict, action in VERDICT_BANDS:
+        if score >= threshold:
+            return (verdict, action)
+    return ("benign", "IGNORE")  # Fallback (shouldn't reach — last band is 0)
+
+
+def bucket_verdict(observed: dict, external: dict) -> dict:
+    """
+    Compute the verdict bucket — deterministic, auditable, override-aware.
+    Returns a dict with the verdict, action, score, breakdown, conflicts, and floor reasons.
+    """
+    # 1) Compute signal strength per source
+    signals = {
+        "tpot":          _signal_tpot(observed),
+        "spamhaus_drop": _signal_spamhaus_drop(external.get("spamhaus_drop")),
+        "greynoise":     _signal_greynoise(external.get("greynoise")),
+        "threatfox":     _signal_threatfox(external.get("threatfox")),
+        "virustotal":    _signal_virustotal(external.get("virustotal")),
+        "abuseipdb":     _signal_abuseipdb(external.get("abuseipdb")),
+        "otx":           _signal_otx(external.get("otx")),
+    }
+
+    # 2) Weighted contribution per source (may be negative for anti-signals)
+    contributions = {
+        name: SOURCE_WEIGHTS[name] * sig
+        for name, sig in signals.items()
+    }
+
+    # 3) Raw weighted score, normalized to 0-100
+    raw_total = sum(contributions.values())
+    raw_score = max(0.0, min(100.0, (raw_total / SOURCE_WEIGHTS_TOTAL) * 100.0))
+
+    # 4) Apply override rules — these are not "fudging" — they encode operational truth
+    #    (Tier-1 ISPs autoblock on DROP; high T-Pot event counts are direct observation)
+    floors = []
+    floor_score = raw_score
+
+    sh = external.get("spamhaus_drop") or {}
+    tpot_events = (observed or {}).get("event_count", 0) or 0
+
+    if sh.get("in_drop"):
+        if tpot_events > 10000:
+            # Both signals: IP is in DROP AND your honeypot saw it at scale
+            floor_score = max(floor_score, 85.0)
+            floors.append("IN DROP + T-Pot ≥10k events → floor 85")
+        else:
+            floor_score = max(floor_score, 65.0)
+            floors.append("IN DROP → floor 65 (SUSPICIOUS)")
+    elif tpot_events > 10000:
+        floor_score = max(floor_score, 75.0)
+        floors.append(f"T-Pot {tpot_events} events → floor 75")
+
+    # 5) Disagreement detection (Layer 8 defense)
+    conflicts = _detect_disagreements(external, observed, floor_score)
+
+    # 6) RIOT/benign safety brake — if a high-confidence anti-signal exists,
+    #    drop one band as a conservative measure (but don't override DROP)
+    gn = external.get("greynoise") or {}
+    safety_brake_applied = False
+    if not sh.get("in_drop"):  # DROP override always wins
+        if gn.get("available") and gn.get("riot"):
+            if floor_score >= 60:
+                floor_score = 59.0  # Drop to "unknown / MONITOR"
+                safety_brake_applied = True
+                floors.append(f"GreyNoise RIOT ({gn.get('name') or 'known service'}) → cap at unknown")
+
+    verdict, action = _band_for_score(floor_score)
+
+    return {
+        "score":               round(floor_score, 1),
+        "raw_score":           round(raw_score, 1),
+        "verdict":             verdict,
+        "action":              action,
+        "signals":             {k: round(v, 3) for k, v in signals.items()},
+        "contributions":       {k: round(v, 2) for k, v in contributions.items()},
+        "floors_applied":      floors,
+        "conflicts":           conflicts,
+        "safety_brake":        safety_brake_applied,
+    }
+
+
 # ── IDENTITY bucket ───────────────────────────────────────────────────────────
 def bucket_identity_ip(ip: str) -> dict:
     """
@@ -885,6 +1134,71 @@ def render_header(ioc: str, ioc_type: str) -> None:
     console.print()
     console.print(f"[bold cyan]🥄 tallkitchen hunt[/]  ·  [dim]1xLoZec Detection Lab[/]")
     console.print(f"[bold]> {ioc}[/]  [dim]({ioc_type})[/]")
+    console.print()
+
+
+def render_verdict(verdict: dict) -> None:
+    """
+    Render the VERDICT bucket FIRST — the analyst's primary question is "is this bad?"
+    Display: large verdict label + score, then contribution breakdown, then conflicts.
+    """
+    if not verdict:
+        return
+
+    label = (verdict.get("verdict") or "unknown").upper()
+    action = verdict.get("action") or "MONITOR"
+    score = verdict.get("score", 0)
+
+    # Color by verdict severity
+    if label == "MALICIOUS":
+        verdict_style = "bold white on red"
+        action_style  = "bold red"
+    elif label == "SUSPICIOUS":
+        verdict_style = "bold black on yellow"
+        action_style  = "bold yellow"
+    elif label == "UNKNOWN":
+        verdict_style = "bold white on blue"
+        action_style  = "bold blue"
+    else:  # BENIGN
+        verdict_style = "bold black on green"
+        action_style  = "bold green"
+
+    console.print(f"[bold yellow]VERDICT[/]")
+    console.print(f"  [{verdict_style}] {label} [/]  [dim]score[/] [bold]{score}/100[/]  →  [{action_style}]{action}[/]")
+
+    # Contribution breakdown — which sources moved the needle
+    contribs = verdict.get("contributions", {}) or {}
+    if contribs:
+        # Show only sources that actually contributed (non-zero)
+        nonzero = [(k, v) for k, v in contribs.items() if abs(v) >= 0.1]
+        nonzero.sort(key=lambda kv: abs(kv[1]), reverse=True)
+        if nonzero:
+            console.print("  [dim]Top contributing sources:[/]")
+            for name, contribution in nonzero[:5]:
+                if contribution > 0:
+                    bar = "█" * min(20, int(abs(contribution)))
+                    console.print(f"    [bold]{name:<14}[/] [red]{bar}[/] [bold]+{contribution:.1f}[/]")
+                else:
+                    bar = "█" * min(20, int(abs(contribution)))
+                    console.print(f"    [bold]{name:<14}[/] [green]{bar}[/] [bold]{contribution:.1f}[/] [dim](anti-signal)[/]")
+
+    # Floors applied (override rules that adjusted the score)
+    floors = verdict.get("floors_applied", []) or []
+    if floors:
+        console.print("  [dim]Overrides applied:[/]")
+        for f in floors:
+            console.print(f"    [dim]·[/] {f}")
+
+    # Cross-source conflicts (Layer 8 defense)
+    conflicts = verdict.get("conflicts", []) or []
+    if conflicts:
+        console.print("  [bold yellow]⚠ Cross-source disagreement:[/]")
+        for c in conflicts:
+            console.print(f"    [yellow]·[/] {c}")
+
+    if verdict.get("safety_brake"):
+        console.print("  [dim](safety brake applied — verdict capped due to high-confidence anti-signal)[/]")
+
     console.print()
 
 
@@ -1156,11 +1470,11 @@ def render_honest_limits(ioc_type: str) -> None:
     """
     console.print("[bold yellow]LIMITS[/] [dim](what Hunt doesn't know yet)[/]")
     msgs = [
-        "VERDICT not computed — reputation logic not yet implemented",
         "ATT&CK mapping not yet implemented",
         "Only IPv4 IOCs supported — domains, hashes, URLs not yet routed",
         "Pattern detection on unknowns not yet implemented",
         "Pivot suggestions not yet implemented",
+        "LLM narrative (STORY, NEXT STEPS) not yet implemented",
     ]
     for m in msgs:
         console.print(f"  [dim]·[/] {m}")
@@ -1225,15 +1539,23 @@ def hunt(ioc: str, fresh: bool = False) -> int:
         return 1
     observed = bucket_observed_ip(ioc)
     external = bucket_external_ip(conn, ioc)
+    verdict  = bucket_verdict(observed, external)
     duration_ms = int((datetime.now(timezone.utc) - started).total_seconds() * 1000)
 
+    # VERDICT renders FIRST — analyst's primary question is "is this bad?"
+    render_verdict(verdict)
     render_identity(identity)
     render_observed(observed)
     render_external(external, ioc)
     render_honest_limits(ioc_type)
 
     # Record this hunt to memory (SQLite + ES)
-    result = {"identity": identity, "observed": observed, "external": external}
+    result = {
+        "verdict":  verdict,
+        "identity": identity,
+        "observed": observed,
+        "external": external,
+    }
     hunt_id = memory_record_hunt(conn, ioc, ioc_type, result, duration_ms)
     console.print(f"[dim]hunt_id: {hunt_id}  ·  {duration_ms}ms[/]")
     console.print()
