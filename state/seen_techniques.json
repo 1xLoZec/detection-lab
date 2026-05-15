@@ -222,5 +222,12 @@
     "rule_id": "63a6f63d-043a-4ddc-9f24-febd436a77f5",
     "deployed_at": "2026-05-15T18:02:48.222893+00:00",
     "confidence": "medium"
+  },
+  "T1016": {
+    "technique_name": "System Network Configuration Discovery",
+    "tactic": "discovery",
+    "rule_id": "1020dcc4-0817-41c0-ba1e-7d3034e816c6",
+    "deployed_at": "2026-05-15T18:20:51.480365+00:00",
+    "confidence": "medium"
   }
 }
