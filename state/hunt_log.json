@@ -458,5 +458,39 @@
     "rule_id": "6d060b71-5faf-425c-bf21-bb7751cc0e83",
     "filepath": "detections/sigma/T1035-service-execution-autogen.yml",
     "lookback": 10
+  },
+  {
+    "timestamp": "2026-05-15T23:37:54.452522+00:00",
+    "result": "hunt_triggered_pending_review",
+    "ioc": "77.83.240.70",
+    "technique_id": "T1046",
+    "technique_name": "Network Service Scanning",
+    "confidence": "high",
+    "rule_id": "88a7cdbe-c5a2-4451-9f85-fe64f51d3b6c",
+    "filepath": "detections/sigma/hunt-triggered/T1046-78249213-77-83-240-70.yml",
+    "triggered_by_hunt_id": "78249213-c0a7-4f39-8034-4cb8da24a929",
+    "honeypots_seen": [
+      "P0f",
+      "Suricata",
+      "Honeytrap",
+      "Miniprint",
+      "Fatt",
+      "Ipphoney"
+    ],
+    "total_events": 599131,
+    "provenance": {
+      "source": "water",
+      "trust_level": "medium",
+      "tagged_at": "2026-05-15T23:37:54.452554+00:00",
+      "triggered_by_hunt_id": "78249213-c0a7-4f39-8034-4cb8da24a929"
+    }
+  },
+  {
+    "timestamp": "2026-05-15T23:37:43.228898+00:00",
+    "result": "confidence_too_low",
+    "technique_id": "T1195.002",
+    "technique_name": "Supply Chain Compromise: Compromise Software Supply Chain",
+    "confidence": "low",
+    "lookback": 318
   }
 ]
