@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# tkhunt — short alias for tallkitchen_hunt
+# Runs the hunt CLI with all arguments passed through.
+# Auto-activates the venv if it exists.
+set -e
+LAB_DIR="${TALLKITCHEN_LAB_DIR:-$HOME/detection-lab}"
+cd "$LAB_DIR"
+if [ -f "venv/bin/activate" ]; then
+    # shellcheck disable=SC1091
+    source venv/bin/activate
+fi
+exec python tallkitchen_hunt.py "$@"
