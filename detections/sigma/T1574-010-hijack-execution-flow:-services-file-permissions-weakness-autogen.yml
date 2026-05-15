@@ -1,0 +1,36 @@
+title: Suspicious sdbinst.exe Execution with Silent Background Flags via Services Context
+id: 63a6f63d-043a-4ddc-9f24-febd436a77f5
+status: experimental
+description: Detects sdbinst.exe executing with silent background flags (-m -bg) under SYSTEM context spawned from services.exe, combined with AppCompatFlags SdbUpdates registry key creation. Attackers abuse the Windows Application Compatibility framework via sdbinst.exe to install malicious shim databases that intercept and redirect legitimate process execution flows without modifying original binaries (T1574.010).
+author: 1xLoZec
+date: 2026/05/15
+references:
+    - https://attack.mitre.org/techniques/T1574/010/
+    - https://www.hexacorn.com/blog/2017/05/01/shimming-for-post-exploitation/
+tags:
+    - attack.persistence
+    - attack.privilege_escalation
+    - attack.t1574.010
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_process:
+        event.code: '1'
+        process.name: 'sdbinst.exe'
+        process.command_line|contains|all:
+            - '-m'
+            - '-bg'
+    selection_parent:
+        process.parent.name: 'services.exe'
+    condition: selection_process and selection_parent
+falsepositives:
+    - Legitimate Windows Update or Application Compatibility infrastructure may invoke sdbinst.exe with these flags during scheduled maintenance or patch cycles. Validate against known patching windows and verify the SDB file paths are Microsoft-signed and expected.
+level: high
+fields:
+    - process.name
+    - process.executable
+    - process.command_line
+    - process.parent.name
+    - process.parent.executable
+    - registry.key
