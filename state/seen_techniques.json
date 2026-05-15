@@ -236,5 +236,12 @@
     "rule_id": "6d060b71-5faf-425c-bf21-bb7751cc0e83",
     "deployed_at": "2026-05-15T18:24:29.483158+00:00",
     "confidence": "medium"
+  },
+  "T1110.001": {
+    "technique_name": "Brute Force: Password Guessing",
+    "tactic": "credential-access",
+    "rule_id": "77ecdffa-3fa9-462a-a86d-ea87e42455d0",
+    "deployed_at": "2026-05-15T23:50:03.456294+00:00",
+    "confidence": "high"
   }
 }

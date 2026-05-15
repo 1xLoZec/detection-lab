@@ -492,5 +492,41 @@
     "technique_name": "Supply Chain Compromise: Compromise Software Supply Chain",
     "confidence": "low",
     "lookback": 318
+  },
+  {
+    "timestamp": "2026-05-15T23:50:10.779383+00:00",
+    "result": "hunt_triggered_pending_review",
+    "ioc": "77.83.240.70",
+    "technique_id": "T1046",
+    "technique_name": "Network Service Scanning",
+    "confidence": "high",
+    "rule_id": "7413d35d-bfe5-4a44-8fff-0db713915937",
+    "filepath": "detections/sigma/hunt-triggered/T1046-78249213-77-83-240-70.yml",
+    "triggered_by_hunt_id": "78249213-c0a7-4f39-8034-4cb8da24a929",
+    "honeypots_seen": [
+      "P0f",
+      "Suricata",
+      "Honeytrap",
+      "Miniprint",
+      "Fatt",
+      "Ipphoney"
+    ],
+    "total_events": 599131,
+    "provenance": {
+      "source": "water",
+      "trust_level": "medium",
+      "tagged_at": "2026-05-15T23:50:10.779399+00:00",
+      "triggered_by_hunt_id": "78249213-c0a7-4f39-8034-4cb8da24a929"
+    }
+  },
+  {
+    "timestamp": "2026-05-15T23:50:03.456294+00:00",
+    "result": "deployed",
+    "technique_id": "T1110.001",
+    "technique_name": "Brute Force: Password Guessing",
+    "confidence": "high",
+    "rule_id": "77ecdffa-3fa9-462a-a86d-ea87e42455d0",
+    "filepath": "detections/sigma/T1110-001-brute-force:-password-guessing-autogen.yml",
+    "lookback": 17
   }
 ]
