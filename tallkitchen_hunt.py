@@ -1861,11 +1861,15 @@ def render_honest_limits(ioc_type: str) -> None:
     """
     console.print("[bold yellow]LIMITS[/] [dim](what Hunt doesn't know yet)[/]")
     msgs = [
-        "ATT&CK mapping not yet implemented",
-        "Only IPv4 IOCs supported — domains, hashes, URLs not yet routed",
+        # Direct ATT&CK mapping bucket — currently indirect via RULES bucket only
+        "Direct ATT&CK mapping bucket not yet implemented (technique inference happens in RULES only)",
+        "Only IPv4 IOCs supported — domains, hashes, URLs, IPv6, CIDR, ASN not yet routed",
         "Pattern detection on unknowns not yet implemented",
-        "LLM narrative (STORY, NEXT STEPS) not yet implemented",
-        "Water integration (closing the loop on rule generation) not yet wired",
+        "LLM narrative (STORY, NEXT STEPS, HYPOTHESIS) not yet implemented — Phase 7",
+        "Self-audit subsystem (Sniff) not yet integrated — Phase 8",
+        "Alert ingestion mode (process ELK alerts, not just CLI queries) not yet implemented — Phase 9",
+        "Web UI not yet built — Phase 10 (FastAPI + HTML, terminal aesthetic)",
+        "DROP-range pivot disabled until T-Pot Logstash maps src_ip as ip-type",
     ]
     for m in msgs:
         console.print(f"  [dim]·[/] {m}")
