@@ -10,8 +10,9 @@ Usage:
     python tallkitchen_hunt.py --history          # show recent hunts
     python tallkitchen_hunt.py --history <ioc>    # show past hunts for one IOC
 
-Phase 2 scope: Engine + transmission (memory layer).
+Phase 3 scope: Engine + transmission (memory) + first external source.
 Memory layer: SQLite local cache + ES hunt-logs-* canonical record.
+External: AbuseIPDB (more sources coming in future phases).
 Honest about what it doesn't know yet (every other bucket).
 """
 import os
@@ -41,6 +42,9 @@ warnings.filterwarnings("ignore", category=urllib3.exceptions.InsecureRequestWar
 ELASTIC_URL     = os.getenv("ELASTIC_URL",     "https://10.0.0.1:9200")
 ELASTIC_API_KEY = os.getenv("ELASTIC_API_KEY", "")
 
+# External source API keys (each optional — Hunt degrades gracefully if missing)
+ABUSEIPDB_API_KEY = os.getenv("ABUSEIPDB_API_KEY", "")
+
 TPOT_INDEX      = "tpot-*"
 HUNT_LOGS_INDEX = "tk-hunt-logs"   # we write to tk-hunt-logs (no glob); ES creates as-needed
 
@@ -48,6 +52,11 @@ HUNT_LOGS_INDEX = "tk-hunt-logs"   # we write to tk-hunt-logs (no glob); ES crea
 MEMORY_DIR  = Path(__file__).parent / "state" / "tallkitchen"
 MEMORY_DB   = MEMORY_DIR / "hunt_memory.db"
 HUNTER_ID   = socket.gethostname()  # provenance: which machine ran the hunt
+
+# Cache TTLs per source (in seconds). Different sources need different freshness.
+CACHE_TTL_SECONDS = {
+    "abuseipdb": 24 * 3600,   # 24h — abuse scores update slowly
+}
 
 
 # ── Console ───────────────────────────────────────────────────────────────────
@@ -140,6 +149,16 @@ CREATE TABLE IF NOT EXISTS hunts (
 );
 CREATE INDEX IF NOT EXISTS idx_hunts_ioc       ON hunts(ioc);
 CREATE INDEX IF NOT EXISTS idx_hunts_timestamp ON hunts(timestamp_utc);
+
+CREATE TABLE IF NOT EXISTS enrichment_cache (
+    ioc            TEXT NOT NULL,
+    source_name    TEXT NOT NULL,       -- 'abuseipdb', 'virustotal', etc.
+    timestamp_utc  TEXT NOT NULL,
+    response_json  TEXT NOT NULL,       -- raw parsed response from the source
+    status_code    INTEGER,             -- HTTP status; null for non-HTTP sources
+    PRIMARY KEY (ioc, source_name)
+);
+CREATE INDEX IF NOT EXISTS idx_cache_timestamp ON enrichment_cache(timestamp_utc);
 """
 
 
@@ -213,6 +232,123 @@ def memory_recent_hunts(conn: sqlite3.Connection, limit: int = 50) -> list:
         (limit,),
     ).fetchall()
     return [dict(r) for r in rows]
+
+
+# ── Enrichment cache ──────────────────────────────────────────────────────────
+def cache_get(conn: sqlite3.Connection, ioc: str, source_name: str) -> dict:
+    """Return cached enrichment if present and within TTL. Returns None if miss/stale."""
+    ttl = CACHE_TTL_SECONDS.get(source_name, 24 * 3600)
+    row = conn.execute(
+        "SELECT timestamp_utc, response_json FROM enrichment_cache "
+        "WHERE ioc = ? AND source_name = ?",
+        (ioc, source_name),
+    ).fetchone()
+    if not row:
+        return None
+    try:
+        cached_at = datetime.fromisoformat(row["timestamp_utc"].replace("Z", "+00:00"))
+        age = (datetime.now(timezone.utc) - cached_at).total_seconds()
+        if age > ttl:
+            return None
+        return json.loads(row["response_json"])
+    except Exception:
+        return None
+
+
+def cache_put(conn: sqlite3.Connection, ioc: str, source_name: str,
+              response: dict, status_code: int = None) -> None:
+    """Store enrichment response in cache. Overwrites prior entry for same (ioc, source)."""
+    conn.execute(
+        "INSERT OR REPLACE INTO enrichment_cache "
+        "(ioc, source_name, timestamp_utc, response_json, status_code) "
+        "VALUES (?, ?, ?, ?, ?)",
+        (ioc, source_name, datetime.now(timezone.utc).isoformat(),
+         json.dumps(response, default=str), status_code),
+    )
+    conn.commit()
+
+
+# ── External source: AbuseIPDB ────────────────────────────────────────────────
+# Free tier: 1000 checks/day. Docs: https://docs.abuseipdb.com/
+ABUSEIPDB_URL = "https://api.abuseipdb.com/api/v2/check"
+
+
+def abuseipdb_check_ip(conn: sqlite3.Connection, ip: str) -> dict:
+    """
+    Query AbuseIPDB for an IP. Returns a normalized dict:
+        {
+          "available": bool,        # True if we got data; False if no key or API down
+          "abuse_score": int,       # 0-100
+          "total_reports": int,
+          "last_reported_at": str,  # ISO timestamp, may be None
+          "country_code": str,
+          "isp": str,
+          "domain": str,
+          "is_whitelisted": bool,
+          "usage_type": str,
+          "_cached": bool,          # True if served from cache
+          "_status_code": int,      # HTTP status; useful for debugging
+        }
+    Empty/skipped result has available=False with a 'reason' field.
+    """
+    if not ABUSEIPDB_API_KEY:
+        return {"available": False, "reason": "no API key (ABUSEIPDB_API_KEY not set in .env)"}
+
+    # Cache check first
+    cached = cache_get(conn, ip, "abuseipdb")
+    if cached is not None:
+        cached["_cached"] = True
+        return cached
+
+    headers = {
+        "Key": ABUSEIPDB_API_KEY,
+        "Accept": "application/json",
+    }
+    params = {"ipAddress": ip, "maxAgeInDays": 90, "verbose": ""}
+
+    try:
+        r = requests.get(ABUSEIPDB_URL, headers=headers, params=params, timeout=10)
+    except Exception as e:
+        return {"available": False, "reason": f"request failed: {type(e).__name__}"}
+
+    if r.status_code == 429:
+        return {"available": False, "reason": "rate limit hit (AbuseIPDB daily quota)",
+                "_status_code": 429}
+    if r.status_code != 200:
+        return {"available": False, "reason": f"HTTP {r.status_code}",
+                "_status_code": r.status_code}
+
+    try:
+        body = r.json().get("data", {}) or {}
+    except Exception:
+        return {"available": False, "reason": "malformed JSON response"}
+
+    normalized = {
+        "available":        True,
+        "abuse_score":      body.get("abuseConfidenceScore", 0),
+        "total_reports":    body.get("totalReports", 0),
+        "last_reported_at": body.get("lastReportedAt"),
+        "country_code":     body.get("countryCode"),
+        "isp":              body.get("isp"),
+        "domain":           body.get("domain"),
+        "is_whitelisted":   body.get("isWhitelisted", False),
+        "usage_type":       body.get("usageType"),
+        "_cached":          False,
+        "_status_code":     200,
+    }
+    cache_put(conn, ip, "abuseipdb", normalized, status_code=200)
+    return normalized
+
+
+# ── EXTERNAL bucket ───────────────────────────────────────────────────────────
+def bucket_external_ip(conn: sqlite3.Connection, ip: str) -> dict:
+    """
+    Orchestrate all external IP enrichment sources. Returns a dict keyed by source name.
+    Adding new sources: just add another call here.
+    """
+    return {
+        "abuseipdb": abuseipdb_check_ip(conn, ip),
+    }
 
 
 # ── IDENTITY bucket ───────────────────────────────────────────────────────────
@@ -343,6 +479,47 @@ def render_observed(observed: dict) -> None:
     console.print()
 
 
+def render_external(external: dict, ioc: str) -> None:
+    """
+    Render the EXTERNAL bucket — one row per source queried.
+    Each row: source name, one-line summary, link to open the source for that IOC.
+    """
+    if not external:
+        return
+
+    console.print("[bold yellow]EXTERNAL[/] [dim](public threat intel)[/]")
+    table = Table.grid(padding=(0, 2))
+    table.add_column(style="bold")
+    table.add_column()
+    table.add_column(style="dim")
+
+    # AbuseIPDB row
+    ab = external.get("abuseipdb") or {}
+    ab_link = f"https://www.abuseipdb.com/check/{ioc}"
+    if not ab.get("available"):
+        reason = ab.get("reason") or "no data"
+        table.add_row("AbuseIPDB", f"[dim]not available — {reason}[/]", f"[link={ab_link}]open ↗[/]")
+    else:
+        score = ab.get("abuse_score", 0)
+        reports = ab.get("total_reports", 0)
+        # Color the score: green if low, yellow medium, red high
+        if score >= 75:
+            score_str = f"[bold red]{score}/100[/]"
+        elif score >= 25:
+            score_str = f"[bold yellow]{score}/100[/]"
+        else:
+            score_str = f"[bold green]{score}/100[/]"
+        summary = f"{score_str} confidence, {reports} reports"
+        if ab.get("is_whitelisted"):
+            summary += " [dim](whitelisted)[/]"
+        if ab.get("_cached"):
+            summary += " [dim](cached)[/]"
+        table.add_row("AbuseIPDB", summary, f"[link={ab_link}]open ↗[/]")
+
+    console.print(table)
+    console.print()
+
+
 def render_memory(past_hunts: list) -> None:
     """
     Show what Hunt has seen for this IOC before. Only renders when there's history.
@@ -390,7 +567,7 @@ def render_honest_limits(ioc_type: str) -> None:
     msgs = [
         "VERDICT not computed — reputation logic not yet implemented",
         "ATT&CK mapping not yet implemented",
-        "External enrichment (AbuseIPDB / VirusTotal / URLhaus) not yet wired up",
+        "External sources wired: AbuseIPDB. Not yet: VirusTotal, GreyNoise, ThreatFox, OTX, others",
         "Pattern detection on unknowns not yet implemented",
         "Pivot suggestions not yet implemented",
     ]
@@ -456,14 +633,16 @@ def hunt(ioc: str, fresh: bool = False) -> int:
         conn.close()
         return 1
     observed = bucket_observed_ip(ioc)
+    external = bucket_external_ip(conn, ioc)
     duration_ms = int((datetime.now(timezone.utc) - started).total_seconds() * 1000)
 
     render_identity(identity)
     render_observed(observed)
+    render_external(external, ioc)
     render_honest_limits(ioc_type)
 
     # Record this hunt to memory (SQLite + ES)
-    result = {"identity": identity, "observed": observed}
+    result = {"identity": identity, "observed": observed, "external": external}
     hunt_id = memory_record_hunt(conn, ioc, ioc_type, result, duration_ms)
     console.print(f"[dim]hunt_id: {hunt_id}  ·  {duration_ms}ms[/]")
     console.print()
