@@ -3,7 +3,6 @@
 1xLoZec Detection Lab
 tallkitchen_water — Autonomous Detection Engineering Pipeline
 
-Named after Havoc the dog and his water bowl.
 Loads credentials from .env automatically.
 Set STOP_TALLKITCHEN_WATER=true in .env to pause all auto-deployment.
 """
