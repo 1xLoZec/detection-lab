@@ -1,0 +1,40 @@
+title: DNS Query to NCSI Connectivity-Check Domain from Unexpected Process Context
+id: 1020dcc4-0817-41c0-ba1e-7d3034e816c6
+status: experimental
+description: Detects Sysmon Event ID 22 DNS queries to www.msftconnecttest.com or similar NCSI connectivity-check domains originating from non-standard or unexpected parent processes. Adversaries may abuse this behavior to confirm outbound internet access from a compromised host, potentially masquerading as legitimate Windows Update or NCSI activity.
+author: 1xLoZec
+date: 2026/05/15
+tags:
+  - attack.discovery
+  - attack.t1016
+references:
+  - https://attack.mitre.org/techniques/T1016/
+  - https://docs.microsoft.com/en-us/windows-server/networking/ncsi/ncsi-overview
+logsource:
+  category: dns_query
+  product: windows
+detection:
+  selection_event:
+    event.code: '22'
+  selection_dns:
+    dns.question.name|contains:
+      - 'msftconnecttest.com'
+      - 'msftncsi.com'
+  filter_legitimate_svchost:
+    process.name: 'svchost.exe'
+    process.parent.name: 'services.exe'
+    process.command_line|contains: 'NlaSvc'
+  condition: selection_event and selection_dns and not filter_legitimate_svchost
+falsepositives:
+  - Legitimate Windows NCSI service (NlaSvc) running under svchost.exe performing routine connectivity checks
+  - Windows Update orchestration via MoUsoCoreWorker.exe triggering NCSI probes during update cycles
+  - Enterprise monitoring tools or network diagnostics utilities querying connectivity-check domains
+level: low
+fields:
+  - process.name
+  - process.executable
+  - process.command_line
+  - process.parent.name
+  - process.parent.executable
+  - dns.question.name
+  - event.code
