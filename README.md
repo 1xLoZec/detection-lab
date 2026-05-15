@@ -12,7 +12,7 @@
 [![SIEM](https://img.shields.io/badge/SIEM-Elastic%208.19-005571?style=flat-square&logo=elastic)](https://www.elastic.co/)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
 
-**[🖥️ Live Dashboard](https://demo.1xlozec.com) · [🗺️ ATT&CK Coverage Heatmap](https://mitre-attack.github.io/attack-navigator/#layerURL=https://raw.githubusercontent.com/1xLoZec/detection-lab/main/docs/coverage_layer.json) · [⚡ h4voc_water Pipeline](#h4voc_water)**
+**[🖥️ Live Dashboard](https://demo.1xlozec.com) · [🗺️ ATT&CK Coverage Heatmap](https://mitre-attack.github.io/attack-navigator/#layerURL=https://raw.githubusercontent.com/1xLoZec/detection-lab/main/docs/coverage_layer.json) · [⚡ TallKitchenVisual](#h4voc_water)**
 
 ---
 
