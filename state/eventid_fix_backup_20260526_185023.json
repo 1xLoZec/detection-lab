@@ -1,0 +1,182 @@
+[
+  {
+    "rule_id": "b8765da9-bc02-4c22-8b48-01096420d98a",
+    "id": "54c53f25-24fe-4b83-a437-a10f38a5b044",
+    "name": "System Language Discovery via Chained Systeminfo and Disk Enum Registry Query",
+    "query": "EventID:1 AND ((event.code:1 AND process.name:cmd.exe AND (process.command_line:*systeminfo* AND process.command_line:*reg* AND process.command_line:*Disk\\\\Enum*)) OR (event.code:1 AND process.name:reg.exe AND (process.command_line:*HKLM* AND process.command_line:*Disk\\\\Enum*) AND process.parent.name:cmd.exe))"
+  },
+  {
+    "rule_id": "c5830d3b-c4fb-465d-8540-44e6b09fc8e7",
+    "id": "3c6c9977-8ea8-4a47-8a0d-2863821b4022",
+    "name": "SAM Registry Hive Dumping via Reg Save Command",
+    "query": "EventID:1 AND ((event.code:1 AND (process.name:(*reg.exe* OR *cmd.exe*))) AND (process.command_line:*reg\\ save* AND process.command_line:*HKLM*) AND (process.command_line:(*HKLM\\\\sam* OR *HKLM\\\\SAM* OR *HKLM\\\\system* OR *HKLM\\\\SYSTEM* OR *HKLM\\\\security* OR *HKLM\\\\SECURITY*)) AND (NOT process.parent.name:wbengine.exe))"
+  },
+  {
+    "rule_id": "0acbfe83-9428-4eda-8c9c-6482e4d60c0a",
+    "id": "456c2204-595e-4e4b-b86b-32b8e47f45f4",
+    "name": "HideFileExt Registry Modification via reg.exe",
+    "query": "EventID:1 AND ((process.name:reg.exe AND (process.parent.name:(*cmd.exe* OR *powershell.exe*))) AND (process.command_line:*HideFileExt* AND process.command_line:*\\/d\\ 1* AND process.command_line:*Explorer\\\\Advanced*))"
+  },
+  {
+    "rule_id": "1b7ee4dd-14c6-4538-aa6b-c64169bb6018",
+    "id": "37d8ccb3-a029-4a50-9315-389f0d1c7ece",
+    "name": "System Network Connections Discovery via Chained CMD Commands",
+    "query": "EventID:1 AND ((process.parent.name:(*cmd.exe* OR *powershell.exe*)) AND (process.name:(*netstat* OR *net1*)) AND (process.command_line:(*\\-ano* OR *sessions*)))"
+  },
+  {
+    "rule_id": "e6f5978e-b45f-4713-a7a2-104d1217ffa1",
+    "id": "b9fe5c31-1054-47ea-b14a-706175b1be75",
+    "name": "PowerShell Launching .bat/.cmd File via Start-Process or Invoke-Expression",
+    "query": "EventID:1 AND ((process.name:powershell.exe AND (process.command_line:(*Start\\-Process* OR *Invoke\\-Expression*))) AND (process.command_line:(*.bat* OR *.cmd*)))"
+  },
+  {
+    "rule_id": "c1ced7af-9d77-402a-aebd-b93426ebec3a",
+    "id": "12d4e387-5494-46cf-8df8-8971f5de3632",
+    "name": "Msiexec Silent Install from Non-Standard Path via CMD",
+    "query": "EventID:1 AND ((event.code:1 AND process.name:*msiexec.exe AND process.parent.name:*cmd.exe) AND (process.command_line:*\\/q* AND process.command_line:*\\/i*) AND (NOT (process.command_line:(*C\\:\\\\Program\\ Files* OR *C\\:\\\\Program\\ Files\\ \\(x86\\)* OR *C\\:\\\\Windows\\\\ccmcache* OR *C\\:\\\\Windows\\\\ccmsetup* OR *C\\:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start\\ Menu* OR *C\\:\\\\Windows\\\\Installer*))))"
+  },
+  {
+    "rule_id": "e82c8c54-344a-4bf5-92dd-ad324a5e1f98",
+    "id": "70a0d93d-758d-4e98-b99e-13a03c8c408d",
+    "name": "Remote System Discovery via Net View with Domain Enumeration",
+    "query": "EventID:1 AND ((event.code:1 AND process.name:net.exe AND process.command_line:*view*) AND (process.parent.name:(cmd.exe OR powershell.exe)) AND (NOT winlog.event_data.IntegrityLevel:System))"
+  },
+  {
+    "rule_id": "ffaa3523-eeb1-4706-aff3-d1d59b16b0d9",
+    "id": "efab1467-c8ed-4a21-b778-42e7adf5227f",
+    "name": "SAM Registry Hive Dumping via Reg Save Command",
+    "query": "EventID:1 AND ((event.code:1 AND (process.name:(*reg.exe* OR *cmd.exe*))) AND (process.command_line:*reg\\ save* AND process.command_line:*HKLM*) AND (process.command_line:(*HKLM\\\\sam* OR *HKLM\\\\SAM* OR *HKLM\\\\system* OR *HKLM\\\\SYSTEM* OR *HKLM\\\\security* OR *HKLM\\\\SECURITY*)) AND (NOT process.parent.name:wbengine.exe))"
+  },
+  {
+    "rule_id": "10edaa6c-50ec-48e8-af0f-8d2a19f0c9a1",
+    "id": "5dc9ebcc-0f47-415f-8ece-6b4efd09a1d7",
+    "name": "Domain Group Enumeration Chain via Net.exe at High Integrity",
+    "query": "EventID:1 AND ((process.name:(*net.exe* OR *net1.exe*)) AND (process.command_line:(*group\\ \\/domain* OR *domain\\ admins* OR *enterprise\\ admins*)))"
+  },
+  {
+    "rule_id": "86f471c5-c658-4531-a4b6-2ddc0b1de64e",
+    "id": "4bfa26cb-cfde-4445-a1c8-0eb9be15ee49",
+    "name": "File and Directory Discovery via Recursive Dir and Tree Commands",
+    "query": "EventID:1 AND ((process.name:cmd.exe AND (process.command_line:*dir* AND process.command_line:*\\/s* AND process.command_line:*\\>\\>*)) OR (process.name:tree.com AND process.command_line:*\\/F*))"
+  },
+  {
+    "rule_id": "40c64994-869e-4907-967b-6ff05bd0f8d8",
+    "id": "ca862431-6ec0-44b3-9797-11015c4042c6",
+    "name": "Registry Query Against HotPatch Key by Non-SYSTEM User",
+    "query": "EventID:1 AND ((event.code:1 AND process.name:reg.exe) AND (process.command_line:*query* AND process.command_line:*HotPatch*) AND (NOT winlog.event_data.IntegrityLevel:System))"
+  },
+  {
+    "rule_id": "1bab9cc9-362e-4106-9b1a-ce23d86833cc",
+    "id": "5ad75ecc-a62d-4cf5-948e-0c57dcc5dcee",
+    "name": "PowerShell Spawning Reconnaissance Commands",
+    "query": "Channel:Microsoft\\-Windows\\-Sysmon\\/Operational AND (EventID:1 AND (ParentImage:(*\\\\powershell.exe OR *\\\\pwsh.exe OR *\\\\powershell_ise.exe)) AND (Image:(*\\\\whoami.exe OR *\\\\systeminfo.exe OR *\\\\nltest.exe OR *\\\\net1.exe OR *\\\\wmic.exe)))"
+  },
+  {
+    "rule_id": "43846fcf-f24e-420e-8469-6a61e6201646",
+    "id": "bc6875de-3d28-41f5-b7f6-f4daffc02634",
+    "name": "Cmdkey Credential Store Followed by MSTSC RDP Lateral Movement",
+    "query": "EventID:1 AND (((event.code:1 AND process.name:cmdkey.exe AND (process.command_line:(*\\/generic\\:TERMSRV\\/* OR *\\/pass\\:*))) AND (process.parent.name:(cmd.exe OR powershell.exe))) OR ((event.code:1 AND process.name:mstsc.exe AND process.command_line:*\\/v\\:*) AND (process.parent.name:(cmd.exe OR powershell.exe))))"
+  },
+  {
+    "rule_id": "0f25ac42-e761-4274-ac36-8aa29738c506",
+    "id": "894d2f20-aabc-41c9-a12b-a58715233227",
+    "name": "CMD Chaining Multiple Network Discovery Utilities - T1016",
+    "query": "EventID:1 AND (((process.parent.name:cmd.exe AND winlog.event_data.IntegrityLevel:High) AND (process.name:(*ipconfig.exe* OR *arp.exe* OR *nbtstat.exe* OR *netsh.exe* OR *net.exe*))) OR (process.parent.name:cmd.exe AND (process.command_line:*ipconfig* AND process.command_line:*netsh* AND process.command_line:*arp*)))"
+  },
+  {
+    "rule_id": "73cfc61f-1ee0-4dcc-ad78-edb3fda1ed6c",
+    "id": "24062ed2-3b0b-405c-84c5-804c2b15d01d",
+    "name": "Masquerading System Utilities via Path Mismatch or Suspicious Parent",
+    "query": "EventID:1 AND ((process.name:(*whoami.exe OR *hostname.exe OR *svchost.exe OR *taskhostw.exe OR *smartscreen.exe)) AND (NOT (process.executable:(C\\:\\\\Windows\\\\System32\\\\* OR C\\:\\\\Windows\\\\SysWOW64\\\\* OR C\\:\\\\Windows\\\\WinSxS\\\\*))))"
+  },
+  {
+    "rule_id": "27b56c7b-ad80-4099-8416-bdb353facd67",
+    "id": "a976b345-a587-4247-bd79-b73f39180204",
+    "name": "PowerShell IEX Remote Download Targeting Office Macro Execution via raw.githubusercontent.com",
+    "query": "EventID:1 AND (process.name:powershell.exe AND (process.command_line:*IEX* AND process.command_line:*iwr* AND process.command_line:*raw.githubusercontent.com*) AND ((process.command_line:(*Invoke\\-MalDoc* OR *Invoke\\-Maldoc* OR *T1204.002*)) OR (process.command_line:(*officeProduct* OR *macroFile* OR *Word* OR *Excel* OR *macrocode*))))"
+  },
+  {
+    "rule_id": "9aa53a2b-66bc-4f8d-a40f-b6962cf9c927",
+    "id": "0e1f111f-0d38-4fc5-a4d9-d4364146ce37",
+    "name": "Scheduled Task Creation via Schtasks with Logon or Startup Triggers",
+    "query": "EventID:1 AND ((event.code:1 AND process.name:schtasks.exe) AND process.command_line:*\\/create* AND (process.command_line:(*\\/sc\\ onlogon* OR *\\/sc\\ onstart* OR *\\/sc\\ onstartup*)) AND process.parent.name:cmd.exe)"
+  },
+  {
+    "rule_id": "c27fffce-2372-458e-ae4b-4f247823dc2c",
+    "id": "c1122db8-b739-4c5c-a4ce-e590fa10ba73",
+    "name": "Suspicious sdbinst.exe Execution",
+    "query": "EventID:1 AND process.name:sdbinst.exe"
+  },
+  {
+    "rule_id": "831565f9-d936-4dcc-abaf-0112e0cb5bb4",
+    "id": "349ea01a-3a1b-4ccf-b737-184f61ae9d50",
+    "name": "Windows Credential Manager Injection via cmdkey.exe for RDP Lateral Movement",
+    "query": "EventID:1 AND ((event.code:1 AND process.name:cmdkey.exe) AND (process.command_line:(*\\/generic\\:TERMSRV* OR *\\/pass\\:*)))"
+  },
+  {
+    "rule_id": "446e7f75-e0c5-48f7-a701-807d8b0a481c",
+    "id": "f50693ca-a1a6-4ebd-918a-aea31a277057",
+    "name": "Process Discovery via Scripting Interpreter - whoami and hostname Execution",
+    "query": "EventID:1 AND ((event.code:1 AND (process.name:(*whoami.exe* OR *HOSTNAME.EXE*))) AND (process.parent.name:(*powershell.exe* OR *cmd.exe* OR *wscript.exe*)) AND (NOT process.parent.name:*explorer.exe*))"
+  },
+  {
+    "rule_id": "c17705f9-58e7-4834-a3fb-8eba1da3b0b0",
+    "id": "c1317410-f391-4b3d-87b0-d0448f3e11f9",
+    "name": "PowerShell Process Injection via Invoke-MalDoc and Raw GitHub Payload Fetch",
+    "query": "EventID:1 AND ((event.code:1 AND process.name:powershell.exe) AND (process.command_line:*Invoke\\-MalDoc* AND process.command_line:*T1055* AND process.command_line:*raw.githubusercontent.com*) AND winlog.event_data.IntegrityLevel:High)"
+  },
+  {
+    "rule_id": "d54e55da-9600-4e18-92a2-25a442b3efab",
+    "id": "a1016aca-9de3-42ea-9486-570a00657378",
+    "name": "Suspicious sdbinst.exe Silent Background Shim Database Installation with Registry Writes",
+    "query": "(EventID:(12 OR 13 OR 14)) AND ((event.code:13 AND (registry.key:(*SOFTWARE\\\\Microsoft\\\\Windows\\ NT\\\\CurrentVersion\\\\AppCompatFlags\\\\SdbUpdates* OR *SOFTWARE\\\\Microsoft\\\\Windows\\ NT\\\\CurrentVersion\\\\AppCompatFlags\\\\Custom*))) AND (process.name:sdbinst.exe AND (process.command_line:*\\-m* AND process.command_line:*\\-bg*)) AND (NOT (process.parent.name:(TrustedInstaller.exe OR MsiExec.exe OR msiexec.exe))))"
+  },
+  {
+    "rule_id": "57053051-8d37-43fc-b572-c3c2c320da81",
+    "id": "74eea9d3-6f11-454e-a018-b3146449dd00",
+    "name": "HideFileExt Registry Value Set via reg.exe",
+    "query": "EventID:1 AND ((process.name:reg.exe AND (process.command_line:*HideFileExt* AND process.command_line:*Explorer\\\\Advanced* AND process.command_line:*\\/d\\ 1*)) AND (process.parent.name:(cmd.exe OR powershell.exe)) AND (NOT winlog.event_data.IntegrityLevel:System))"
+  },
+  {
+    "rule_id": "e1bed71c-47d5-4f71-b9f0-a1b6717c06e2",
+    "id": "c7d07967-e306-49d7-925a-80a12e052242",
+    "name": "Archive Utility Spawned by CMD or PowerShell for Data Staging",
+    "query": "EventID:1 AND ((process.parent.name:(*cmd.exe* OR *powershell.exe*)) AND (process.name:(*Rar.exe* OR *7z.exe* OR *zip.exe* OR *WinRAR.exe*)) AND ((process.command_line:*\\ a\\ * AND process.command_line:*\\-r*) AND (process.command_line:(*%USERPROFILE%* OR *\\\\Users\\\\*))))"
+  },
+  {
+    "rule_id": "1457a8cc-0e8f-4a18-ae3c-1ee41e4bb8c6",
+    "id": "664a2706-59bf-499d-94ba-7d4315c68208",
+    "name": "Local Account Discovery via whoami and hostname Spawned by Scripting Engine",
+    "query": "EventID:1 AND ((process.name:(*whoami.exe* OR *hostname.exe*)) AND (process.parent.name:(*powershell.exe* OR *wscript.exe* OR *cscript.exe* OR *mshta.exe* OR *python.exe* OR *pwsh.exe*)))"
+  },
+  {
+    "rule_id": "28a2bef3-af7f-4b3a-8e7f-08616e25b694",
+    "id": "2c9e9032-6b13-45bb-8caa-4f0b637fe164",
+    "name": "PowerShell Invoke-WebRequest Download to Temp Directory",
+    "query": "EventID:1 AND (((process.name:(*\\\\powershell.exe OR *powershell.exe)) AND (process.command_line:*Invoke\\-WebRequest* AND process.command_line:*OutFile*) AND (process.command_line:(*$env\\:TEMP* OR *%TEMP%* OR *\\\\AppData\\\\Local\\\\Temp* OR *\\\\AppData\\\\Roaming* OR *\\\\Users\\\\Public* OR *C\\:\\\\Windows\\\\Temp*)) AND (process.command_line:(*raw.githubusercontent.com* OR *http\\:\\/\\/* OR *https\\:\\/\\/*))) OR ((process.name:(*\\\\powershell.exe OR *powershell.exe)) AND dns.question.name:raw.githubusercontent.com))"
+  },
+  {
+    "rule_id": "a4a0b85e-6503-452f-8506-f9c30505ce72",
+    "id": "a30ba018-6c26-4a6f-99b0-d2a85dfbcc56",
+    "name": "PowerShell SMB Mapping via QUIC Transport with Certificate Check Disabled",
+    "query": "EventID:1 AND ((event.code:1 AND process.name:*powershell.exe*) AND (process.command_line:*New\\-SmbMapping* AND process.command_line:*TransportType* AND process.command_line:*QUIC* AND process.command_line:*SkipCertificateCheck*) AND (process.command_line:(*copy* OR *Copy\\-Item* OR *cp\\ *)))"
+  },
+  {
+    "rule_id": "61399e8c-6e6d-46d7-8257-ada4b2f3ea76",
+    "id": "483e845a-df9a-4f4d-a3c8-aa08a6f9debd",
+    "name": "Domain Trust Discovery via Net View Command Chaining",
+    "query": "EventID:1 AND ((process.parent.name:(*cmd.exe* OR *powershell.exe*)) AND process.name:net.exe AND (process.command_line:*view* AND process.command_line:*\\/domain*))"
+  },
+  {
+    "rule_id": "6d7bd734-ebdb-4625-ab08-62dd11e2a5cf",
+    "id": "5a6b2203-d3c8-405b-bf42-ce0670b583ab",
+    "name": "Registry Run Key Persistence via reg.exe (T1547.001)",
+    "query": "EventID:1 AND (process.name:reg.exe AND (process.command_line:*ADD* AND process.command_line:*CurrentVersion\\\\Run*) AND (process.parent.name:(cmd.exe OR powershell.exe)) AND (NOT (process.command_line:(*C\\:\\\\Windows\\\\* OR *C\\:\\\\Program\\ Files\\\\* OR *C\\:\\\\Program\\ Files\\ \\(x86\\)\\\\*))))"
+  },
+  {
+    "rule_id": "0d8f5280-0209-4112-a17f-8e6830258c82",
+    "id": "397c03d8-325c-465b-9211-c8e67a10a126",
+    "name": "PowerShell Spawning Reconnaissance Commands",
+    "query": "Channel:Microsoft\\-Windows\\-Sysmon\\/Operational AND (EventID:1 AND (ParentImage:(*\\\\powershell.exe OR *\\\\pwsh.exe OR *\\\\powershell_ise.exe)) AND (Image:(*\\\\whoami.exe OR *\\\\systeminfo.exe OR *\\\\nltest.exe OR *\\\\net1.exe OR *\\\\wmic.exe)))"
+  }
+]
