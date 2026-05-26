@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tall Kitchen Water</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#070c10; --panel:rgba(14,21,28,.74); --panel2:rgba(10,16,22,.92);
+    --line:rgba(120,150,170,.16); --text:#dde7ee; --dim:#9db0bf; --faint:#74899a;
+    --cyan:#22d3ee; --cyan-l:#7df0ff;
+    --gold:#fbbf24; --gold-l:#fcd34d;
+    --violet:#b66bff; --violet-l:#e9d5ff;
+    --green:#34e2a8; --green-l:#7df5c8;
+    --red:#ff5c6c; --amber:#fbb43a;
+    --mono:"Space Mono",ui-monospace,Menlo,monospace;
+    --disp:"Space Grotesk",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;}
+  body{background:var(--bg); color:var(--text); font-family:var(--mono); font-size:15px;
+    line-height:1.55; overflow-x:hidden; position:relative; min-height:100vh;}
+  .bgfx{position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden;}
+  .grid{position:absolute; inset:-2px;
+    background-image:linear-gradient(rgba(120,150,170,.045) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(120,150,170,.045) 1px,transparent 1px);
+    background-size:46px 46px; mask-image:radial-gradient(ellipse 80% 55% at 50% 0%,#000 30%,transparent 75%);
+    animation:drift 30s linear infinite;}
+  @keyframes drift{from{background-position:0 0,0 0;}to{background-position:46px 46px,46px 46px;}}
+  .orb{position:absolute; border-radius:50%; filter:blur(85px); opacity:.35;}
+  .orb.c{width:480px;height:480px;background:radial-gradient(circle,rgba(34,211,238,.4),transparent 70%); top:-160px;left:-110px; animation:f1 19s ease-in-out infinite;}
+  .orb.g{width:380px;height:380px;background:radial-gradient(circle,rgba(251,191,36,.22),transparent 70%); top:30%;right:-120px; animation:f2 23s ease-in-out infinite;}
+  .orb.v{width:360px;height:360px;background:radial-gradient(circle,rgba(182,107,255,.2),transparent 70%); bottom:-120px;left:20%; animation:f1 25s ease-in-out infinite;}
+  @keyframes f1{0%,100%{transform:translate(0,0);}50%{transform:translate(50px,40px);}}
+  @keyframes f2{0%,100%{transform:translate(0,0);}50%{transform:translate(-40px,-30px);}}
+  .wrap{position:relative; z-index:2; max-width:1000px; margin:0 auto; padding:48px 20px 80px;}
+
+  .head{display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:8px; animation:rise .7s cubic-bezier(.2,.7,.2,1) both;}
+  .brand{font-family:var(--disp); font-weight:700; font-size:30px; letter-spacing:-.5px;
+    background:linear-gradient(120deg,var(--cyan) 0%,var(--cyan-l) 45%,var(--gold-l) 100%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;}
+  .brand .spoon{-webkit-text-fill-color:initial;}
+  .ver{font-size:11px; color:var(--dim); border:1px solid var(--line); border-radius:20px; padding:2px 9px; letter-spacing:1px;}
+  .tag{color:var(--dim); font-size:15px; margin:0 0 18px; max-width:680px; animation:rise .7s .08s both;}
+  .tag b{color:var(--text); font-weight:400;}
+  .links{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:30px; animation:rise .7s .16s both;}
+  .lk{display:inline-flex; align-items:center; gap:8px; text-decoration:none; border-radius:10px; padding:9px 16px; font-size:13px; transition:all .2s;}
+  .lk.hunt{background:rgba(182,107,255,.12); border:1px solid rgba(182,107,255,.4); color:var(--violet-l);}
+  .lk.hunt:hover{background:rgba(182,107,255,.22);}
+  .lk.gh{background:rgba(120,150,170,.07); border:1px solid var(--line); color:var(--dim);}
+  .lk.gh:hover{border-color:rgba(34,211,238,.4); color:var(--cyan-l);}
+  .lk svg{width:15px;height:15px;}
+
+  .section-label{font-family:var(--disp); font-size:11px; color:var(--cyan-l); text-transform:uppercase; letter-spacing:2px; margin:0 0 6px; display:flex; align-items:center; gap:8px;}
+  .section-label::after{content:""; flex:1; height:1px; background:linear-gradient(90deg,var(--line),transparent);}
+  .section-sub{color:var(--faint); font-size:12.5px; margin:0 0 18px;}
+
+  /* ── FLOW: clickable step boxes, left to right ── */
+  .flow{background:var(--panel); backdrop-filter:blur(12px); border:1px solid rgba(34,211,238,.5); border-radius:18px; padding:34px 30px 28px; margin-bottom:30px; box-shadow:0 0 70px -18px rgba(34,211,238,.6), inset 0 1px 0 rgba(125,240,255,.08); animation:cardin .6s both;}
+  .clue{font-size:12px; color:var(--gold-l); margin-bottom:18px; display:flex; align-items:center; gap:8px;}
+  .clue .tap{display:inline-flex; width:16px;height:16px; border:1px solid var(--gold); border-radius:50%; align-items:center; justify-content:center; font-size:9px; color:var(--gold);}
+  .stage{display:flex; align-items:stretch; gap:0; flex-wrap:nowrap;}
+  .box{flex:1; min-width:0; cursor:pointer; border:1px solid rgba(120,150,170,.3); border-radius:13px; padding:16px 12px 14px; text-align:center; background:rgba(10,16,22,.62); transition:all .2s; position:relative;}
+  .box:hover{transform:translateY(-3px);}
+  .box .num{position:absolute; top:-9px; left:50%; transform:translateX(-50%); width:20px;height:20px; border-radius:50%; font-family:var(--disp); font-weight:700; font-size:11px; display:flex; align-items:center; justify-content:center; color:#06121a;}
+  .box .ic{width:30px;height:30px; margin:4px auto 9px; display:block; fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
+  .box .bt{font-family:var(--disp); font-weight:700; font-size:13px; color:var(--text); line-height:1.25;}
+  .box .more{font-size:10px; color:var(--faint); margin-top:7px; display:flex; align-items:center; justify-content:center; gap:4px;}
+  .box .more .car{transition:transform .3s;}
+  .box.open .more .car{transform:rotate(180deg);}
+  /* per-step color */
+  .box.s1{--ac:var(--cyan);}   .box.s2{--ac:var(--gold);}
+  .box.s3{--ac:var(--violet);} .box.s4{--ac:var(--green);} .box.s5{--ac:var(--gold);}
+  .box .num{background:var(--ac);}
+  .box .ic{stroke:var(--ac);}
+  .box:hover,.box.open{border-color:var(--ac); box-shadow:0 0 26px -10px var(--ac);}
+  .arrow{flex:0 0 28px; display:flex; align-items:center; justify-content:center; color:var(--faint); font-size:15px;}
+  .arrow .p{animation:fp 2.4s ease-in-out infinite;}
+  @keyframes fp{0%,100%{opacity:.3;}50%{opacity:.9;}}
+
+  .detail{max-height:0; overflow:hidden; transition:max-height .4s ease; margin-top:0;}
+  .detail.show{max-height:340px; margin-top:18px;}
+  .detail-in{border:1px solid var(--dac,var(--line)); border-left:3px solid var(--dac,var(--cyan)); border-radius:0 11px 11px 0; padding:16px 18px; background:rgba(10,16,22,.5);}
+  .detail-in .dt{font-family:var(--disp); font-weight:700; font-size:15px; color:var(--text); margin-bottom:6px;}
+  .detail-in .dwhat{font-size:13px; color:var(--dim); margin-bottom:11px; line-height:1.55;}
+  .detail-in .dwhy{font-size:13px; color:var(--text); line-height:1.6;}
+  .detail-in .dwhy b{color:var(--dac,var(--gold)); font-weight:700; font-size:10.5px; letter-spacing:1px; text-transform:uppercase; display:block; margin-bottom:3px;}
+  .ais{display:flex; gap:8px; margin:11px 0; flex-wrap:wrap;}
+  .ai{border:1px solid var(--line); border-radius:9px; padding:7px 11px; background:rgba(10,16,22,.6); display:flex; align-items:center; gap:8px;}
+  .ai .dot{width:8px;height:8px;border-radius:50%;}
+  .ai.a1 .dot{background:var(--violet);} .ai.a2 .dot{background:var(--cyan);} .ai.a3 .dot{background:var(--gold);}
+  .ai .an{font-family:var(--disp); font-size:12px; font-weight:700; color:var(--text);}
+  .ai .ar{font-size:10px; color:var(--faint);}
+
+  /* ── STATS (distinct colors) ── */
+  .stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; margin-bottom:28px;}
+  .stat{background:var(--panel); backdrop-filter:blur(12px); border:1px solid var(--line); border-radius:14px; padding:19px; border-top:2px solid var(--sc,var(--cyan)); animation:cardin .5s both;}
+  .stat .n{font-family:var(--disp); font-weight:700; font-size:36px; line-height:1; color:var(--sc,var(--cyan));}
+  .stat .l{color:var(--dim); font-size:12px; margin-top:7px;}
+  .stat.k1,.stat.k2,.stat.k3,.stat.k4{--sc:var(--cyan);}
+
+  .duo{display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:28px;}
+  @media(max-width:820px){ .duo{grid-template-columns:1fr;} .stage{flex-wrap:wrap; gap:10px;} .box{flex:1 1 42%;} .arrow{display:none;} }
+  .panel{background:var(--panel); backdrop-filter:blur(12px); border:1px solid var(--line); border-radius:16px; padding:22px; animation:cardin .6s both;}
+
+  .tactics{display:flex; flex-direction:column; gap:6px;}
+  .tactic{display:flex; align-items:center; gap:10px;}
+  .tactic .tn{font-size:11px; color:var(--dim); text-transform:capitalize; min-width:112px;}
+  .tactic .tbar{flex:1; height:13px; background:rgba(120,150,170,.07); border-radius:5px; overflow:hidden;}
+  .tactic .tbar i{display:block; height:100%; width:0; border-radius:5px; background:linear-gradient(90deg,var(--cyan),var(--cyan-l)); transition:width .9s cubic-bezier(.2,.8,.2,1);}
+  .tactic .tc{font-size:11px; color:var(--cyan-l); min-width:18px; text-align:right;}
+  .tactic.empty .tn,.tactic.empty .tc{color:var(--faint); opacity:.55;}
+
+  /* email */
+  .email{background:var(--panel2); border:1px solid rgba(251,191,36,.5); border-radius:12px; overflow:hidden; box-shadow:0 0 44px -16px rgba(251,191,36,.45);}
+  .email-bar{display:flex; align-items:center; gap:7px; padding:9px 13px; border-bottom:1px solid var(--line); background:rgba(251,191,36,.05);}
+  .email-bar .d{width:10px;height:10px;border-radius:50%;}
+  .email-bar .d:nth-child(1){background:#ff5f57;} .email-bar .d:nth-child(2){background:#febc2e;} .email-bar .d:nth-child(3){background:#28c840;}
+  .email-bar .ef{margin-left:8px; font-size:11px; color:var(--gold-l);}
+  .email-body{padding:16px; font-size:12px; max-height:430px; overflow-y:auto;}
+  .esubject{font-family:var(--disp); font-weight:700; font-size:13px; color:var(--text); line-height:1.35;}
+  .emeta{font-size:10.5px; color:var(--faint); margin:6px 0 14px; border-bottom:1px solid var(--line); padding-bottom:12px;}
+  .ehero{background:linear-gradient(135deg,rgba(52,226,168,.12),rgba(52,226,168,.03)); border:1px solid rgba(52,226,168,.3); border-radius:9px; padding:13px; margin-bottom:13px;}
+  .ehero .ed{font-family:var(--disp); font-weight:700; font-size:13px; color:var(--green-l); margin-bottom:6px;}
+  .ehero p{margin:0; font-size:11.5px; color:var(--dim); line-height:1.5;}
+  .epills{display:grid; grid-template-columns:repeat(3,1fr); gap:7px; margin-bottom:13px;}
+  .epill{background:rgba(120,150,170,.05); border:1px solid var(--line); border-radius:7px; padding:7px 9px;}
+  .epill .pk{font-size:9px; color:var(--faint); text-transform:uppercase; letter-spacing:.5px;}
+  .epill .pv{font-family:var(--disp); font-weight:700; font-size:12px; color:var(--text); margin-top:2px;}
+  .eblock{margin-bottom:12px;}
+  .eblock h5{font-family:var(--disp); font-size:10px; color:var(--cyan-l); text-transform:uppercase; letter-spacing:1px; margin:0 0 5px;}
+  .eblock p{margin:0; font-size:11.5px; color:var(--dim); line-height:1.55;}
+  .ecode{font-family:var(--mono); font-size:10.5px; color:var(--gold-l); background:rgba(0,0,0,.3); padding:2px 5px; border-radius:4px; word-break:break-all;}
+  .email-tell{background:rgba(251,191,36,.08); border:1px solid rgba(251,191,36,.3); border-radius:9px; padding:11px 14px; margin-bottom:14px; font-size:12px; color:var(--text); line-height:1.5;}
+  .email-tell b{color:var(--gold-l);}
+
+  .bars{display:flex; flex-direction:column; gap:14px; margin-top:8px;}
+  .bar2{display:flex; align-items:center; gap:14px;}
+  .bar2 .blabel{min-width:210px; font-size:13px; color:var(--dim);}
+  .bar2 .btrack{flex:1; height:30px; background:rgba(120,150,170,.07); border-radius:8px; overflow:hidden;}
+  .bar2 .bfill{height:100%; width:0; border-radius:8px; transition:width 1.1s cubic-bezier(.2,.8,.2,1); display:flex; align-items:center; padding-left:12px; font-family:var(--disp); font-weight:700; font-size:14px; color:#06121a;}
+  .bf-deployed{background:linear-gradient(90deg,var(--green),#1fd0a0);}
+  .bf-skipped{background:linear-gradient(90deg,var(--amber),#f59e0b);}
+  .bf-pending{background:linear-gradient(90deg,var(--violet),#9333ea); color:#fff;}
+  .bf-failed{background:linear-gradient(90deg,var(--red),#e11d48); color:#fff;}
+
+  .timeline{position:relative; padding-left:22px;}
+  .timeline::before{content:""; position:absolute; left:6px; top:4px; bottom:4px; width:2px; background:linear-gradient(rgba(34,211,238,.4),transparent);}
+  .tl{position:relative; padding:8px 0 8px 4px;}
+  .tl::before{content:""; position:absolute; left:-19px; top:13px; width:9px;height:9px; border-radius:50%; background:var(--cyan);}
+  .tl.r-skipped::before{background:var(--amber);} .tl.r-pending::before{background:var(--violet);} .tl.r-failed::before{background:var(--red);}
+  .tl .tl-top{font-size:13px; color:var(--text);}
+  .tl .tl-top .tl-id{color:var(--cyan-l); font-weight:700;}
+  .tl .tl-meta{font-size:11px; color:var(--faint); margin-top:2px; display:flex; gap:10px; flex-wrap:wrap;}
+  .tl .rtag{font-size:10px; letter-spacing:.5px; padding:1px 7px; border-radius:5px; font-weight:700;}
+  .rt-deployed{background:rgba(52,226,168,.15); color:var(--green);} .rt-skipped{background:rgba(251,180,58,.15); color:var(--amber);}
+  .rt-pending{background:rgba(182,107,255,.15); color:var(--violet-l);} .rt-failed{background:rgba(255,92,108,.15); color:var(--red);}
+  .showall{margin-top:16px; background:transparent; border:1px solid var(--line); color:var(--cyan-l); border-radius:9px; padding:9px 16px; font-family:var(--mono); font-size:13px; cursor:pointer; transition:all .2s;}
+  .showall:hover{border-color:rgba(34,211,238,.4); background:rgba(34,211,238,.07);}
+  .tl.hidden{display:none;}
+
+  .loadingbig{text-align:center; padding:50px; color:var(--cyan-l);}
+  .spinner{width:30px;height:30px;border-radius:50%;border:3px solid rgba(34,211,238,.2); border-top-color:var(--cyan); animation:spin .7s linear infinite; margin:0 auto 16px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  @keyframes cardin{from{opacity:0; transform:translateY(14px);}to{opacity:1; transform:none;}}
+  @keyframes rise{from{opacity:0; transform:translateY(14px);}to{opacity:1; transform:none;}}
+  .footer{margin-top:36px; color:var(--faint); font-size:11px; text-align:center; letter-spacing:.5px;}
+  .footer b{color:var(--dim); font-weight:400;}
+
+  /* tool marks in the flow boxes */
+  .tool{width:30px;height:30px; margin:6px auto 10px; display:flex; align-items:center; justify-content:center;}
+  .tool svg{width:30px;height:30px;}
+  .bt .tname{font-weight:700;}
+  .tn-elastic{color:#00BFB3;} .tn-claude{color:#D97757;} .tn-gh{color:#e6edf3;} .tn-kibana{color:#F04E98;}
+  .threemarks{display:flex; gap:6px; justify-content:center; align-items:center; margin:6px 0 10px; height:30px;}
+  .threemarks .m{width:22px;height:22px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-family:var(--disp); font-weight:700; font-size:11px;}
+  .threemarks .m1{background:rgba(217,119,87,.15); color:#D97757; border:1px solid rgba(217,119,87,.4);}
+  .threemarks .m2{background:rgba(66,133,244,.15); color:#6fa8ff; border:1px solid rgba(66,133,244,.4);}
+  .threemarks .m3{background:rgba(120,150,170,.12); color:#cdd9e3; border:1px solid var(--line);}
+  .threemarks .plus{color:var(--faint); font-size:12px;}
+
+    background:linear-gradient(135deg,rgba(251,180,58,.1),rgba(251,180,58,.03));
+    border:1px solid rgba(251,180,58,.38); border-radius:13px; padding:16px 18px;}
+    border:1px solid rgba(251,180,58,.4); background:rgba(251,180,58,.08);}
+  .stats-explain{margin:-14px 0 28px; font-size:13px; color:var(--dim); line-height:1.6;
+    background:rgba(34,211,238,.05); border:1px solid rgba(34,211,238,.18); border-radius:12px; padding:14px 18px;}
+  .stats-explain b{color:var(--cyan-l); font-weight:700;}
+.box.s5 .ic{animation:spin 7s linear infinite;}
+.leftcol{display:flex; flex-direction:column;}
+
+  /* quieter supporting stats */
+  .stats{margin-top:0;}
+  .stat{padding:14px 16px;}
+  .stat .n{font-size:27px;}
+  .stat .l{font-size:11.5px; color:var(--dim); margin-top:6px;}
+  .stat .ls{font-size:10.5px; color:var(--faint); margin-top:2px; line-height:1.35;}
+  .stats-explain{margin:16px 0 8px; font-size:12px;}
+  /* hero treatment for the flow */
+  .flow-hero-title{font-family:var(--disp); font-weight:700; font-size:32px; color:var(--text); margin:0 0 5px; letter-spacing:-.5px;}
+  .flow-hero-sub{color:var(--dim); font-size:13px; margin:0 0 20px;}
+</style>
+</head>
+<body>
+<div class="bgfx"><div class="grid"></div><div class="orb c"></div><div class="orb g"></div><div class="orb v"></div></div>
+
+<div class="wrap">
+  <div class="head">
+    <span class="brand"><span class="spoon">🥄</span> tallkitchen water</span>
+    <span class="ver">WATER</span>
+  </div>
+  <p class="tag">Water is one half of Tall Kitchen. It runs on its own, around the clock. It watches the lab, learns how attackers behave, and writes new detection rules to catch them. Three separate AIs check the work before any of it is trusted, and if a rule is not good enough, Water rewrites it and tries again on its own.</p>
+  <div class="links">
+    <a class="lk hunt" href="/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg> Meet Hunt, the other half</a>
+    <a class="lk gh" href="https://github.com/1xLoZec/detection-lab" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1a11 11 0 00-3.5 21.4c.55.1.75-.24.75-.53v-1.9c-3 .65-3.7-1.4-3.7-1.4-.5-1.3-1.2-1.6-1.2-1.6-1-.68.08-.66.08-.66 1.1.08 1.7 1.13 1.7 1.13 1 1.7 2.6 1.2 3.2.93.1-.72.4-1.2.7-1.5-2.4-.27-5-1.2-5-5.3 0-1.2.42-2.13 1.1-2.88-.1-.27-.48-1.35.1-2.8 0 0 .9-.3 3 1.1a10.4 10.4 0 015.5 0c2.1-1.4 3-1.1 3-1.1.6 1.45.2 2.53.1 2.8.7.75 1.1 1.7 1.1 2.88 0 4.1-2.6 5-5 5.3.4.36.75 1 .75 2.05v3c0 .3.2.64.76.53A11 11 0 0012 1z"/></svg> See the code</a>
+  </div>
+
+  <!-- FLOW -->
+  <div class="flow">
+    <h2 class="flow-hero-title">How Water works</h2>
+    <p class="flow-hero-sub">Five steps, all automatic. A human only steps in when something needs a second look.</p>
+    <div class="clue"><span class="tap">+</span> Tap any step to see why it matters</div>
+    <div class="stage">
+      <div class="box s1" data-step="1">
+        <span class="num">1</span>
+        <div class="tool"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="6" r="3" fill="#00BFB3"/><circle cx="7" cy="14" r="3" fill="#FEC514"/><circle cx="17" cy="14" r="3" fill="#1BA9F5"/><circle cx="12" cy="19" r="2.4" fill="#F04E98"/></svg></div>
+        <div class="bt"><span class="tname tn-elastic">Elastic</span> sees the attack</div>
+        <div class="more">why it matters <span class="car">&#9662;</span></div>
+      </div>
+      <div class="arrow"><span class="p">&#9654;</span></div>
+      <div class="box s2" data-step="2">
+        <span class="num">2</span>
+        <div class="tool"><svg viewBox="0 0 24 24" fill="none" stroke="#D97757" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M16.5 11.5L21 7"/><circle cx="11" cy="11" r="2"/></svg></div>
+        <div class="bt"><span class="tname tn-claude">Claude</span> writes a Sigma rule</div>
+        <div class="more">why it matters <span class="car">&#9662;</span></div>
+      </div>
+      <div class="arrow"><span class="p">&#9654;</span></div>
+      <div class="box s3" data-step="3">
+        <span class="num">3</span>
+        <div class="threemarks"><span class="m m1">C</span><span class="plus">+</span><span class="m m2">G</span><span class="plus">+</span><span class="m m3">O</span></div>
+        <div class="bt">Three AIs grade it</div>
+        <div class="more">why it matters <span class="car">&#9662;</span></div>
+      </div>
+      <div class="arrow"><span class="p">&#9654;</span></div>
+      <div class="box s4" data-step="4">
+        <span class="num">4</span>
+        <div class="tool"><svg viewBox="0 0 24 24" fill="#e6edf3"><path d="M12 1a11 11 0 00-3.5 21.4c.55.1.75-.24.75-.53v-1.9c-3 .65-3.7-1.4-3.7-1.4-.5-1.3-1.2-1.6-1.2-1.6-1-.68.08-.66.08-.66 1.1.08 1.7 1.13 1.7 1.13 1 1.7 2.6 1.2 3.2.93.1-.72.4-1.2.7-1.5-2.4-.27-5-1.2-5-5.3 0-1.2.42-2.13 1.1-2.88-.1-.27-.48-1.35.1-2.8 0 0 .9-.3 3 1.1a10.4 10.4 0 015.5 0c2.1-1.4 3-1.1 3-1.1.6 1.45.2 2.53.1 2.8.7.75 1.1 1.7 1.1 2.88 0 4.1-2.6 5-5 5.3.4.36.75 1 .75 2.05v3c0 .3.2.64.76.53A11 11 0 0012 1z"/></svg></div>
+        <div class="bt"><span class="tname tn-gh">GitHub Actions</span> ships it to <span class="tname tn-kibana">Kibana</span></div>
+        <div class="more">why it matters <span class="car">&#9662;</span></div>
+      </div>
+      <div class="arrow"><span class="p">&#9654;</span></div>
+      <div class="box s5" data-step="5">
+        <span class="num">5</span>
+        <div class="tool"><svg class="ic" viewBox="0 0 24 24"><path d="M21 12a9 9 0 11-3-6.7"/><path d="M21 4v4h-4"/></svg></div>
+        <div class="bt">Self Healing Loop</div>
+        <div class="more">why it matters <span class="car">&#9662;</span></div>
+      </div>
+    </div>
+    <div class="detail" id="detail"></div>
+  </div>
+
+  <!-- STATS -->
+
+  <!-- MAP + EMAIL -->
+  <div class="panel" id="decisions" style="margin-bottom:22px">
+      <div class="section-label">Every decision it made</div>
+      <div class="section-sub">loading…</div>
+    </div>
+    <div class="panel">
+      <div class="section-label">The email it sends you</div>
+      <div class="email-tell">When Water finishes the whole process, it emails you a plain summary. <b>This is exactly what lands in your inbox.</b></div>
+      <div class="email">
+        <div class="email-bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="ef">your inbox · from Water</span></div>
+        <div class="email-body">
+          <div class="esubject">[MEDIUM] New rule deployed: System Language Discovery</div>
+          <div class="emeta">to you · from your detection lab</div>
+          <div class="ehero"><div class="ed">A new detection rule went live</div>
+            <p>An attacker used built-in Windows tools to gather system and hardware details. They do this to study a machine before the next stage of an attack. Water just wrote a rule to catch it.</p></div>
+          <div class="epills">
+            <div class="epill"><div class="pk">Technique</div><div class="pv">T1614.001</div></div>
+            <div class="epill"><div class="pk">Severity</div><div class="pv" style="color:var(--amber)">MEDIUM</div></div>
+            <div class="epill"><div class="pk">Stage</div><div class="pv">Discovery</div></div>
+          </div>
+          <div class="eblock"><h5>What happened</h5>
+            <p>A normal user account ran <span class="ecode">systeminfo</span> chained with a registry query that lists the machine's disks. That combination reveals the storage layout and hints whether the machine is a virtual one, which attackers use to fingerprint a target.</p></div>
+          <div class="eblock"><h5>What to do next</h5>
+            <p>Keep an eye out for sandbox evasion. Attackers check disk and system info to spot virtual machines and avoid being analyzed, so that is the next gap worth closing.</p></div>
+        </div>
+      </div>
+    </div>
+  <div class="footer">tall kitchen · <b>water</b> — autonomous detection engineering · built by 1xLoZec</div>
+</div>
+<script>
+function esc(s){return String(s ?? '').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function fmtDate(s){ if(!s) return ''; try{ const d=new Date(s);
+  return d.toLocaleDateString(undefined,{month:'short',day:'numeric'})+' '+d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'}); }catch(e){ return esc(s); } }
+
+// step accordion content (plain English, the WHY)
+const COLORS={1:'var(--cyan)',2:'var(--gold)',3:'var(--violet)',4:'var(--green)'};
+const STEPS={
+  1:{t:"It spots the attack",
+     what:"Every computer in the lab keeps a diary of what happens on it. All those diaries get collected in one place (a tool called Elastic) so nothing gets missed. When someone tries to break in, that activity shows up here.",
+     why:"The lab is connected to the open internet on purpose, so real attackers try to break in every single day. That gives Water a constant supply of real attacks to learn from, which most training setups never have."},
+  2:{t:"It writes the defense",
+     what:"An AI (Claude) looks at what the attacker did and writes a short instruction that tells the security system how to catch that same move next time. Think of it as writing a new rule for a security guard: 'if you ever see this, raise the alarm.'",
+     why:"Normally a trained analyst writes these by hand, and a single good one can take most of a workday. Water writes them in seconds, so the lab keeps up with attackers instead of falling behind."},
+  3:{t:"Three AIs double-check it",
+     what:"Before that new rule is trusted, three different AIs each read it and grade it, like three teachers grading the same paper. The rule only passes if at least two of them agree it is good.",
+     ais:true,
+     why:"Any single AI can sound confident and still be wrong. Making three of them check each other catches the bad rules before they ever go live, so a mistake from one does not slip through."},
+  4:{t:"It puts the defense to work",
+     what:"A rule that passes gets added to the live security dashboard automatically, so it is watching for that attack from then on. This handoff runs through the same trusted, automated process that professional software teams use, so every change is tracked and nothing is done by hand.",
+     why:"This is how a real security team ships its work, not a one-off script on someone's laptop. It shows the whole thing is built to professional standard, start to finish."},
+  5:{t:"The Self Healing Loop",
+     what:"This is the loop hiding inside the last step. When the three AIs reject a rule, Water treats it like a teacher handing back a paper with notes. It reads the notes, rewrites the rule, and submits it again. It will try three times before it gives up.",
+     why:"People learn by getting feedback and trying again, and this works the same way. It will not push a weak rule through just to look busy, and it will not quietly fail either. If it truly cannot get it right, it stops and emails you instead of pretending everything is fine. Scroll down to see exactly what that email looks like."}
+};
+
+const detail=document.getElementById('detail');
+let openStep=null;
+function buildDetail(n){
+  const s=STEPS[n], c=COLORS[n];
+  let h='<div class="detail-in" style="--dac:'+c+'"><div class="dt">'+esc(s.t)+'</div>'
+    +'<div class="dwhat">'+esc(s.what)+'</div>';
+  if(s.ais){
+    h+='<div class="ais">'
+      +'<div class="ai a1"><span class="dot"></span><span class="an">Claude</span><span class="ar">checks the logic</span></div>'
+      +'<div class="ai a2"><span class="dot"></span><span class="an">Gemini</span><span class="ar">a second opinion</span></div>'
+      +'<div class="ai a3"><span class="dot"></span><span class="an">Ollama</span><span class="ar">runs on my own machine</span></div></div>';
+  }
+  h+='<div class="dwhy"><b>Why it matters</b>'+esc(s.why)+'</div></div>';
+  return h;
+}
+document.querySelectorAll('.box').forEach(box=>{
+  box.onclick=()=>{
+    const n=box.dataset.step;
+    document.querySelectorAll('.box').forEach(b=>b.classList.remove('open'));
+    if(openStep===n){ detail.classList.remove('show'); openStep=null; return; }
+    detail.innerHTML=buildDetail(n);
+    detail.classList.add('show'); box.classList.add('open'); openStep=n;
+  };
+});
+
+const OUT={deployed:['Rules written and deployed','deployed'],
+  confidence_too_low:['Skipped, not confident enough','skipped'],
+  already_covered:['Skipped, already covered','skipped'],
+  hunt_triggered_pending_review:['Waiting for me to review','pending'],
+  hunt_triggered_generation_failed:['Failed, needs a retry','failed']};
+const TLR={deployed:['deployed','wrote a new detection rule'],
+  confidence_too_low:['skipped','skipped, confidence too low'],
+  already_covered:['skipped','skipped, already had a rule'],
+  hunt_triggered_pending_review:['pending','rule written, waiting for review'],
+  hunt_triggered_generation_failed:['failed','tried but could not generate a rule']};
+
+function fill(d){
+  const total=Object.values(d.outcomes).reduce((a,b)=>a+b,0)||1;
+  let dec='<div class="section-label">Every decision it made</div>'
+    +'<div class="section-sub">Out of '+total+' runs. Water does not blindly deploy. Skipping and waiting are the point, not failures.</div><div class="bars">';
+  ['deployed','confidence_too_low','already_covered','hunt_triggered_pending_review','hunt_triggered_generation_failed'].forEach(k=>{
+    if(!d.outcomes[k]) return;
+    const [label,cls]=OUT[k]||[k,'skipped'], n=d.outcomes[k], pct=Math.round(n/total*100);
+    dec+='<div class="bar2"><div class="blabel">'+esc(label)+'</div><div class="btrack"><div class="bfill bf-'+cls+'" data-w="'+pct+'">'+n+'</div></div></div>';
+  });
+  dec+='</div>';
+  document.getElementById('decisions').innerHTML=dec;
+  requestAnimationFrame(()=>{
+    document.querySelectorAll('#decisions .bfill').forEach(b=>{ b.style.width=b.dataset.w+'%'; });
+  });
+}
+
+async function load(){
+  try{ const r=await fetch('/api/water'); fill(await r.json()); }
+  catch(e){ document.getElementById('decisions').innerHTML='<div class="loadingbig">Could not load Water data.<br><span style="font-size:12px;color:var(--faint)">'+esc(e.message)+'</span></div>'; }
+}
+load();
+</script>
+</body>
+</html>
