@@ -1,0 +1,325 @@
+{
+  "generated_at": "2026-05-26T21:36:31.736181+00:00",
+  "alerts_index": ".internal.alerts-security.alerts-default-*",
+  "total_rules": 35,
+  "rules_fired": 1,
+  "rules_dormant": 34,
+  "rules_error": 0,
+  "by_technique": {
+    "T1059.001": {
+      "technique_name": "Command and Scripting Interpreter: PowerShell",
+      "tactic": "execution",
+      "rule_id": "ae4b60ce-b6c0-4ca8-82df-9469de001220",
+      "deployed_at": "2026-05-10T07:21:09.396447+00:00",
+      "fire_count": 0,
+      "first_fired": null,
+      "last_fired": null
+    },
+    "T1087.001": {
+      "technique_name": "Account Discovery: Local Account",
+      "tactic": "discovery",
+      "rule_id": "5d9f4578-3ec8-4b4a-902d-62f951b3d28a",
+      "deployed_at": "2026-05-10T08:01:43.617305+00:00",
+      "fire_count": 0,
+      "first_fired": null,
+      "last_fired": null
+    },
+    "T1082": {
+      "technique_name": "System Information Discovery",
+      "tactic": "discovery",
+      "rule_id": "32bcde9b-c3c8-4b34-ae75-89d885cda787",
+      "deployed_at": "2026-05-10T08:34:26.089672+00:00",
+      "fire_count": 0,
+      "first_fired": null,
+      "last_fired": null
+    },
+    "T1204.002": {
+      "technique_name": "User Execution: Malicious File",
+      "tactic": "execution",
+      "rule_id": "e998f335-c133-40a1-b6dd-8dab20e774ae",
+      "deployed_at": "2026-05-10T08:49:56.330051+00:00",
+      "fire_count": 0,
+      "first_fired": null,
+      "last_fired": null
+    },
+    "T1547.001": {
+      "technique_name": "Boot or Logon Autostart Execution: Registry Run Keys / Startup Folder",
+      "tactic": "persistence",
+      "rule_id": "0fb1a2d5-180c-471d-827c-8bdc4b0a03b9",
+      "deployed_at": "2026-05-10T15:53:26.098559+00:00",
+      "fire_count": 0,
+      "first_fired": null,
+      "last_fired": null
+    },
+    "T1021.001": {
+      "technique_name": "Remote Services: Remote Desktop Protocol",
+      "tactic": "lateral-movement",
+      "rule_id": "e02cc050-88ca-459a-8b12-b17d384eeb00",
+      "deployed_at": "2026-05-10T16:33:17.220543+00:00",
+      "fire_count": 0,
+      "first_fired": null,
+      "last_fired": null
+    },
+    "T1555.004": {
+      "technique_name": "Credentials from Password Stores: Windows Credential Manager",
+      "tactic": "credential-access",
+      "rule_id": "0ba73e8e-e872-4067-ac92-e53d7af7b7f1",
+      "deployed_at": "2026-05-10T16:49:35.563902+00:00",
+      "fire_count": 0,
+      "first_fired": null,
+      "last_fired": null
+    },
+    "T1560.001": {
+      "technique_name": "Archive Collected Data: Archive via Utility",
+      "tactic": "collection",
+      "rule_id": "83e6d320-4d0e-4b8c-95fc-4e5c7fe4afda",
+      "deployed_at": "2026-05-10T17:28:21.536890+00:00",
+      "fire_count": 0,
+      "first_fired": null,
+      "last_fired": null
+    },
+    "T1057": {
+      "technique_name": "Process Discovery",
+      "tactic": "discovery",
+      "rule_id": "a43bd367-b5b5-4a03-b2b4-f3053b2eef83",
+      "deployed_at": "2026-05-10T17:30:03.138867+00:00",
+      "fire_count": 0,
+      "first_fired": null,
+      "last_fired": null
+    },
+    "T1021.002": {
+      "technique_name": "Remote Services: SMB/Windows Admin Shares",
+      "tactic": "lateral-movement",
+      "rule_id": "c413ce24-f558-4226-810b-c52b958638f0",
+      "deployed_at": "2026-05-10T17:37:04.496464+00:00",
+      "fire_count": 0,
+      "first_fired": null,
+      "last_fired": null
+    },
+    "T1048.003": {
+      "technique_name": "Exfiltration Over Alternative Protocol: Exfiltration Over Unencrypted Non-C2 Protocol",
+      "tactic": "exfiltration",
+      "rule_id": "723b2878-ced4-4052-ab1c-05629a5f4127",
+      "deployed_at": "2026-05-10T17:55:16.780740+00:00",
+      "fire_count": 0,
+      "first_fired": null,
+      "last_fired": null
+    },
+    "T1564.001": {
+      "technique_name": "Hide Artifacts: Hidden Files and Directories",
+      "tactic": "defense-evasion",
+      "rule_id": "c2664794-610c-4732-ba19-2782eacd278f",
+      "deployed_at": "2026-05-10T17:57:01.558767+00:00",
+      "fire_count": 0,
+      "first_fired": null,
+      "last_fired": null
+    },
+    "T1112": {
+      "technique_name": "Modify Registry",
+      "tactic": "defense-evasion",
+      "rule_id": "ec96bb5c-362a-4a2a-b306-ec3f189432bb",
+      "deployed_at": "2026-05-10T18:00:51.426451+00:00",
+      "fire_count": 0,
+      "first_fired": null,
+      "last_fired": null
+    },
+    "T1564.003": {
+      "technique_name": "Hide Artifacts: Hidden Window",
+      "tactic": "defense-evasion",
+      "rule_id": "aea83186-6d3e-4623-aa2d-e7f2a21a088e",
+      "deployed_at": "2026-05-10T18:04:32.985037+00:00",
+      "fire_count": 0,
+      "first_fired": null,
+      "last_fired": null
+    },
+    "T1518.001": {
+      "technique_name": "Software Discovery: Security Software Discovery",
+      "tactic": "discovery",
+      "rule_id": "9144651a-2b56-4047-ba53-1cff3babe181",
+      "deployed_at": "2026-05-10T18:08:33.118289+00:00",
+      "fire_count": 0,
+      "first_fired": null,
+      "last_fired": null
+    },
+    "T1059.003": {
+      "technique_name": "Command and Scripting Interpreter: Windows Command Shell",
+      "tactic": "execution",
+      "rule_id": "62ed787d-48b7-4072-bca6-2a9048ed8bec",
+      "deployed_at": "2026-05-10T18:17:41.285044+00:00",
+      "fire_count": 0,
+      "first_fired": null,
+      "last_fired": null
+    },
+    "T1003.002": {
+      "technique_name": "OS Credential Dumping: Security Account Manager",
+      "tactic": "credential-access",
+      "rule_id": "c5830d3b-c4fb-465d-8540-44e6b09fc8e7",
+      "deployed_at": "2026-05-10T18:22:28.268979+00:00",
+      "fire_count": 0,
+      "first_fired": null,
+      "last_fired": null
+    },
+    "T1218.007": {
+      "technique_name": "System Binary Proxy Execution: Msiexec",
+      "tactic": "defense-evasion",
+      "rule_id": "d134f553-f48a-471e-b593-05e99a4f57d6",
+      "deployed_at": "2026-05-10T18:28:37.089496+00:00",
+      "fire_count": 0,
+      "first_fired": null,
+      "last_fired": null
+    },
+    "T1216": {
+      "technique_name": "System Script Proxy Execution",
+      "tactic": "defense-evasion",
+      "rule_id": "b8ee8991-c2af-4d5e-9dd8-4702f01a2e14",
+      "deployed_at": "2026-05-10T18:31:24.087481+00:00",
+      "fire_count": 0,
+      "first_fired": null,
+      "last_fired": null
+    },
+    "T1036.005": {
+      "technique_name": "Masquerading: Match Legitimate Name or Location",
+      "tactic": "defense-evasion",
+      "rule_id": "68a6befc-d840-4c30-8e8f-6b21ecd6d4d5",
+      "deployed_at": "2026-05-10T18:35:44.746794+00:00",
+      "fire_count": 0,
+      "first_fired": null,
+      "last_fired": null
+    },
+    "T1069.002": {
+      "technique_name": "Permission Groups Discovery: Domain Groups",
+      "tactic": "discovery",
+      "rule_id": "eb0dc4a9-2abf-4471-8905-68bcef7c63c8",
+      "deployed_at": "2026-05-10T18:43:55.502481+00:00",
+      "fire_count": 0,
+      "first_fired": null,
+      "last_fired": null
+    },
+    "T1049": {
+      "technique_name": "System Network Connections Discovery",
+      "tactic": "discovery",
+      "rule_id": "7bf6f4b4-b3fc-4563-8f05-9b3d9c62132b",
+      "deployed_at": "2026-05-10T18:50:26.823039+00:00",
+      "fire_count": 0,
+      "first_fired": null,
+      "last_fired": null
+    },
+    "T1053.005": {
+      "technique_name": "Scheduled Task/Job: Scheduled Task",
+      "tactic": "persistence",
+      "rule_id": "fe6d1f50-c1bc-4a22-ac80-c9712bab85c7",
+      "deployed_at": "2026-05-10T19:17:31.030180+00:00",
+      "fire_count": 0,
+      "first_fired": null,
+      "last_fired": null
+    },
+    "T1016.001": {
+      "technique_name": "System Network Configuration Discovery: Internet Connection Discovery",
+      "tactic": "discovery",
+      "rule_id": "f7f59eb3-ad8b-4d57-b1cc-fe60a5418b39",
+      "deployed_at": "2026-05-10T19:47:07.925416+00:00",
+      "fire_count": 0,
+      "first_fired": null,
+      "last_fired": null
+    },
+    "T1482": {
+      "technique_name": "Domain Trust Discovery",
+      "tactic": "discovery",
+      "rule_id": "cb9127a0-e005-4aff-a599-dd2dff0eec62",
+      "deployed_at": "2026-05-10T19:52:26.775991+00:00",
+      "fire_count": 0,
+      "first_fired": null,
+      "last_fired": null
+    },
+    "T1018": {
+      "technique_name": "Remote System Discovery",
+      "tactic": "discovery",
+      "rule_id": "7d5e8bb8-a144-4791-a605-fd4a955ddc89",
+      "deployed_at": "2026-05-10T20:10:25.371431+00:00",
+      "fire_count": 0,
+      "first_fired": null,
+      "last_fired": null
+    },
+    "T1083": {
+      "technique_name": "File and Directory Discovery",
+      "tactic": "discovery",
+      "rule_id": "bdade355-a931-4fba-b349-eedb384f8993",
+      "deployed_at": "2026-05-10T20:17:03.429796+00:00",
+      "fire_count": 0,
+      "first_fired": null,
+      "last_fired": null
+    },
+    "T1012": {
+      "technique_name": "Query Registry",
+      "tactic": "discovery",
+      "rule_id": "85b96de7-a91c-4938-846f-1853ee7e39d9",
+      "deployed_at": "2026-05-11T09:35:56.759390+00:00",
+      "fire_count": 0,
+      "first_fired": null,
+      "last_fired": null
+    },
+    "T1614.001": {
+      "technique_name": "System Location Discovery: System Language Discovery",
+      "tactic": "discovery",
+      "rule_id": "b8765da9-bc02-4c22-8b48-01096420d98a",
+      "deployed_at": "2026-05-11T18:19:28.396993+00:00",
+      "fire_count": 0,
+      "first_fired": null,
+      "last_fired": null
+    },
+    "T1218.011": {
+      "technique_name": "System Binary Proxy Execution: Rundll32",
+      "tactic": "defense-evasion",
+      "rule_id": "5c8ea8be-7a0e-4809-b65a-2d26f91ee077",
+      "deployed_at": "2026-05-11T18:44:59.364279+00:00",
+      "fire_count": 681,
+      "first_fired": "2026-05-11T12:47:32.793Z",
+      "last_fired": "2026-05-26T20:48:09.239Z"
+    },
+    "T1033": {
+      "technique_name": "System Owner/User Discovery",
+      "tactic": "discovery",
+      "rule_id": "0d36e12f-4b63-4cf0-8483-8552b1d57090",
+      "deployed_at": "2026-05-11T19:23:14.657042+00:00",
+      "fire_count": 0,
+      "first_fired": null,
+      "last_fired": null
+    },
+    "T1574.010": {
+      "technique_name": "Hijack Execution Flow: Services File Permissions Weakness",
+      "tactic": "persistence",
+      "rule_id": "63a6f63d-043a-4ddc-9f24-febd436a77f5",
+      "deployed_at": "2026-05-15T18:02:48.222893+00:00",
+      "fire_count": 0,
+      "first_fired": null,
+      "last_fired": null
+    },
+    "T1016": {
+      "technique_name": "System Network Configuration Discovery",
+      "tactic": "discovery",
+      "rule_id": "1020dcc4-0817-41c0-ba1e-7d3034e816c6",
+      "deployed_at": "2026-05-15T18:20:51.480365+00:00",
+      "fire_count": 0,
+      "first_fired": null,
+      "last_fired": null
+    },
+    "T1035": {
+      "technique_name": "Service Execution",
+      "tactic": "execution",
+      "rule_id": "6d060b71-5faf-425c-bf21-bb7751cc0e83",
+      "deployed_at": "2026-05-15T18:24:29.483158+00:00",
+      "fire_count": 0,
+      "first_fired": null,
+      "last_fired": null
+    },
+    "T1110.001": {
+      "technique_name": "Brute Force: Password Guessing",
+      "tactic": "credential-access",
+      "rule_id": "77ecdffa-3fa9-462a-a86d-ea87e42455d0",
+      "deployed_at": "2026-05-15T23:50:03.456294+00:00",
+      "fire_count": 0,
+      "first_fired": null,
+      "last_fired": null
+    }
+  }
+}
