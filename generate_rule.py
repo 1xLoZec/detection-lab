@@ -367,6 +367,7 @@ winlog.event_data.ImageLoaded, winlog.event_data.GrantedAccess,
 winlog.event_data.IntegrityLevel, winlog.event_data.PipeName
 
 Rules: ECS field names only. Most distinctive indicators only. Realistic false positives. Correct severity.
+CRITICAL: the event id field is `event.code` (NOT `EventID`). Sysmon process creation is `event.code: 1`. Never write `EventID`.
 BANNED modifiers — NEVER use: |in, |lowercasefield, |re — not supported by pySigma 0.11.23. Use |contains, |startswith, |endswith, or exact match only.
 Required: id: {rule_id}, date: {today}, author: 1xLoZec, status: experimental
 
@@ -374,7 +375,28 @@ Return valid Sigma YAML only. No markdown. No explanation."""
     msg = client.messages.create(model="claude-sonnet-4-6", max_tokens=2048,
                                   messages=[{"role":"user","content":prompt}])
     sigma = msg.content[0].text.strip().replace("```yaml","").replace("```","").strip()
+    sigma = normalize_sigma_fields(sigma)
     return sigma, rule_id
+
+
+def normalize_sigma_fields(sigma_yaml):
+    """Deterministic field-hygiene pass on LLM-generated Sigma.
+
+    The model often emits the Sysmon-convention field name `EventID` even when told
+    to use ECS, but our Elastic data indexes the event id as `event.code`. A rule
+    keyed on `EventID` is enabled and scheduled yet matches nothing. We do NOT trust
+    the model to get this right every time; we rewrite it deterministically before deploy.
+    Rewrites only the YAML *field key* (e.g. `EventID: 1` -> `event.code: 1`), never values.
+    """
+    import re as _re
+    # match a detection field key named EventID / EventId / Event_ID (with optional Sigma modifier),
+    # preserving indentation and any |modifier and the trailing colon.
+    def _sub(m):
+        return f"{m.group('indent')}event.code{m.group('mod') or ''}:"
+    pattern = _re.compile(
+        r"(?P<indent>^[ 	]+)(?:EventID|EventId|Event_ID)(?P<mod>\|[A-Za-z]+)?:",
+        _re.MULTILINE)
+    return pattern.sub(_sub, sigma_yaml)
 
 
 # ── Save and Push ──────────────────────────────────────────────────────────────
