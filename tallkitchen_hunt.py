@@ -946,6 +946,129 @@ def otx_check_hash(conn: sqlite3.Connection, hash_str: str, hash_type: str) -> d
     return normalized
 
 
+# -- External source: URLhaus (abuse.ch) --
+# Free with abuse.ch Auth-Key. Tracks malware-distribution hosts/URLs.
+URLHAUS_HOST_URL = "https://urlhaus-api.abuse.ch/v1/host/"
+
+
+def urlhaus_check_domain(conn: sqlite3.Connection, domain: str) -> dict:
+    """Query URLhaus for a domain/host. Returns malware-URL count, threat types, status."""
+    if not ABUSECH_AUTH_KEY:
+        return {"available": False, "reason": "no Auth-Key (ABUSECH_AUTH_KEY not set)"}
+    cached = cache_get(conn, domain, "urlhaus")
+    if cached is not None:
+        cached["_cached"] = True
+        return cached
+    headers = {"Auth-Key": ABUSECH_AUTH_KEY}
+    data = {"host": domain}
+    try:
+        r = requests.post(URLHAUS_HOST_URL, headers=headers, data=data, timeout=10)
+    except Exception as e:
+        return {"available": False, "reason": f"request failed: {type(e).__name__}"}
+    if r.status_code != 200:
+        return {"available": False, "reason": f"HTTP {r.status_code}", "_status_code": r.status_code}
+    try:
+        body = r.json() or {}
+    except Exception:
+        return {"available": False, "reason": "malformed JSON"}
+    status = body.get("query_status")
+    if status == "no_results":
+        normalized = {"available": True, "listed": False, "url_count": 0, "urls_online": 0,
+            "threats": [], "tags": [], "blacklists": {}, "first_seen": None,
+            "message": "host not in URLhaus", "_cached": False, "_status_code": 200}
+        cache_put(conn, domain, "urlhaus", normalized, status_code=200)
+        return normalized
+    if status != "ok":
+        return {"available": False, "reason": f"unexpected query_status: {status}", "_status_code": 200}
+    urls = body.get("urls") or []
+    online = sum(1 for u in urls if u.get("url_status") == "online")
+    threats = list({u.get("threat") for u in urls if u.get("threat")})
+    tags = []
+    for u in urls:
+        for t in (u.get("tags") or []):
+            if t not in tags:
+                tags.append(t)
+    normalized = {"available": True, "listed": True,
+        "url_count": int(body.get("url_count") or len(urls)),
+        "urls_online": online, "threats": threats, "tags": tags[:10],
+        "blacklists": body.get("blacklists") or {},
+        "first_seen": body.get("firstseen"),
+        "_cached": False, "_status_code": 200}
+    cache_put(conn, domain, "urlhaus", normalized, status_code=200)
+    return normalized
+
+
+def virustotal_check_domain(conn: sqlite3.Connection, domain: str) -> dict:
+    """Query VirusTotal for a domain. Detection ratio, reputation, categories."""
+    if not VIRUSTOTAL_API_KEY:
+        return {"available": False, "reason": "no API key (VIRUSTOTAL_API_KEY not set)"}
+    cached = cache_get(conn, domain, "virustotal")
+    if cached is not None:
+        cached["_cached"] = True
+        return cached
+    headers = {"x-apikey": VIRUSTOTAL_API_KEY, "Accept": "application/json"}
+    try:
+        r = requests.get(f"{VT_BASE_URL}/domains/{domain}", headers=headers, timeout=10)
+    except Exception as e:
+        return {"available": False, "reason": f"request failed: {type(e).__name__}"}
+    if r.status_code == 429:
+        return {"available": False, "reason": "rate limit hit (VT 4/min or 500/day)", "_status_code": 429}
+    if r.status_code == 404:
+        normalized = {"available": True, "in_corpus": False, "malicious": 0, "suspicious": 0,
+            "harmless": 0, "undetected": 0, "total_engines": 0, "reputation": 0,
+            "community_votes": {}, "categories": [], "registrar": None, "creation_date": None,
+            "message": "domain not in VirusTotal database", "_cached": False, "_status_code": 404}
+        cache_put(conn, domain, "virustotal", normalized, status_code=404)
+        return normalized
+    if r.status_code != 200:
+        return {"available": False, "reason": f"HTTP {r.status_code}", "_status_code": r.status_code}
+    try:
+        attrs = (r.json().get("data", {}) or {}).get("attributes", {}) or {}
+    except Exception:
+        return {"available": False, "reason": "malformed JSON"}
+    stats = attrs.get("last_analysis_stats", {}) or {}
+    cats = attrs.get("categories", {}) or {}
+    normalized = {"available": True, "in_corpus": True,
+        "malicious": stats.get("malicious", 0), "suspicious": stats.get("suspicious", 0),
+        "harmless": stats.get("harmless", 0), "undetected": stats.get("undetected", 0),
+        "total_engines": sum(stats.values()) if stats else 0,
+        "reputation": attrs.get("reputation", 0), "community_votes": attrs.get("total_votes", {}) or {},
+        "categories": list({v for v in cats.values()})[:5] if isinstance(cats, dict) else [],
+        "registrar": attrs.get("registrar"), "creation_date": attrs.get("creation_date"),
+        "_cached": False, "_status_code": 200}
+    cache_put(conn, domain, "virustotal", normalized, status_code=200)
+    return normalized
+
+
+def otx_check_domain(conn: sqlite3.Connection, domain: str) -> dict:
+    """Query OTX for a domain. Returns pulse count + top pulse names."""
+    if not OTX_API_KEY:
+        return {"available": False, "reason": "no API key (OTX_API_KEY not set)"}
+    cached = cache_get(conn, domain, "otx")
+    if cached is not None:
+        cached["_cached"] = True
+        return cached
+    headers = {"X-OTX-API-KEY": OTX_API_KEY, "Accept": "application/json"}
+    try:
+        r = requests.get(f"{OTX_BASE_URL}/domain/{domain}/general", headers=headers, timeout=10)
+    except Exception as e:
+        return {"available": False, "reason": f"request failed: {type(e).__name__}"}
+    if r.status_code != 200:
+        return {"available": False, "reason": f"HTTP {r.status_code}", "_status_code": r.status_code}
+    try:
+        body = r.json() or {}
+    except Exception:
+        return {"available": False, "reason": "malformed JSON"}
+    pi = body.get("pulse_info", {}) or {}
+    pulses = pi.get("pulses", []) or []
+    normalized = {"available": True, "pulse_count": pi.get("count", 0),
+        "top_pulses": [p.get("name") for p in pulses[:5] if p.get("name")],
+        "related_indicator_types": list((pi.get("related", {}) or {}).keys()),
+        "_cached": False, "_status_code": 200}
+    cache_put(conn, domain, "otx", normalized, status_code=200)
+    return normalized
+
+
 def bucket_external_ip(conn: sqlite3.Connection, ip: str) -> dict:
     """
     Orchestrate all external IP enrichment sources. Returns a dict keyed by source name.
@@ -991,6 +1114,14 @@ SOURCE_WEIGHTS_HASH = {
 }
 SOURCE_WEIGHTS_HASH_TOTAL = sum(SOURCE_WEIGHTS_HASH.values())  # 100
 
+SOURCE_WEIGHTS_DOMAIN = {
+    "urlhaus":    35,
+    "virustotal": 35,
+    "threatfox":  22,
+    "otx":         8,
+}
+SOURCE_WEIGHTS_DOMAIN_TOTAL = sum(SOURCE_WEIGHTS_DOMAIN.values())  # 100
+
 # Verdict bands match Mandiant's published thresholds (see blog: alert scoring at machine scale)
 VERDICT_BANDS = [
     (80, "malicious",  "BLOCK"),
@@ -1007,6 +1138,16 @@ def bucket_external_hash(conn: sqlite3.Connection, hash_str: str, hash_type: str
         "virustotal":    virustotal_check_hash(conn, hash_str, hash_type),
         "otx":           otx_check_hash(conn, hash_str, hash_type),
         "threatfox":     threatfox_check_ioc(conn, hash_str, hash_type),
+    }
+
+
+def bucket_external_domain(conn: sqlite3.Connection, domain: str) -> dict:
+    """Orchestrate domain enrichment sources. IP-only sources are skipped."""
+    return {
+        "urlhaus":    urlhaus_check_domain(conn, domain),
+        "virustotal": virustotal_check_domain(conn, domain),
+        "otx":        otx_check_domain(conn, domain),
+        "threatfox":  threatfox_check_ioc(conn, domain, "domain"),
     }
 
 
@@ -1107,6 +1248,17 @@ def _signal_malwarebazaar(src: dict) -> float:
     return base
 
 
+def _signal_urlhaus(src: dict) -> float:
+    """URLhaus: listed = malware distribution host. Online URLs escalate."""
+    if not src or not src.get("available"):
+        return 0.0
+    if not src.get("listed"):
+        return 0.0
+    if (src.get("urls_online") or 0) >= 1:
+        return 1.0
+    return 0.7
+
+
 def _detect_disagreements(external: dict, observed: dict, raw_score: float) -> list:
     """
     Identify cross-source disagreements (Layer 8 defense from hallucination stack).
@@ -1170,6 +1322,7 @@ def bucket_verdict(observed: dict, external: dict, ioc_type: str = "ipv4") -> di
     Returns a dict with the verdict, action, score, breakdown, conflicts, and floor reasons.
     """
     is_hash = ioc_type in ("md5", "sha1", "sha256")
+    is_domain = ioc_type == "domain"
 
     # 1) Compute signal strength per source (only valid sources for this IOC type)
     if is_hash:
@@ -1180,6 +1333,14 @@ def bucket_verdict(observed: dict, external: dict, ioc_type: str = "ipv4") -> di
             "otx":           _signal_otx(external.get("otx")),
         }
         weights, weights_total = SOURCE_WEIGHTS_HASH, SOURCE_WEIGHTS_HASH_TOTAL
+    elif is_domain:
+        signals = {
+            "urlhaus":    _signal_urlhaus(external.get("urlhaus")),
+            "virustotal": _signal_virustotal(external.get("virustotal")),
+            "threatfox":  _signal_threatfox(external.get("threatfox")),
+            "otx":        _signal_otx(external.get("otx")),
+        }
+        weights, weights_total = SOURCE_WEIGHTS_DOMAIN, SOURCE_WEIGHTS_DOMAIN_TOTAL
     else:
         signals = {
             "tpot":          _signal_tpot(observed),
@@ -1225,8 +1386,24 @@ def bucket_verdict(observed: dict, external: dict, ioc_type: str = "ipv4") -> di
                 floor_score = max(floor_score, 65.0)
                 floors.append(f"VT consensus {flagged}/{total} -> floor 65 (SUSPICIOUS)")
 
-    sh = {} if is_hash else (external.get("spamhaus_drop") or {})
-    tpot_events = 0 if is_hash else ((observed or {}).get("event_count", 0) or 0)
+    if is_domain:
+        uh = external.get("urlhaus") or {}
+        if uh.get("available") and uh.get("listed"):
+            if (uh.get("urls_online") or 0) >= 1:
+                floor_score = max(floor_score, 85.0)
+                floors.append(f"URLhaus: {uh.get('urls_online')} live malware URLs -> floor 85 (MALICIOUS)")
+            else:
+                floor_score = max(floor_score, 65.0)
+                floors.append("URLhaus listed (offline URLs) -> floor 65 (SUSPICIOUS)")
+        vtd = external.get("virustotal") or {}
+        if vtd.get("available") and vtd.get("in_corpus"):
+            flagged = (vtd.get("malicious", 0) or 0) + (vtd.get("suspicious", 0) or 0)
+            if flagged >= 5:
+                floor_score = max(floor_score, 75.0)
+                floors.append(f"VT {flagged} engines flag domain -> floor 75")
+
+    sh = {} if (is_hash or is_domain) else (external.get("spamhaus_drop") or {})
+    tpot_events = 0 if (is_hash or is_domain) else ((observed or {}).get("event_count", 0) or 0)
 
     if sh.get("in_drop"):
         if tpot_events > 10000:
@@ -1761,6 +1938,27 @@ def render_external(external: dict, ioc: str) -> None:
     table.add_column()
     table.add_column(style="dim")
 
+    if "urlhaus" in external:
+        uh = external.get("urlhaus") or {}
+        uh_link = f"https://urlhaus.abuse.ch/host/{ioc}/"
+        if not uh.get("available"):
+            reason = uh.get("reason") or "no data"
+            table.add_row("URLhaus", f"[dim]not available - {reason}[/]", f"[link={uh_link}]open[/]")
+        elif not uh.get("listed"):
+            table.add_row("URLhaus", "[dim]not listed[/]", f"[link={uh_link}]open[/]")
+        else:
+            n = uh.get("url_count") or 0
+            online = uh.get("urls_online") or 0
+            threats = uh.get("threats") or []
+            summary = f"[bold red]{n} malware URLs[/]"
+            if online:
+                summary += f"  [bold red]{online} online[/]"
+            if threats:
+                summary += f"  [dim]{', '.join(threats[:3])}[/]"
+            if uh.get("_cached"):
+                summary += " [dim](cached)[/]"
+            table.add_row("URLhaus", summary, f"[link={uh_link}]open[/]")
+
     if "malwarebazaar" in external:
         mb = external.get("malwarebazaar") or {}
         mb_link = f"https://bazaar.abuse.ch/sample/{ioc}/"
@@ -2093,7 +2291,7 @@ def render_honest_limits(ioc_type: str) -> None:
     msgs = [
         # Direct ATT&CK mapping bucket — currently indirect via RULES bucket only
         "Direct ATT&CK mapping bucket not yet implemented (technique inference happens in RULES only)",
-        "IPv4 and file hashes supported — domains, URLs, IPv6, CIDR, ASN not yet routed",
+        "IPv4, file hashes, and domains supported — URLs, IPv6, CIDR, ASN not yet routed",
         "Pattern detection on unknowns not yet implemented",
         "LLM narrative (STORY, NEXT STEPS, HYPOTHESIS) not yet implemented — Phase 7",
         "Self-audit subsystem (Sniff) not yet integrated — Phase 8",
@@ -2142,14 +2340,16 @@ def hunt(ioc: str, fresh: bool = False) -> int:
     ioc_type = detect_ioc_type(ioc)
     render_header(ioc, ioc_type)
 
-    if ioc_type not in ("ipv4", "md5", "sha1", "sha256"):
+    if ioc_type not in ("ipv4", "md5", "sha1", "sha256", "domain"):
         console.print(f"[bold red]Hunt does not yet support this IOC type.[/]")
-        console.print(f"[dim]Detected type: {ioc_type}. Supported: IPv4, file hashes.[/]")
+        console.print(f"[dim]Detected type: {ioc_type}. Supported: IPv4, file hashes, domains.[/]")
         console.print()
         return 2
 
     conn = memory_init()
     is_hash = ioc_type in ("md5", "sha1", "sha256")
+    is_domain = ioc_type == "domain"
+    is_light = is_hash or is_domain
 
     # MEMORY check first — the "have I seen this before?" gate
     past_hunts = memory_lookup_ioc(conn, ioc)
@@ -2158,10 +2358,13 @@ def hunt(ioc: str, fresh: bool = False) -> int:
 
     # Run fresh enrichment (always, for now — Phase 3 may add "show cached" mode)
     started = datetime.now(timezone.utc)
-    if is_hash:
+    if is_light:
         identity = {}
         observed = {}
-        external = bucket_external_hash(conn, ioc, ioc_type)
+        if is_hash:
+            external = bucket_external_hash(conn, ioc, ioc_type)
+        else:
+            external = bucket_external_domain(conn, ioc)
         verdict  = bucket_verdict(observed, external, ioc_type)
         pivots   = []
         rules    = {}
@@ -2180,11 +2383,11 @@ def hunt(ioc: str, fresh: bool = False) -> int:
 
     # VERDICT renders FIRST — analyst's primary question is "is this bad?"
     render_verdict(verdict)
-    if not is_hash:
+    if not is_light:
         render_identity(identity)
         render_observed(observed)
     render_external(external, ioc)
-    if not is_hash:
+    if not is_light:
         render_rules(rules)
         render_pivots(pivots)
     render_honest_limits(ioc_type)
