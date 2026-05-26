@@ -218,6 +218,44 @@
   @keyframes rise{from{opacity:0; transform:translateY(14px);}to{opacity:1; transform:none;}}
   .footer{margin-top:40px; color:var(--faint); font-size:11px; text-align:center; letter-spacing:.5px;}
   .footer b{color:var(--dim); font-weight:400;}
+
+  .hlinks{display:flex; gap:10px; flex-wrap:wrap; margin:0 0 28px;
+    animation:rise .7s cubic-bezier(.2,.7,.2,1) .2s both;}
+  .hlk{display:inline-flex; align-items:center; gap:8px; text-decoration:none; border-radius:10px;
+    padding:9px 16px; font-family:var(--mono); font-size:13px; transition:all .2s;}
+  .hlk svg{width:15px;height:15px;}
+  .hlk.water{background:rgba(34,211,238,.1); border:1px solid rgba(34,211,238,.4); color:#7df0ff;}
+  .hlk.water:hover{background:rgba(34,211,238,.2);}
+  .hlk.gh{background:rgba(130,150,170,.07); border:1px solid var(--line); color:var(--dim);}
+  .hlk.gh:hover{border-color:var(--line-bright); color:var(--violet-l);}
+
+  /* verdict + score on one line */
+  .vline{display:flex; align-items:center; gap:14px; flex-wrap:wrap;}
+  .scoretag{font-family:var(--disp); font-weight:700; font-size:17px; color:var(--dim);}
+  .action{font-family:var(--mono); font-size:13px; color:var(--dim); letter-spacing:.3px; margin-top:4px;}
+  .action b{color:var(--text); font-weight:700;}
+  /* the bottom line, front and center */
+  .bottomline{margin:20px 0 4px; font-size:17px; line-height:1.55; color:var(--text);
+    border-left:3px solid var(--accent,var(--violet)); padding:14px 18px; border-radius:0 12px 12px 0;
+    background:linear-gradient(90deg, color-mix(in srgb, var(--accent,var(--violet)) 12%, transparent), transparent);}
+  /* evidence behind a button */
+  .ev-toggle{margin-top:18px;}
+  .ev-toggle button{display:inline-flex; align-items:center; gap:8px; background:rgba(130,150,170,.06);
+    border:1px solid var(--line); color:var(--dim); border-radius:9px; padding:9px 16px;
+    font-family:var(--mono); font-size:13px; cursor:pointer; transition:all .2s;}
+  .ev-toggle button:hover{border-color:var(--line-bright); color:var(--violet-l);}
+  .ev-toggle .car{transition:transform .3s;}
+  .ev-toggle.open .car{transform:rotate(180deg);}
+  .evidence{max-height:0; overflow:hidden; transition:max-height .5s ease; margin-top:0;}
+  .evidence.show{max-height:3000px; margin-top:16px;}
+
+  .hlk.ex{background:rgba(168,85,247,.1); border:1px solid var(--line-bright); color:var(--violet-l); cursor:pointer; font-family:var(--mono);}
+  .hlk.ex:hover{background:rgba(168,85,247,.2);}
+  .hlk.ex .excar{transition:transform .3s; font-size:11px;}
+  .hlk.ex.open .excar{transform:rotate(180deg);}
+  .exdrop{max-height:0; overflow:hidden; transition:max-height .4s ease; margin:0 0 0;}
+  .exdrop.show{max-height:260px; margin:0 0 28px;}
+  .exlbl{color:var(--faint); font-size:12px; margin:4px 2px 9px;}
 </style>
 </head>
 <body>
@@ -230,7 +268,29 @@
     <span class="ver">HUNT</span>
     <button class="whatbtn" id="whatbtn"><span class="q">?</span> What is this?</button>
   </div>
-  <p class="tag">Paste in anything suspicious — a website, a file's fingerprint, or an IP address. Hunt checks it against the world's threat databases and gives you <b>one clear answer: safe, or not</b>.</p>
+  <p class="tag">Hunt is one half of Tall Kitchen. Paste in anything suspicious, a website, a file's fingerprint, or an IP address, and Hunt checks it against the world's threat databases and gives you <b>one clear answer: safe, or not</b>.</p>
+  <div class="hlinks">
+    <a class="hlk water" href="/water"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c4 4.5 6 7.5 6 10.5a6 6 0 01-12 0C6 10.5 8 7.5 12 3z"/></svg> Meet Water, the other half</a>
+    <a class="hlk gh" href="https://github.com/1xLoZec/detection-lab" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1a11 11 0 00-3.5 21.4c.55.1.75-.24.75-.53v-1.9c-3 .65-3.7-1.4-3.7-1.4-.5-1.3-1.2-1.6-1.2-1.6-1-.68.08-.66.08-.66 1.1.08 1.7 1.13 1.7 1.13 1 1.7 2.6 1.2 3.2.93.1-.72.4-1.2.7-1.5-2.4-.27-5-1.2-5-5.3 0-1.2.42-2.13 1.1-2.88-.1-.27-.48-1.35.1-2.8 0 0 .9-.3 3 1.1a10.4 10.4 0 015.5 0c2.1-1.4 3-1.1 3-1.1.6 1.45.2 2.53.1 2.8.7.75 1.1 1.7 1.1 2.88 0 4.1-2.6 5-5 5.3.4.36.75 1 .75 2.05v3c0 .3.2.64.76.53A11 11 0 0012 1z"/></svg> See the code</a>
+    <button class="hlk ex" id="exbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 00-4 12.7V17h8v-2.3A7 7 0 0012 2z"/></svg> Try an example <span class="excar">&#9662;</span></button>
+  </div>
+  <div class="exdrop" id="exdrop">
+    <div class="exlbl">Tap one to see how Hunt works:</div>
+    <div class="chips" id="chips">
+      <button class="chip" data-ioc="44d88612fea8a8f36de82e1278abb02f">
+        <span class="c-top">A test virus</span>
+        <span class="c-sub"><span class="arrow">&rarr; should say</span> <b class="c-mal">MALICIOUS</b></span>
+      </button>
+      <button class="chip" data-ioc="iphm.info">
+        <span class="c-top">A known bad website</span>
+        <span class="c-sub"><span class="arrow">&rarr; should say</span> <b class="c-sus">SUSPICIOUS</b></span>
+      </button>
+      <button class="chip" data-ioc="8.8.8.8">
+        <span class="c-top">A safe address (Google)</span>
+        <span class="c-sub"><span class="arrow">&rarr; should say</span> <b class="c-ben">BENIGN</b></span>
+      </button>
+    </div>
+  </div>
 
   <div class="search">
     <div class="promptline">
@@ -241,23 +301,6 @@
     </div>
     <div class="hint"><span class="dot"></span> Checks live public threat databases · nothing you type is saved</div>
 
-    <div class="tries">
-      <div class="lbl">New here? Tap one to see how it works:</div>
-      <div class="chips" id="chips">
-        <button class="chip" data-ioc="44d88612fea8a8f36de82e1278abb02f">
-          <span class="c-top">A test virus</span>
-          <span class="c-sub"><span class="arrow">→ should say</span> <b class="c-mal">MALICIOUS</b></span>
-        </button>
-        <button class="chip" data-ioc="iphm.info">
-          <span class="c-top">A known bad website</span>
-          <span class="c-sub"><span class="arrow">→ should say</span> <b class="c-sus">SUSPICIOUS</b></span>
-        </button>
-        <button class="chip" data-ioc="8.8.8.8">
-          <span class="c-top">A safe address (Google)</span>
-          <span class="c-sub"><span class="arrow">→ should say</span> <b class="c-ben">BENIGN</b></span>
-        </button>
-      </div>
-    </div>
   </div>
 
   <div class="out" id="out"></div>
@@ -405,21 +448,50 @@ function render(data){
       '<div class="tip">Tip: paste a website (example.com), an IP address (8.8.8.8), or a file hash (a long string of letters and numbers).</div></div>';
     return;
   }
-  const v=data.verdict, [acc,accGlow]=ACCENT[v.verdict]||ACCENT.unknown, ext=data.external||{};
+  const v=data.verdict, accPair=ACCENT[v.verdict]||ACCENT.unknown, acc=accPair[0], accGlow=accPair[1], ext=data.external||{};
   const R=36, C=2*Math.PI*R, offset=C*(1-(v.score/100));
+
+  // pull a real malware family name if any source has one (no guessing)
+  let family=null;
+  const mb=ext.malwarebazaar; if(mb&&mb.in_corpus&&mb.signature) family=mb.signature;
+  if(!family){ const vt=ext.virustotal; if(vt&&vt.suggested_label) family=vt.suggested_label; }
+  let knownService=null;
+  const gn=ext.greynoise; if(gn&&gn.classification==='benign'&&gn.name) knownService=gn.name;
+
+  // bottom line: what it is + what to do, plain english, built from real data
+  let bottom='';
+  if(v.verdict==='malicious'){
+    const what = family ? ('This is known malware, called '+esc(family)+'. ') : 'Trusted security sources agree this is dangerous. ';
+    bottom = '<b>Action: block it.</b> '+what+'Do not open or run it, and check any computer that already touched it.';
+  } else if(v.verdict==='suspicious'){
+    bottom = '<b>Action: investigate before trusting.</b> This shows warning signs but is not fully confirmed. Have someone look closer, and do not allow it until you know more.';
+  } else if(v.verdict==='benign'){
+    const what = knownService ? ('It looks like a known, legitimate service ('+esc(knownService)+'). ') : 'No trusted source is flagging it as a threat. ';
+    bottom = '<b>Action: safe to allow.</b> '+what+'It is reasonable to let this through, though good practice is to stay alert if anything about it changes.';
+  } else {
+    bottom = '<b>Action: watch it.</b> There is not enough information to be sure yet. Treat it with caution, do not fully trust it, and keep an eye out for more signals.';
+  }
 
   let h='<div class="card" style="--accent:'+acc+';--accent-glow:'+accGlow+'">';
   h+='<div class="ioc-echo">you checked: <b>'+esc(data.ioc)+'</b> <span class="ty">('+esc(data.ioc_type)+')</span></div>';
+
+  // headline: ring + verdict/score on one line + action
   h+='<div class="verdict-row">';
   h+='<div class="ring"><svg width="84" height="84"><circle class="track" cx="42" cy="42" r="'+R+'" fill="none" stroke-width="6"/>'
     +'<circle class="fill" cx="42" cy="42" r="'+R+'" fill="none" stroke-width="6" stroke-dasharray="'+C.toFixed(1)+'" stroke-dashoffset="'+C.toFixed(1)+'" id="ringfill"/></svg>'
     +'<div class="num"><b id="scorenum">0</b><span>/ 100</span></div></div>';
-  h+='<div class="vmeta"><span class="badge v-'+v.verdict+'"><span class="ico"></span>'+esc(v.verdict.toUpperCase())+'</span>'
-    +'<span class="plain">'+esc(PLAIN[v.verdict]||'')+'</span>'
-    +'<span class="action">what an analyst would do · <b>'+esc(v.action)+'</b></span></div></div>';
+  h+='<div class="vmeta">'
+    +'<div class="vline"><span class="badge v-'+v.verdict+'"><span class="ico"></span>'+esc(v.verdict.toUpperCase())+'</span>'
+    +'<span class="scoretag">'+esc(v.score)+' / 100</span></div>'
+    +'<span class="action">what to do &middot; <b>'+esc(v.action)+'</b></span></div></div>';
 
-  h+='<div class="why"><h3>Why &mdash; the evidence</h3>'
-    +'<div class="sub">Each source below was checked live. Tap any one to learn what it is and what its result means.</div>';
+  // the bottom line, front and center
+  h+='<div class="bottomline">'+bottom+'</div>';
+
+  // evidence behind a button
+  h+='<div class="ev-toggle"><button id="evbtn"><span>show the evidence</span><span class="car">&#9662;</span></button></div>';
+  h+='<div class="evidence" id="evidence">';
+  h+='<div class="why"><div class="sub">Each source below was checked live. Tap any one to learn what it is and what its result means.</div>';
   if(v.floors_applied&&v.floors_applied.length){
     h+='<div class="floors-wrap">';
     v.floors_applied.forEach(f=>h+='<div class="floor">'+esc(f)+'</div>');
@@ -428,19 +500,19 @@ function render(data){
   let i=0;
   Object.keys(ext).forEach(k=>{
     const info=srcInfo(k,ext[k]);
-    h+='<div class="src" style="animation-delay:'+(i*55)+'ms" data-src="'+k+'">'
+    h+='<div class="src" data-src="'+k+'">'
       +'<div class="src-head"><span class="src-led led-'+info.led+'"></span>'
       +'<span class="src-name">'+esc(LABELS[k]||k)+'</span>'
       +'<span class="src-verdict">'+info.summary+'<span class="tagword tw-'+info.tag+'">'+esc(info.tagword)+'</span></span>'
-      +'<span class="src-caret">▾</span></div>'
+      +'<span class="src-caret">&#9662;</span></div>'
       +'<div class="src-body"><div class="src-body-in"><span class="lead">'+esc(WHATIS[k]||'')+'</span>'
-      +'<div class="mean">→ '+esc(info.mean)+'</div></div></div></div>';
+      +'<div class="mean">&rarr; '+esc(info.mean)+'</div></div></div></div>';
     i++;
   });
   h+='</div>';
-
-  h+='<div class="nohall"><span class="shield">🛡️</span><p><b>No guessing.</b> This verdict is worked out with simple math from the sources above — not by an AI that could make something up. The same input always gives the same answer.</p></div>';
-  h+='</div>';
+  h+='<div class="nohall"><span class="shield">&#128737;</span><p><b>No guessing.</b> This answer is worked out with simple math from the sources above, not by an AI that could make something up. The same input always gives the same answer.</p></div>';
+  h+='</div>'; // close evidence
+  h+='</div>'; // close card
   out.innerHTML=h;
 
   requestAnimationFrame(()=>{
@@ -449,9 +521,11 @@ function render(data){
     function step(t){const p=Math.min(1,(t-t0)/1000); sn.textContent=Math.round(target*(1-Math.pow(1-p,3))); if(p<1)requestAnimationFrame(step);}
     requestAnimationFrame(step);
   });
-  out.querySelectorAll('.src').forEach(el=>{
-    el.querySelector('.src-head').onclick=()=>el.classList.toggle('open');
-  });
+
+  const evbtn=document.getElementById('evbtn'), evidence=document.getElementById('evidence');
+  evbtn.onclick=()=>{ evidence.classList.toggle('show'); evbtn.parentElement.classList.toggle('open');
+    evbtn.querySelector('span').textContent = evidence.classList.contains('show')?'hide the evidence':'show the evidence'; };
+  out.querySelectorAll('.src').forEach(el=>{ el.querySelector('.src-head').onclick=()=>el.classList.toggle('open'); });
 }
 
 async function run(){
@@ -466,6 +540,10 @@ async function run(){
 }
 go.onclick=run;
 input.addEventListener('keydown',e=>{ if(e.key==='Enter') run(); });
+document.getElementById('exbtn').onclick=()=>{
+  const dd=document.getElementById('exdrop'), b=document.getElementById('exbtn');
+  dd.classList.toggle('show'); b.classList.toggle('open');
+};
 document.getElementById('chips').addEventListener('click',e=>{
   const c=e.target.closest('.chip'); if(!c) return; input.value=c.dataset.ioc; run();
 });

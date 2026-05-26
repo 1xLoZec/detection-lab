@@ -1380,11 +1380,14 @@ def bucket_verdict(observed: dict, external: dict, ioc_type: str = "ipv4") -> di
             total = vt.get("total_engines", 0) or 0
             ratio = (flagged / total) if total else 0.0
             if flagged >= 10 and ratio >= 0.20:
-                floor_score = max(floor_score, 85.0)
-                floors.append(f"VT consensus {flagged}/{total} -> floor 85 (MALICIOUS)")
+                # Floor at 85, then scale UP with consensus strength toward 99.
+                # ratio 0.20 -> 85, ratio 1.00 -> 99 (linear across that span).
+                scaled = 85.0 + (min(ratio, 1.0) - 0.20) / (1.0 - 0.20) * 14.0
+                floor_score = max(floor_score, scaled)
+                floors.append(f"VT consensus {flagged}/{total} flagged -> score {round(scaled)} (MALICIOUS)")
             elif flagged >= 5 and ratio >= 0.10:
                 floor_score = max(floor_score, 65.0)
-                floors.append(f"VT consensus {flagged}/{total} -> floor 65 (SUSPICIOUS)")
+                floors.append(f"VT consensus {flagged}/{total} flagged -> floor 65 (SUSPICIOUS)")
 
     if is_domain:
         uh = external.get("urlhaus") or {}
