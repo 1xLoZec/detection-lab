@@ -85,7 +85,8 @@ CACHE_TTL_SECONDS = {
     "otx":           24 * 3600,   # 24h
     "threatfox":     12 * 3600,   # 12h — community DB updates frequently
     "internetdb":    24 * 3600,   # 24h — Shodan data is daily-ish
-    "spamhaus_drop": 24 * 3600,   # 24h — list itself only changes once per day
+    "spamhaus_drop": 24 * 3600,
+    "malwarebazaar": 7 * 24 * 3600,   # 24h — list itself only changes once per day
 }
 
 
@@ -803,6 +804,148 @@ def spamhaus_drop_check_ip(conn: sqlite3.Connection, ip: str) -> dict:
 
 
 # ── EXTERNAL bucket ───────────────────────────────────────────────────────────
+# -- External source: MalwareBazaar (abuse.ch) --
+# Free with abuse.ch Auth-Key. Hash-only specialist. Presence implies confirmed malware.
+MALWAREBAZAAR_URL = "https://mb-api.abuse.ch/api/v1/"
+
+
+def malwarebazaar_check_hash(conn: sqlite3.Connection, hash_str: str, hash_type: str) -> dict:
+    """Query MalwareBazaar for a file hash. Returns family attribution, metadata, tags."""
+    if not ABUSECH_AUTH_KEY:
+        return {"available": False, "reason": "no Auth-Key (ABUSECH_AUTH_KEY not set)"}
+    cached = cache_get(conn, hash_str, "malwarebazaar")
+    if cached is not None:
+        cached["_cached"] = True
+        return cached
+    headers = {"Auth-Key": ABUSECH_AUTH_KEY}
+    data = {"query": "get_info", "hash": hash_str}
+    try:
+        r = requests.post(MALWAREBAZAAR_URL, headers=headers, data=data, timeout=10)
+    except Exception as e:
+        return {"available": False, "reason": f"request failed: {type(e).__name__}"}
+    if r.status_code != 200:
+        return {"available": False, "reason": f"HTTP {r.status_code}", "_status_code": r.status_code}
+    try:
+        body = r.json() or {}
+    except Exception:
+        return {"available": False, "reason": "malformed JSON"}
+    status = body.get("query_status")
+    if status == "hash_not_found":
+        normalized = {"available": True, "in_corpus": False, "signature": None,
+            "file_type": None, "file_size": None, "first_seen": None, "last_seen": None,
+            "tags": [], "clamav": [], "vendor_count": 0, "vendor_intel": [], "delivery": [],
+            "imphash": None, "tlsh": None, "message": "hash not in MalwareBazaar",
+            "_cached": False, "_status_code": 200}
+        cache_put(conn, hash_str, "malwarebazaar", normalized, status_code=200)
+        return normalized
+    if status != "ok":
+        return {"available": False, "reason": f"unexpected query_status: {status}", "_status_code": 200}
+    records = body.get("data") or []
+    if not records:
+        return {"available": False, "reason": "ok but empty data", "_status_code": 200}
+    rec = records[0]
+    vi = rec.get("vendor_intel") or {}
+    clamav = (rec.get("intelligence") or {}).get("clamav") or []
+    delivery = rec.get("delivery_method") or []
+    normalized = {"available": True, "in_corpus": True, "signature": rec.get("signature"),
+        "file_type": rec.get("file_type"), "file_size": rec.get("file_size"),
+        "first_seen": rec.get("first_seen"), "last_seen": rec.get("last_seen"),
+        "tags": rec.get("tags") or [], "clamav": clamav if isinstance(clamav, list) else [],
+        "vendor_count": len(vi) if isinstance(vi, dict) else 0,
+        "vendor_intel": list(vi.keys()) if isinstance(vi, dict) else [],
+        "delivery": delivery if isinstance(delivery, list) else [],
+        "imphash": rec.get("imphash"), "tlsh": rec.get("tlsh"),
+        "sha256_hash": rec.get("sha256_hash"), "sha1_hash": rec.get("sha1_hash"),
+        "md5_hash": rec.get("md5_hash"), "_cached": False, "_status_code": 200}
+    cache_put(conn, hash_str, "malwarebazaar", normalized, status_code=200)
+    return normalized
+
+
+def virustotal_check_hash(conn: sqlite3.Connection, hash_str: str, hash_type: str) -> dict:
+    """Query VirusTotal for a file hash. Detection ratio, family label, metadata, YARA."""
+    if not VIRUSTOTAL_API_KEY:
+        return {"available": False, "reason": "no API key (VIRUSTOTAL_API_KEY not set)"}
+    cached = cache_get(conn, hash_str, "virustotal")
+    if cached is not None:
+        cached["_cached"] = True
+        return cached
+    headers = {"x-apikey": VIRUSTOTAL_API_KEY, "Accept": "application/json"}
+    try:
+        r = requests.get(f"{VT_BASE_URL}/files/{hash_str}", headers=headers, timeout=10)
+    except Exception as e:
+        return {"available": False, "reason": f"request failed: {type(e).__name__}"}
+    if r.status_code == 429:
+        return {"available": False, "reason": "rate limit hit (VT 4/min or 500/day)", "_status_code": 429}
+    if r.status_code == 404:
+        normalized = {"available": True, "in_corpus": False, "malicious": 0, "suspicious": 0,
+            "harmless": 0, "undetected": 0, "total_engines": 0, "reputation": 0,
+            "community_votes": {}, "suggested_label": None, "threat_names": [],
+            "threat_categories": [], "meaningful_name": None, "type_description": None,
+            "magic": None, "size": None, "first_submission": None, "last_submission": None,
+            "times_submitted": 0, "signed": False, "signer": None, "yara_matches": [], "tags": [],
+            "message": "hash not in VirusTotal database", "_cached": False, "_status_code": 404}
+        cache_put(conn, hash_str, "virustotal", normalized, status_code=404)
+        return normalized
+    if r.status_code != 200:
+        return {"available": False, "reason": f"HTTP {r.status_code}", "_status_code": r.status_code}
+    try:
+        attrs = (r.json().get("data", {}) or {}).get("attributes", {}) or {}
+    except Exception:
+        return {"available": False, "reason": "malformed JSON"}
+    stats = attrs.get("last_analysis_stats", {}) or {}
+    ptc = attrs.get("popular_threat_classification", {}) or {}
+    sig = attrs.get("signature_info", {}) or {}
+    yara = attrs.get("crowdsourced_yara_results") or []
+    normalized = {"available": True, "in_corpus": True,
+        "malicious": stats.get("malicious", 0), "suspicious": stats.get("suspicious", 0),
+        "harmless": stats.get("harmless", 0), "undetected": stats.get("undetected", 0),
+        "total_engines": sum(stats.values()) if stats else 0,
+        "reputation": attrs.get("reputation", 0), "community_votes": attrs.get("total_votes", {}) or {},
+        "suggested_label": ptc.get("suggested_threat_label"),
+        "threat_names": [n.get("value") for n in (ptc.get("popular_threat_name") or [])[:5] if isinstance(n, dict) and n.get("value")],
+        "threat_categories": [c.get("value") for c in (ptc.get("popular_threat_category") or [])[:5] if isinstance(c, dict) and c.get("value")],
+        "meaningful_name": attrs.get("meaningful_name"), "type_description": attrs.get("type_description"),
+        "magic": attrs.get("magic"), "size": attrs.get("size"),
+        "first_submission": attrs.get("first_submission_date"),
+        "last_submission": attrs.get("last_submission_date"),
+        "times_submitted": attrs.get("times_submitted", 0),
+        "signed": bool(sig.get("verified")) if sig else False,
+        "signer": sig.get("signers") if sig else None,
+        "yara_matches": [y.get("rule_name") for y in yara[:5] if isinstance(y, dict) and y.get("rule_name")],
+        "tags": attrs.get("tags") or [], "_cached": False, "_status_code": 200}
+    cache_put(conn, hash_str, "virustotal", normalized, status_code=200)
+    return normalized
+
+
+def otx_check_hash(conn: sqlite3.Connection, hash_str: str, hash_type: str) -> dict:
+    """Query OTX for a file hash. Returns pulse count + top pulse names."""
+    if not OTX_API_KEY:
+        return {"available": False, "reason": "no API key (OTX_API_KEY not set)"}
+    cached = cache_get(conn, hash_str, "otx")
+    if cached is not None:
+        cached["_cached"] = True
+        return cached
+    headers = {"X-OTX-API-KEY": OTX_API_KEY, "Accept": "application/json"}
+    try:
+        r = requests.get(f"{OTX_BASE_URL}/file/{hash_str}/general", headers=headers, timeout=10)
+    except Exception as e:
+        return {"available": False, "reason": f"request failed: {type(e).__name__}"}
+    if r.status_code != 200:
+        return {"available": False, "reason": f"HTTP {r.status_code}", "_status_code": r.status_code}
+    try:
+        body = r.json() or {}
+    except Exception:
+        return {"available": False, "reason": "malformed JSON"}
+    pi = body.get("pulse_info", {}) or {}
+    pulses = pi.get("pulses", []) or []
+    normalized = {"available": True, "pulse_count": pi.get("count", 0),
+        "top_pulses": [p.get("name") for p in pulses[:5] if p.get("name")],
+        "related_indicator_types": list((pi.get("related", {}) or {}).keys()),
+        "_cached": False, "_status_code": 200}
+    cache_put(conn, hash_str, "otx", normalized, status_code=200)
+    return normalized
+
+
 def bucket_external_ip(conn: sqlite3.Connection, ip: str) -> dict:
     """
     Orchestrate all external IP enrichment sources. Returns a dict keyed by source name.
@@ -840,6 +983,14 @@ SOURCE_WEIGHTS = {
 }
 SOURCE_WEIGHTS_TOTAL = sum(SOURCE_WEIGHTS.values())  # 105
 
+SOURCE_WEIGHTS_HASH = {
+    "malwarebazaar": 40,
+    "virustotal":    35,
+    "threatfox":     18,
+    "otx":            7,
+}
+SOURCE_WEIGHTS_HASH_TOTAL = sum(SOURCE_WEIGHTS_HASH.values())  # 100
+
 # Verdict bands match Mandiant's published thresholds (see blog: alert scoring at machine scale)
 VERDICT_BANDS = [
     (80, "malicious",  "BLOCK"),
@@ -847,6 +998,16 @@ VERDICT_BANDS = [
     (40, "unknown",    "MONITOR"),
     (0,  "benign",     "IGNORE"),
 ]
+
+
+def bucket_external_hash(conn: sqlite3.Connection, hash_str: str, hash_type: str) -> dict:
+    """Orchestrate hash enrichment sources. IP-only sources are skipped."""
+    return {
+        "malwarebazaar": malwarebazaar_check_hash(conn, hash_str, hash_type),
+        "virustotal":    virustotal_check_hash(conn, hash_str, hash_type),
+        "otx":           otx_check_hash(conn, hash_str, hash_type),
+        "threatfox":     threatfox_check_ioc(conn, hash_str, hash_type),
+    }
 
 
 def _signal_tpot(observed: dict) -> float:
@@ -932,6 +1093,20 @@ def _signal_otx(src: dict) -> float:
     return min(1.0, pulses / 10.0)
 
 
+def _signal_malwarebazaar(src: dict) -> float:
+    """MalwareBazaar: presence = confirmed malware. Family/vendor coverage escalates."""
+    if not src or not src.get("available"):
+        return 0.0
+    if not src.get("in_corpus"):
+        return 0.0
+    base = 0.7
+    if src.get("signature"):
+        base = 0.9
+    if (src.get("vendor_count") or 0) >= 3:
+        base = 1.0
+    return base
+
+
 def _detect_disagreements(external: dict, observed: dict, raw_score: float) -> list:
     """
     Identify cross-source disagreements (Layer 8 defense from hallucination stack).
@@ -989,39 +1164,69 @@ def _band_for_score(score: float) -> tuple:
     return ("benign", "IGNORE")  # Fallback (shouldn't reach — last band is 0)
 
 
-def bucket_verdict(observed: dict, external: dict) -> dict:
+def bucket_verdict(observed: dict, external: dict, ioc_type: str = "ipv4") -> dict:
     """
     Compute the verdict bucket — deterministic, auditable, override-aware.
     Returns a dict with the verdict, action, score, breakdown, conflicts, and floor reasons.
     """
-    # 1) Compute signal strength per source
-    signals = {
-        "tpot":          _signal_tpot(observed),
-        "spamhaus_drop": _signal_spamhaus_drop(external.get("spamhaus_drop")),
-        "greynoise":     _signal_greynoise(external.get("greynoise")),
-        "threatfox":     _signal_threatfox(external.get("threatfox")),
-        "virustotal":    _signal_virustotal(external.get("virustotal")),
-        "abuseipdb":     _signal_abuseipdb(external.get("abuseipdb")),
-        "otx":           _signal_otx(external.get("otx")),
-    }
+    is_hash = ioc_type in ("md5", "sha1", "sha256")
+
+    # 1) Compute signal strength per source (only valid sources for this IOC type)
+    if is_hash:
+        signals = {
+            "malwarebazaar": _signal_malwarebazaar(external.get("malwarebazaar")),
+            "virustotal":    _signal_virustotal(external.get("virustotal")),
+            "threatfox":     _signal_threatfox(external.get("threatfox")),
+            "otx":           _signal_otx(external.get("otx")),
+        }
+        weights, weights_total = SOURCE_WEIGHTS_HASH, SOURCE_WEIGHTS_HASH_TOTAL
+    else:
+        signals = {
+            "tpot":          _signal_tpot(observed),
+            "spamhaus_drop": _signal_spamhaus_drop(external.get("spamhaus_drop")),
+            "greynoise":     _signal_greynoise(external.get("greynoise")),
+            "threatfox":     _signal_threatfox(external.get("threatfox")),
+            "virustotal":    _signal_virustotal(external.get("virustotal")),
+            "abuseipdb":     _signal_abuseipdb(external.get("abuseipdb")),
+            "otx":           _signal_otx(external.get("otx")),
+        }
+        weights, weights_total = SOURCE_WEIGHTS, SOURCE_WEIGHTS_TOTAL
 
     # 2) Weighted contribution per source (may be negative for anti-signals)
-    contributions = {
-        name: SOURCE_WEIGHTS[name] * sig
-        for name, sig in signals.items()
-    }
+    contributions = {name: weights[name] * sig for name, sig in signals.items()}
 
     # 3) Raw weighted score, normalized to 0-100
     raw_total = sum(contributions.values())
-    raw_score = max(0.0, min(100.0, (raw_total / SOURCE_WEIGHTS_TOTAL) * 100.0))
+    raw_score = max(0.0, min(100.0, (raw_total / weights_total) * 100.0))
 
     # 4) Apply override rules — these are not "fudging" — they encode operational truth
     #    (Tier-1 ISPs autoblock on DROP; high T-Pot event counts are direct observation)
     floors = []
     floor_score = raw_score
 
-    sh = external.get("spamhaus_drop") or {}
-    tpot_events = (observed or {}).get("event_count", 0) or 0
+    if is_hash:
+        mb = external.get("malwarebazaar") or {}
+        if mb.get("in_corpus"):
+            if mb.get("signature"):
+                floor_score = max(floor_score, 85.0)
+                floors.append(f"MalwareBazaar: {mb.get('signature')} -> floor 85 (MALICIOUS)")
+            else:
+                floor_score = max(floor_score, 75.0)
+                floors.append("MalwareBazaar in-corpus -> floor 75")
+        vt = external.get("virustotal") or {}
+        if vt.get("available") and vt.get("in_corpus"):
+            flagged = (vt.get("malicious", 0) or 0) + (vt.get("suspicious", 0) or 0)
+            total = vt.get("total_engines", 0) or 0
+            ratio = (flagged / total) if total else 0.0
+            if flagged >= 10 and ratio >= 0.20:
+                floor_score = max(floor_score, 85.0)
+                floors.append(f"VT consensus {flagged}/{total} -> floor 85 (MALICIOUS)")
+            elif flagged >= 5 and ratio >= 0.10:
+                floor_score = max(floor_score, 65.0)
+                floors.append(f"VT consensus {flagged}/{total} -> floor 65 (SUSPICIOUS)")
+
+    sh = {} if is_hash else (external.get("spamhaus_drop") or {})
+    tpot_events = 0 if is_hash else ((observed or {}).get("event_count", 0) or 0)
 
     if sh.get("in_drop"):
         if tpot_events > 10000:
@@ -1556,54 +1761,77 @@ def render_external(external: dict, ioc: str) -> None:
     table.add_column()
     table.add_column(style="dim")
 
-    # AbuseIPDB row
-    ab = external.get("abuseipdb") or {}
-    ab_link = f"https://www.abuseipdb.com/check/{ioc}"
-    if not ab.get("available"):
-        reason = ab.get("reason") or "no data"
-        table.add_row("AbuseIPDB", f"[dim]not available — {reason}[/]", f"[link={ab_link}]open ↗[/]")
-    else:
-        score = ab.get("abuse_score", 0)
-        reports = ab.get("total_reports", 0)
-        if score >= 75:
-            score_str = f"[bold red]{score}/100[/]"
-        elif score >= 25:
-            score_str = f"[bold yellow]{score}/100[/]"
+    if "malwarebazaar" in external:
+        mb = external.get("malwarebazaar") or {}
+        mb_link = f"https://bazaar.abuse.ch/sample/{ioc}/"
+        if not mb.get("available"):
+            reason = mb.get("reason") or "no data"
+            table.add_row("MalwareBazaar", f"[dim]not available - {reason}[/]", f"[link={mb_link}]open[/]")
+        elif not mb.get("in_corpus"):
+            table.add_row("MalwareBazaar", "[dim]not in corpus[/]", f"[link={mb_link}]open[/]")
         else:
-            score_str = f"[bold green]{score}/100[/]"
-        summary = f"{score_str} confidence, {reports} reports"
-        if ab.get("is_whitelisted"):
-            summary += " [dim](whitelisted)[/]"
-        if ab.get("_cached"):
-            summary += " [dim](cached)[/]"
-        table.add_row("AbuseIPDB", summary, f"[link={ab_link}]open ↗[/]")
+            sig = mb.get("signature") or "unknown family"
+            ftype = mb.get("file_type") or ""
+            vc = mb.get("vendor_count") or 0
+            summary = f"[bold red]{sig}[/]"
+            if ftype:
+                summary += f"  [dim]{ftype}[/]"
+            if vc:
+                summary += f"  {vc} vendors"
+            if mb.get("_cached"):
+                summary += " [dim](cached)[/]"
+            table.add_row("MalwareBazaar", summary, f"[link={mb_link}]open[/]")
 
-    # GreyNoise row
-    gn = external.get("greynoise") or {}
-    gn_link = f"https://viz.greynoise.io/ip/{ioc}"
-    if not gn.get("available"):
-        reason = gn.get("reason") or "no data"
-        table.add_row("GreyNoise", f"[dim]not available — {reason}[/]", f"[link={gn_link}]open ↗[/]")
-    else:
-        cls = gn.get("classification", "unknown")
-        name = gn.get("name")
-        if cls == "malicious":
-            cls_str = "[bold red]malicious[/]"
-        elif cls == "benign":
-            cls_str = "[bold green]benign[/]"
+    if "abuseipdb" in external:
+        # AbuseIPDB row
+            ab = external.get("abuseipdb") or {}
+            ab_link = f"https://www.abuseipdb.com/check/{ioc}"
+            if not ab.get("available"):
+                reason = ab.get("reason") or "no data"
+                table.add_row("AbuseIPDB", f"[dim]not available — {reason}[/]", f"[link={ab_link}]open ↗[/]")
+            else:
+                score = ab.get("abuse_score", 0)
+                reports = ab.get("total_reports", 0)
+                if score >= 75:
+                    score_str = f"[bold red]{score}/100[/]"
+                elif score >= 25:
+                    score_str = f"[bold yellow]{score}/100[/]"
+                else:
+                    score_str = f"[bold green]{score}/100[/]"
+                summary = f"{score_str} confidence, {reports} reports"
+                if ab.get("is_whitelisted"):
+                    summary += " [dim](whitelisted)[/]"
+                if ab.get("_cached"):
+                    summary += " [dim](cached)[/]"
+                table.add_row("AbuseIPDB", summary, f"[link={ab_link}]open ↗[/]")
+
+    if "greynoise" in external:
+        # GreyNoise row
+        gn = external.get("greynoise") or {}
+        gn_link = f"https://viz.greynoise.io/ip/{ioc}"
+        if not gn.get("available"):
+            reason = gn.get("reason") or "no data"
+            table.add_row("GreyNoise", f"[dim]not available — {reason}[/]", f"[link={gn_link}]open ↗[/]")
         else:
-            cls_str = "[dim]unknown[/]"
-        parts = [cls_str]
-        if gn.get("noise"):
-            parts.append("[yellow]noise[/]")
-        if gn.get("riot"):
-            parts.append("[cyan]known service (RIOT)[/]")
-        if name:
-            parts.append(f"\"{name}\"")
-        summary = ", ".join(parts)
-        if gn.get("_cached"):
-            summary += " [dim](cached)[/]"
-        table.add_row("GreyNoise", summary, f"[link={gn_link}]open ↗[/]")
+            cls = gn.get("classification", "unknown")
+            name = gn.get("name")
+            if cls == "malicious":
+                cls_str = "[bold red]malicious[/]"
+            elif cls == "benign":
+                cls_str = "[bold green]benign[/]"
+            else:
+                cls_str = "[dim]unknown[/]"
+            parts = [cls_str]
+            if gn.get("noise"):
+                parts.append("[yellow]noise[/]")
+            if gn.get("riot"):
+                parts.append("[cyan]known service (RIOT)[/]")
+            if name:
+                parts.append(f"\"{name}\"")
+            summary = ", ".join(parts)
+            if gn.get("_cached"):
+                summary += " [dim](cached)[/]"
+            table.add_row("GreyNoise", summary, f"[link={gn_link}]open ↗[/]")
 
     # VirusTotal row
     vt = external.get("virustotal") or {}
@@ -1678,45 +1906,47 @@ def render_external(external: dict, ioc: str) -> None:
             summary += " [dim](cached)[/]"
         table.add_row("ThreatFox", summary, f"[link={tf_link}]open ↗[/]")
 
-    # InternetDB row
-    idb = external.get("internetdb") or {}
-    idb_link = f"https://internetdb.shodan.io/{ioc}"
-    if not idb.get("available"):
-        reason = idb.get("reason") or "no data"
-        table.add_row("InternetDB", f"[dim]not available — {reason}[/]", f"[link={idb_link}]open ↗[/]")
-    else:
-        ports = idb.get("ports", []) or []
-        vulns = idb.get("vulns", []) or []
-        tags  = idb.get("tags", []) or []
-        if not ports:
-            summary = "[dim]no scan data[/]"
+    if "internetdb" in external:
+        # InternetDB row
+        idb = external.get("internetdb") or {}
+        idb_link = f"https://internetdb.shodan.io/{ioc}"
+        if not idb.get("available"):
+            reason = idb.get("reason") or "no data"
+            table.add_row("InternetDB", f"[dim]not available — {reason}[/]", f"[link={idb_link}]open ↗[/]")
         else:
-            port_str = ", ".join(str(p) for p in ports[:8])
-            if len(ports) > 8:
-                port_str += f" +{len(ports)-8} more"
-            summary = f"{len(ports)} ports: {port_str}"
-            if vulns:
-                summary += f"  [red]{len(vulns)} CVEs[/]"
-            if tags:
-                summary += f"  [yellow]tags: {', '.join(tags[:3])}[/]"
-        if idb.get("_cached"):
-            summary += " [dim](cached)[/]"
-        table.add_row("InternetDB", summary, f"[link={idb_link}]open ↗[/]")
+            ports = idb.get("ports", []) or []
+            vulns = idb.get("vulns", []) or []
+            tags  = idb.get("tags", []) or []
+            if not ports:
+                summary = "[dim]no scan data[/]"
+            else:
+                port_str = ", ".join(str(p) for p in ports[:8])
+                if len(ports) > 8:
+                    port_str += f" +{len(ports)-8} more"
+                summary = f"{len(ports)} ports: {port_str}"
+                if vulns:
+                    summary += f"  [red]{len(vulns)} CVEs[/]"
+                if tags:
+                    summary += f"  [yellow]tags: {', '.join(tags[:3])}[/]"
+            if idb.get("_cached"):
+                summary += " [dim](cached)[/]"
+            table.add_row("InternetDB", summary, f"[link={idb_link}]open ↗[/]")
 
-    # Spamhaus DROP row
-    sh = external.get("spamhaus_drop") or {}
-    sh_link = "https://www.spamhaus.org/drop/"
-    if not sh.get("available"):
-        reason = sh.get("reason") or "no data"
-        table.add_row("Spamhaus DROP", f"[dim]not available — {reason}[/]", f"[link={sh_link}]open ↗[/]")
-    else:
-        if sh.get("in_drop"):
-            summary = f"[bold red on yellow] IN DROP [/]  range {sh.get('range')}  ({sh.get('sbl')})"
+    if "spamhaus_drop" in external:
+        # Spamhaus DROP row
+        sh = external.get("spamhaus_drop") or {}
+        sh_link = "https://www.spamhaus.org/drop/"
+        if not sh.get("available"):
+            reason = sh.get("reason") or "no data"
+            table.add_row("Spamhaus DROP", f"[dim]not available — {reason}[/]", f"[link={sh_link}]open ↗[/]")
         else:
-            summary = "[dim]not listed[/]"
-        if sh.get("_cached"):
-            summary += " [dim](cached)[/]"
-        table.add_row("Spamhaus DROP", summary, f"[link={sh_link}]open ↗[/]")
+            if sh.get("in_drop"):
+                summary = f"[bold red on yellow] IN DROP [/]  range {sh.get('range')}  ({sh.get('sbl')})"
+            else:
+                summary = "[dim]not listed[/]"
+            if sh.get("_cached"):
+                summary += " [dim](cached)[/]"
+            table.add_row("Spamhaus DROP", summary, f"[link={sh_link}]open ↗[/]")
 
     console.print(table)
     console.print()
@@ -1863,7 +2093,7 @@ def render_honest_limits(ioc_type: str) -> None:
     msgs = [
         # Direct ATT&CK mapping bucket — currently indirect via RULES bucket only
         "Direct ATT&CK mapping bucket not yet implemented (technique inference happens in RULES only)",
-        "Only IPv4 IOCs supported — domains, hashes, URLs, IPv6, CIDR, ASN not yet routed",
+        "IPv4 and file hashes supported — domains, URLs, IPv6, CIDR, ASN not yet routed",
         "Pattern detection on unknowns not yet implemented",
         "LLM narrative (STORY, NEXT STEPS, HYPOTHESIS) not yet implemented — Phase 7",
         "Self-audit subsystem (Sniff) not yet integrated — Phase 8",
@@ -1912,13 +2142,14 @@ def hunt(ioc: str, fresh: bool = False) -> int:
     ioc_type = detect_ioc_type(ioc)
     render_header(ioc, ioc_type)
 
-    if ioc_type != "ipv4":
-        console.print(f"[bold red]Hunt currently only supports IPv4 addresses.[/]")
-        console.print(f"[dim]Detected type: {ioc_type}. Support for hashes and domains is next.[/]")
+    if ioc_type not in ("ipv4", "md5", "sha1", "sha256"):
+        console.print(f"[bold red]Hunt does not yet support this IOC type.[/]")
+        console.print(f"[dim]Detected type: {ioc_type}. Supported: IPv4, file hashes.[/]")
         console.print()
         return 2
 
     conn = memory_init()
+    is_hash = ioc_type in ("md5", "sha1", "sha256")
 
     # MEMORY check first — the "have I seen this before?" gate
     past_hunts = memory_lookup_ioc(conn, ioc)
@@ -1927,25 +2158,35 @@ def hunt(ioc: str, fresh: bool = False) -> int:
 
     # Run fresh enrichment (always, for now — Phase 3 may add "show cached" mode)
     started = datetime.now(timezone.utc)
-    identity = bucket_identity_ip(ioc)
-    if identity.get("error"):
-        console.print(f"[bold red]ELK query failed:[/] {identity['error']}")
-        conn.close()
-        return 1
-    observed = bucket_observed_ip(ioc)
-    external = bucket_external_ip(conn, ioc)
-    verdict  = bucket_verdict(observed, external)
-    pivots   = bucket_pivots(ioc, identity, observed, external)
-    rules    = bucket_rules(observed, ioc)
+    if is_hash:
+        identity = {}
+        observed = {}
+        external = bucket_external_hash(conn, ioc, ioc_type)
+        verdict  = bucket_verdict(observed, external, ioc_type)
+        pivots   = []
+        rules    = {}
+    else:
+        identity = bucket_identity_ip(ioc)
+        if identity.get("error"):
+            console.print(f"[bold red]ELK query failed:[/] {identity['error']}")
+            conn.close()
+            return 1
+        observed = bucket_observed_ip(ioc)
+        external = bucket_external_ip(conn, ioc)
+        verdict  = bucket_verdict(observed, external, ioc_type)
+        pivots   = bucket_pivots(ioc, identity, observed, external)
+        rules    = bucket_rules(observed, ioc)
     duration_ms = int((datetime.now(timezone.utc) - started).total_seconds() * 1000)
 
     # VERDICT renders FIRST — analyst's primary question is "is this bad?"
     render_verdict(verdict)
-    render_identity(identity)
-    render_observed(observed)
+    if not is_hash:
+        render_identity(identity)
+        render_observed(observed)
     render_external(external, ioc)
-    render_rules(rules)
-    render_pivots(pivots)
+    if not is_hash:
+        render_rules(rules)
+        render_pivots(pivots)
     render_honest_limits(ioc_type)
 
     # Record this hunt to memory (SQLite + ES)
