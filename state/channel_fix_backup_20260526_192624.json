@@ -1,0 +1,12 @@
+[
+  {
+    "rule_id": "0d8f5280-0209-4112-a17f-8e6830258c82",
+    "name": "PowerShell Spawning Reconnaissance Commands",
+    "query": "event.code:1 AND (process.parent.executable:(*\\\\powershell.exe OR *\\\\pwsh.exe OR *\\\\powershell_ise.exe)) AND (process.executable:(*\\\\whoami.exe OR *\\\\systeminfo.exe OR *\\\\nltest.exe OR *\\\\net1.exe OR *\\\\wmic.exe))"
+  },
+  {
+    "rule_id": "1bab9cc9-362e-4106-9b1a-ce23d86833cc",
+    "name": "PowerShell Spawning Reconnaissance Commands",
+    "query": "event.code:1 AND (process.parent.executable:(*\\\\powershell.exe OR *\\\\pwsh.exe OR *\\\\powershell_ise.exe)) AND (process.executable:(*\\\\whoami.exe OR *\\\\systeminfo.exe OR *\\\\nltest.exe OR *\\\\net1.exe OR *\\\\wmic.exe))"
+  }
+]
