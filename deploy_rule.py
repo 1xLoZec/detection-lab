@@ -9,15 +9,41 @@ from sigma.backends.elasticsearch import LuceneBackend
 from sigma.pipelines.sysmon import sysmon_pipeline
 from sigma.pipelines.windows import windows_logsource_pipeline as windows_pipeline
 from sigma.processing.resolver import ProcessingPipelineResolver
+from sigma.processing.pipeline import ProcessingPipeline, ProcessingItem
+from sigma.processing.transformations import FieldMappingTransformation, DropDetectionItemTransformation
+from sigma.processing.conditions import IncludeFieldCondition
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+
+def ecs_fieldmap_pipeline():
+    """Translate raw Sysmon event-log field names to ECS, because our Elastic data is
+    ECS-normalized (event.code, process.executable) but the pySigma sysmon pipeline emits
+    raw Sysmon names (EventID, Image, ParentImage, Channel). Without this, deployed rules
+    are enabled and scheduled yet match nothing. Runs late (high priority number)."""
+    return ProcessingPipeline(name="sysmon-to-ecs-fieldmap", priority=100, items=[
+        ProcessingItem(
+            transformation=DropDetectionItemTransformation(),
+            field_name_conditions=[IncludeFieldCondition(fields=["Channel"])],
+        ),
+        ProcessingItem(transformation=FieldMappingTransformation({
+            "EventID": "event.code",
+            "Image": "process.executable",
+            "ParentImage": "process.parent.executable",
+            "CommandLine": "process.command_line",
+            "ParentCommandLine": "process.parent.command_line",
+            "TargetFilename": "file.path",
+            "DestinationIp": "destination.ip",
+            "DestinationPort": "destination.port",
+            "User": "user.name",
+        })),
+    ])
 
 def convert_sigma(rule_path):
     resolver = ProcessingPipelineResolver()
     resolver.add_pipeline_class(windows_pipeline())
     resolver.add_pipeline_class(sysmon_pipeline())
-    resolved = resolver.resolve(resolver.pipelines)
+    resolved = resolver.resolve(resolver.pipelines) + ecs_fieldmap_pipeline()
     backend = LuceneBackend(processing_pipeline=resolved)
     rules = SigmaCollection.load_ruleset([rule_path])
     result = backend.convert(rules)
