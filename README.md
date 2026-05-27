@@ -103,7 +103,7 @@ Live, auto-generated from the deployed rule set.
 ## Progress
 
 **May 26 — Tall Kitchen progress**
-- Built Hunt and Water web pages (plain-English, recruiter-friendly), committed and polished.
+- Built Hunt and Water web pages (plain-English), committed and polished.
 - Fixed Hunt scoring so confirmed-malicious results scale past 85 instead of flatlining; rewrote verdicts to lead with a clear action.
 - Built a rule efficacy counter that measures which deployed rules actually fire on real alerts.
 - Found the big one: 30 rules were silently dead. Traced it to a schema mismatch (the Sigma converter emitted raw Sysmon fields like `EventID` against ECS data). Fixed all 30 live rules, fixed the root cause in the deploy converter, and verified rules firing with live attacks.
