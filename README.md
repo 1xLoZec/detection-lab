@@ -102,20 +102,38 @@ Live, auto-generated from the deployed rule set.
 
 ## Progress
 
-- **May 14 2026 (later that day)** — Cleaned up Elasticsearch. T-Pot now on a 30-day ILM policy, replicas dropped to 0, best_compression on. Real disk hog was Elastic Agent metrics from the Windows VM, 16M perfmon docs and 1.6M process snapshots that nothing was reading. Turned those off, kept Sysmon and the Windows Security logs. Stack Monitoring rules now watching disk and JVM.
+**May 26 — Tall Kitchen progress**
+- Built Hunt and Water web pages (plain-English, recruiter-friendly), committed and polished.
+- Fixed Hunt scoring so confirmed-malicious results scale past 85 instead of flatlining; rewrote verdicts to lead with a clear action.
+- Built a rule efficacy counter that measures which deployed rules actually fire on real alerts.
+- Found the big one: 30 rules were silently dead. Traced it to a schema mismatch (the Sigma converter emitted raw Sysmon fields like `EventID` against ECS data). Fixed all 30 live rules, fixed the root cause in the deploy converter, and verified rules firing with live attacks.
+- Added an efficacy visual to the Water page, auto-refreshing every 15 minutes.
+- Built a human review gate: Water now holds every generated rule for approval (CLI + email) instead of auto-deploying, unified across both rule paths.
+- Put it all on a schedule: efficacy every 15 min, Water twice daily (generates and holds, never auto-deploys).
+  
+<img width="1107" height="811" alt="image" src="https://github.com/user-attachments/assets/af3ae7b2-8d33-4913-a155-bff287a577e0" />
+<img width="1107" height="473" alt="image" src="https://github.com/user-attachments/assets/6f5941fd-733c-48b8-a41d-c9a14bd07215" />
+
+
+
+- **May 14 2026 (later that day)**
+  Cleaned up Elasticsearch. T-Pot now on a 30-day ILM policy, replicas dropped to 0, best_compression on. Real disk hog was Elastic Agent metrics from the Windows VM, 16M perfmon docs and 1.6M process snapshots that nothing was reading. Turned those off, kept Sysmon and the Windows Security logs. Stack Monitoring rules now watching disk and JVM.
 
   <img width="891" height="124" alt="Elasticsearch disk usage cleanup after ILM policy change" src="https://github.com/user-attachments/assets/4b8d2867-4b99-44f9-8a8e-8ff465f74ddf" />
 
-- **May 14 2026** — T-Pot integration complete. WireGuard tunnel up between ELK and T-Pot — both directions, low latency, persistent across reboots. Created a dedicated `tpot_writer` Elasticsearch user scoped to `tpot-*` indices only — least privilege. Patched T-Pot's Logstash config to dual-output: it still writes to its own local ES (so T-Pot's UI keeps working) and now also ships every event to main ELK over the encrypted tunnel. Wall hit: Logstash 8 fully removed the old `ssl_certificate_verification` and `ssl` settings — they're not deprecated, they're obsolete and crash the pipeline on load. Had to use the modern `ssl_enabled` / `ssl_verification_mode` names. Another fun one: container healthcheck reported "healthy" while Logstash was actually in a pipeline crash loop, because the healthcheck only verifies the API port responds. 1974 attack events landed in ELK in the first ten minutes. tallkitchen_water can now learn from real attackers.
+- **May 14 2026**
+  T-Pot integration complete. WireGuard tunnel up between ELK and T-Pot — both directions, low latency, persistent across reboots. Created a dedicated `tpot_writer` Elasticsearch user scoped to `tpot-*` indices only — least privilege. Patched T-Pot's Logstash config to dual-output: it still writes to its own local ES (so T-Pot's UI keeps working) and now also ships every event to main ELK over the encrypted tunnel. Wall hit: Logstash 8 fully removed the old `ssl_certificate_verification` and `ssl` settings — they're not deprecated, they're obsolete and crash the pipeline on load. Had to use the modern `ssl_enabled` / `ssl_verification_mode` names. Another fun one: container healthcheck reported "healthy" while Logstash was actually in a pipeline crash loop, because the healthcheck only verifies the API port responds. 1974 attack events landed in ELK in the first ten minutes. tallkitchen_water can now learn from real attackers.
 
-- **May 13 2026** — T-Pot is live. Dedicated cloud droplet running 30+ honeypots. Cowrie was logging real Telnet brute force attempts from Colombia within minutes of the install finishing. Management is locked down behind ELK, honeypot ports wide open. The build wasn't clean — port conflict put it in a restart loop on the first reboot, took some journal log digging to sort out. Next: pipe the data into the main ELK so tallkitchen_water can learn from real attackers, not just simulations.
+- **May 13 2026**
+  T-Pot is live. Dedicated cloud droplet running 30+ honeypots. Cowrie was logging real Telnet brute force attempts from Colombia within minutes of the install finishing. Management is locked down behind ELK, honeypot ports wide open. The build wasn't clean — port conflict put it in a restart loop on the first reboot, took some journal log digging to sort out. Next: pipe the data into the main ELK so tallkitchen_water can learn from real attackers, not just simulations.
 
   <img width="1145" height="661" alt="T-Pot honeypot dashboard showing real attack events from Colombia" src="https://github.com/user-attachments/assets/061c7d4e-b2ef-445c-b292-91ea071a9636" />
 
-- **May 12 2026** — Cleaned up the public demo. Fixed Kibana permissions so the demo user can actually see alert data on the dashboard — the role's Security feature privilege needed to be set via the Kibana role API, not the ES role API. Wrong tool for the job. Locked the time range to last 3 months, turned on dark mode, made the dashboard the default landing page. Rewrote the markdown header in plain language. Demo is ready to show.
+- **May 12 2026**
+  Cleaned up the public demo. Fixed Kibana permissions so the demo user can actually see alert data on the dashboard — the role's Security feature privilege needed to be set via the Kibana role API, not the ES role API. Wrong tool for the job. Locked the time range to last 3 months, turned on dark mode, made the dashboard the default landing page. Rewrote the markdown header in plain language. Demo is ready to show.
 
-- **May 11 2026** — Two big things today.
-
+- **May 11 2026**
+  Two big things today.
   First, `demo.1xlozec.com` is live. Public read-only Kibana dashboard with SSL, rate limiting, and a dedicated viewer account. Anyone can see the lab without VPN. Built a Security Overview dashboard with nine live panels covering total alerts, severity distribution, most active rules, ATT&CK coverage, and a live alerts table.
 
   Second, the CI/CD pipeline is now self-healing. Every Sigma rule runs through four automated stages before it touches Kibana:
@@ -127,29 +145,37 @@ Live, auto-generated from the deployed rule set.
 
   If it fails, Claude rewrites it using each validator's feedback and tries again. Three attempts max. If it still fails, a circuit breaker emails me and stops. Nothing broken makes it to Kibana. 31 custom detection rules deployed to Kibana and firing live alerts. Full pipeline confirmed end to end: simulation → telemetry → AI analysis → rule generation → CI/CD validation → deployment → alert. Three high severity alerts generated from T1059.001, T1082, and T1016 simulations.
 
-- **May 10 2026** — Built the full tallkitchen_water automation pipeline. One command triggers the entire detection engineering workflow: query Elasticsearch, extract ATT&CK technique with Claude AI, generate a Sigma rule, push to GitHub, validate with three AI models (Claude + Gemini + Ollama), convert to Elastic DSL with pySigma, deploy to Kibana, send a formatted HTML alert to my inbox. 31 rules deployed. 57% ATT&CK tactic coverage. Runs 24/7 with adaptive lookback, weekly digest, and a kill switch. The pipeline is fully operational.
+- **May 10 2026**
+  Built the full tallkitchen_water automation pipeline. One command triggers the entire detection engineering workflow: query Elasticsearch, extract ATT&CK technique with Claude AI, generate a Sigma rule, push to GitHub, validate with three AI models (Claude + Gemini + Ollama), convert to Elastic DSL with pySigma, deploy to Kibana, send a formatted HTML alert to my inbox. 31 rules deployed. 57% ATT&CK tactic coverage. Runs 24/7 with adaptive lookback, weekly digest, and a kill switch. The pipeline is fully operational.
 
   <img width="862" height="754" alt="tallkitchen_water email report showing technique analysis and deployment summary" src="https://github.com/user-attachments/assets/4e82b198-a59d-4191-aa6a-6a5759ae9c79" />
 
-- **May 10 2026** — Full Detection-as-Code pipeline is live. Push a Sigma rule to GitHub and it automatically gets validated by three AI models, converted to Elastic query language, and deployed to Kibana. No manual steps. First rule deployed successfully — PowerShell Spawning Reconnaissance Commands. Running every 5 minutes.
+- **May 10 2026**
+  Full Detection-as-Code pipeline is live. Push a Sigma rule to GitHub and it automatically gets validated by three AI models, converted to Elastic query language, and deployed to Kibana. No manual steps. First rule deployed successfully — PowerShell Spawning Reconnaissance Commands. Running every 5 minutes.
 
   <img width="510" height="74" alt="GitHub Actions workflow run for first detection rule deployment" src="https://github.com/user-attachments/assets/2951a146-6d4c-4349-99db-834555e4c09e" />
   <img width="752" height="140" alt="First detection rule live in Kibana with enabled status" src="https://github.com/user-attachments/assets/dc67a15d-2a6e-44c8-9300-38d44620ef04" />
 
-- **May 8 2026** — First Atomic Red Team simulation ran today. T1003 credential dumping. Completely isolated, nowhere to go. Telemetry showed up in Kibana immediately. Sysmon caught everything — process creation, registry modifications, logon events. The whole pipeline worked exactly as designed. Writing the first detection rule next.
+- **May 8 2026**
+  First Atomic Red Team simulation ran today. T1003 credential dumping. Completely isolated, nowhere to go. Telemetry showed up in Kibana immediately. Sysmon caught everything — process creation, registry modifications, logon events. The whole pipeline worked exactly as designed. Writing the first detection rule next.
 
   <img width="558" height="269" alt="Atomic Red Team T1003 credential dumping simulation executing on Windows VM" src="https://github.com/user-attachments/assets/2a654b1a-2d26-4604-ae85-a65a5f95fb2a" />
   <img width="558" height="269" alt="T1003 simulation telemetry captured by Sysmon and ingested into Kibana" src="https://github.com/user-attachments/assets/c20186bc-723b-47cb-aef3-f4cd0dee7068" />
 
-- **May 8 2026** — The endpoint pipeline is live. Windows VM telemetry flowing into Kibana. Sysmon operational. Windows event logs, PowerShell logs, and security events all showing up from the VM. Took some work to get here but it's running clean now.
+- **May 8 2026**
+  The endpoint pipeline is live. Windows VM telemetry flowing into Kibana. Sysmon operational. Windows event logs, PowerShell logs, and security events all showing up from the VM. Took some work to get here but it's running clean now.
 
-- **May 7 2026** — Long sessions. Got Proxmox running on the dedicated lab machine and the Windows VM stood up inside it. Built a jump host for secure access to the lab environment. SSH from my PC to the jump host is working with full clipboard support. Still working through network segmentation. Getting closer.
+- **May 7 2026**
+  Long sessions. Got Proxmox running on the dedicated lab machine and the Windows VM stood up inside it. Built a jump host for secure access to the lab environment. SSH from my PC to the jump host is working with full clipboard support. Still working through network segmentation. Getting closer.
 
-- **April 28 2026** — Decided to do it right. Replaced the ISP router and mesh WiFi with enterprise-grade gear. Bought a dedicated machine for Proxmox. Proper network segmentation is in place. Attack environment is locked down. Waiting on hardware to finish the build.
+- **April 28 2026**
+  Decided to do it right. Replaced the ISP router and mesh WiFi with enterprise-grade gear. Bought a dedicated machine for Proxmox. Proper network segmentation is in place. Attack environment is locked down. Waiting on hardware to finish the build.
 
-- **April 25 2026** — Hit a wall with VMware. Dug into it, found out Broadcom is shipping incomplete installers. Not a config issue — the files are literally missing. Fixed a DNS issue while I was in there and kept moving.
+- **April 25 2026**
+  Hit a wall with VMware. Dug into it, found out Broadcom is shipping incomplete installers. Not a config issue — the files are literally missing. Fixed a DNS issue while I was in there and kept moving.
 
-- **April 24 2026** — Full ELK stack deployed and secured on DigitalOcean. Ubuntu server patched, firewall configured, SSL via NGINX. Elasticsearch 8.19 running on cluster `1xlozec-lab`, node `elk-node-01` verified responding. Kibana live at https://1xlozec.com. Fleet Server running and healthy. Elastic Agent enrolled and shipping live telemetry. 1,616 Elastic prebuilt detection rules installed with zero gaps. WireGuard VPN configured with split DNS — Kibana accessible only through the encrypted tunnel, blocked on the public internet. First Windows 11 ARM VM stood up in VMware Fusion, Sysmon installed with SwiftOnSecurity config, Elastic Agent enrolled and healthy, telemetry flowing. 704 documents ingested in the first hour.
+- **April 24 2026**
+  Full ELK stack deployed and secured on DigitalOcean. Ubuntu server patched, firewall configured, SSL via NGINX. Elasticsearch 8.19 running on cluster `1xlozec-lab`, node `elk-node-01` verified responding. Kibana live at https://1xlozec.com. Fleet Server running and healthy. Elastic Agent enrolled and shipping live telemetry. 1,616 Elastic prebuilt detection rules installed with zero gaps. WireGuard VPN configured with split DNS — Kibana accessible only through the encrypted tunnel, blocked on the public internet. First Windows 11 ARM VM stood up in VMware Fusion, Sysmon installed with SwiftOnSecurity config, Elastic Agent enrolled and healthy, telemetry flowing. 704 documents ingested in the first hour.
 
   <img width="1076" height="873" alt="Elasticsearch cluster 1xlozec-lab verified responding via Kibana Dev Tools" src="https://github.com/user-attachments/assets/65e011c9-47b2-4088-a3f0-cd9c70e389b1" />
   <img width="1076" height="873" alt="First live telemetry documents flowing into Kibana Discover from Elastic Agent" src="https://github.com/user-attachments/assets/4f297393-48c5-4416-97bf-e804358a2aaa" />
