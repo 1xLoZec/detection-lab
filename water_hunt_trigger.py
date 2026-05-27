@@ -221,7 +221,7 @@ def build_iocs_from_hunt(record: dict, observed: dict, identity: dict) -> dict:
     return {k: v for k, v in iocs.items() if v}
 
 
-def process_hunt_triggered_verdicts(generate_fn, save_and_push_fn, log: list, _con=None) -> int:
+def process_hunt_triggered_verdicts(generate_fn, save_and_push_fn, log: list, _con=None, queue_for_review_fn=None) -> int:
     """
     Main entry point. Called once per Water run, BEFORE Water's normal
     Sysmon-coverage flow. Returns the number of rules generated.
@@ -401,6 +401,17 @@ def process_hunt_triggered_verdicts(generate_fn, save_and_push_fn, log: list, _c
             f"# Generated: {datetime.now(timezone.utc).isoformat()}\n\n"
         )
         filepath.write_text(provenance_block + sigma_yaml)
+        # Also place into the unified review queue (approve.py) so both paths funnel to one place
+        if queue_for_review_fn is not None:
+            try:
+                queue_for_review_fn(sigma_yaml, {
+                    "technique_id": inferred["technique_id"],
+                    "technique_name": inferred["technique_name"],
+                    "tactic": inferred.get("tactic"),
+                    "confidence": "high",
+                }, rule_id, datetime.now(timezone.utc).isoformat())
+            except Exception:
+                pass
 
         # Step 9: record provenance in Water's hunt_log
         log_entry = {

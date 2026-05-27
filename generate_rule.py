@@ -974,6 +974,7 @@ def main():
             save_and_push_fn=save_and_push,
             log=log,
             _con=_con,
+            queue_for_review_fn=queue_for_review,
         )
         if hunt_generated > 0:
             save_state(seen, last, log, digest)

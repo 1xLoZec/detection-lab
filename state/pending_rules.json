@@ -1,10 +1,1 @@
-[
-  {
-    "rule_id": "b70565cc-77c4-4dd4-8838-a1fdb18a392d",
-    "technique_id": "T1046",
-    "technique_name": "Network Service Scanning",
-    "tactic": "discovery",
-    "confidence": "high",
-    "queued_at": "2026-05-27T00:33:41.380405+00:00"
-  }
-]
+[]
