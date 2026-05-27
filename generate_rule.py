@@ -400,6 +400,32 @@ def normalize_sigma_fields(sigma_yaml):
 
 
 # ── Save and Push ──────────────────────────────────────────────────────────────
+def queue_for_review(sigma_yaml, analysis, rule_id, now_ts):
+    """Review gate: hold a validated rule for human approval instead of deploying."""
+    import json as _json
+    base = os.path.dirname(os.path.abspath(__file__))
+    pending_dir = os.path.join(base, "detections", "pending")
+    os.makedirs(pending_dir, exist_ok=True)
+    with open(os.path.join(pending_dir, f"{rule_id}.yml"), "w") as fh:
+        fh.write(sigma_yaml)
+    pfile = os.path.join(base, "state", "pending_rules.json")
+    try:
+        items = _json.loads(open(pfile).read())
+    except Exception:
+        items = []
+    items.append({
+        "rule_id": rule_id,
+        "technique_id": analysis["technique_id"],
+        "technique_name": analysis["technique_name"],
+        "tactic": analysis.get("tactic"),
+        "confidence": analysis.get("confidence"),
+        "queued_at": now_ts,
+    })
+    with open(pfile, "w") as fh:
+        fh.write(_json.dumps(items, indent=2))
+    return pfile
+
+
 def save_and_push(sigma_yaml, analysis, rule_id):
     tid   = analysis["technique_id"].replace(".","-")
     tname = (analysis["technique_name"].lower()
@@ -513,6 +539,57 @@ def _wrapper(content, footer=""):
 
 
 # ── Email: rule deployed ───────────────────────────────────────────────────────
+def email_rule_pending(analysis, iocs, sigma_yaml, rule_id, events_count, lookback, seen):
+    """Review-gate email: a rule passed validation and is HELD awaiting human approval."""
+    now  = datetime.now(timezone.utc).strftime("%B %d, %Y at %I:%M %p UTC")
+    conf = analysis.get("confidence", "unknown").capitalize()
+    sev  = analysis.get("severity", "medium").capitalize()
+    indicators_html = "".join(
+        f'<tr><td style="padding:8px 14px;font-family:monospace;font-size:12px;'
+        f'color:{GREEN};border-bottom:1px solid {BORDER};">{ind}</td></tr>'
+        for ind in analysis.get("key_indicators", [])
+    )
+    short = rule_id[:8]
+    content = f"""
+<tr><td style="padding:20px 36px;">
+  <p style="margin:0;font-size:13px;color:{MUTED};">{now}</p>
+  <h1 style="margin:6px 0 0;font-size:20px;font-weight:700;color:{TEXT};">Rule awaiting your approval</h1>
+</td></tr>
+<tr><td style="padding:0 36px 14px;">
+  <p style="margin:0;font-size:14px;color:{TEXT};line-height:1.6;">
+    Water generated and validated a new detection rule. It is <b>held for review</b> and will not
+    deploy until you approve it.
+  </p>
+</td></tr>
+<tr><td style="padding:0 36px 16px;">
+  <table style="width:100%;border-collapse:collapse;border:1px solid {BORDER};border-radius:6px;">
+    <tr><td style="padding:8px 14px;font-size:13px;color:{MUTED};border-bottom:1px solid {BORDER};">Technique</td>
+        <td style="padding:8px 14px;font-size:13px;color:{TEXT};border-bottom:1px solid {BORDER};">{analysis.get("technique_id")} — {analysis.get("technique_name")}</td></tr>
+    <tr><td style="padding:8px 14px;font-size:13px;color:{MUTED};border-bottom:1px solid {BORDER};">Tactic</td>
+        <td style="padding:8px 14px;font-size:13px;color:{TEXT};border-bottom:1px solid {BORDER};">{analysis.get("tactic")}</td></tr>
+    <tr><td style="padding:8px 14px;font-size:13px;color:{MUTED};border-bottom:1px solid {BORDER};">Confidence</td>
+        <td style="padding:8px 14px;font-size:13px;color:{TEXT};border-bottom:1px solid {BORDER};">{conf}</td></tr>
+    <tr><td style="padding:8px 14px;font-size:13px;color:{MUTED};">Severity</td>
+        <td style="padding:8px 14px;font-size:13px;color:{TEXT};">{sev}</td></tr>
+  </table>
+</td></tr>
+<tr><td style="padding:0 36px 20px;">
+  <p style="margin:0 0 8px;font-size:13px;color:{MUTED};">What it looks for:</p>
+  <table style="width:100%;border-collapse:collapse;">{indicators_html}</table>
+</td></tr>
+<tr><td style="padding:0 36px 24px;">
+  <p style="margin:0;padding:14px;background:{YELLOW}15;border:1px solid {YELLOW}44;border-radius:6px;
+     font-size:13px;color:{TEXT};line-height:1.7;">
+    To approve and deploy this rule, run:<br>
+    <span style="font-family:monospace;color:{YELLOW};">python3 approve.py approve {short}</span><br>
+    To see the full rule first: <span style="font-family:monospace;color:{MUTED};">python3 approve.py show {short}</span><br>
+    To discard it: <span style="font-family:monospace;color:{MUTED};">python3 approve.py reject {short}</span>
+  </p>
+</td></tr>
+"""
+    send_email(f"[Review needed] {analysis.get('technique_id')} {analysis.get('technique_name')}", _wrapper(content))
+
+
 def email_rule_deployed(analysis, iocs, sigma_yaml, rule_id, events_count, lookback, filepath, seen):
     now  = datetime.now(timezone.utc).strftime("%B %d, %Y at %I:%M %p UTC")
     conf = analysis.get("confidence","unknown").capitalize()
@@ -981,6 +1058,28 @@ def main():
         _con.print("[red]✗  Rule failed validation.[/]")
         sys.exit(1)
 
+    # Step 5: deploy — or HOLD for human review if the gate is on
+    if os.getenv("WATER_REVIEW_GATE", "").lower() == "true":
+        _t0r = _t.time()
+        queue_for_review(sigma_yaml, analysis, rule_id, now_ts)
+        _step_ok("Held for review", "Rule validated and queued, awaiting human approval", _t.time()-_t0r)
+        log.append({
+            "timestamp": now_ts, "result": "pending_review",
+            "technique_id": analysis["technique_id"],
+            "technique_name": analysis["technique_name"],
+            "confidence": analysis["confidence"],
+            "rule_id": rule_id, "lookback": lookback,
+        })
+        save_state(seen, last, log, digest)
+        git_push_state()
+        try:
+            email_rule_pending(analysis, iocs, sigma_yaml, rule_id, len(events), lookback, seen)
+        except Exception:
+            pass
+        _con.print()
+        _con.print(f"  [yellow]Rule held for review[/] - approve with: [white]python3 approve.py approve {rule_id[:8]}[/]")
+        _con.print()
+        return
     # Step 5: Push to GitHub
     t0 = _t.time()
     with _con.status("[cyan]Pushing to GitHub...[/]", spinner="dots", spinner_style="cyan"):
