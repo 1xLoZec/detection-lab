@@ -400,6 +400,35 @@ def normalize_sigma_fields(sigma_yaml):
 
 
 # ── Save and Push ──────────────────────────────────────────────────────────────
+def write_ai_context(analysis):
+    """Optional AI-written context for a rule, shown to the analyst LABELED as an AI note.
+    Grounded in the real analysis data. Subordinate to the human-written technique meaning,
+    never the source of truth. Returns '' on any failure so a missing note never breaks anything."""
+    if not ANTHROPIC_API_KEY:
+        return ""
+    try:
+        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+        prompt = f"""Write ONE short, plain-English sentence (max 30 words) giving a new SOC analyst
+useful context about this specific detection. Use simple language, no jargon, no hype. State only what
+is supported by the data below. Do not give a verdict or say whether it is safe. Do not invent details.
+
+Technique: {analysis.get('technique_id')} {analysis.get('technique_name')}
+What was seen: {analysis.get('key_indicators')}
+Reasoning: {analysis.get('reasoning')}
+
+Respond with just the sentence, nothing else."""
+        resp = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=120,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        text = "".join(b.text for b in resp.content if hasattr(b, "text")).strip()
+        # keep it to a single clean sentence
+        return text.split("\n")[0].strip()
+    except Exception:
+        return ""
+
+
 def queue_for_review(sigma_yaml, analysis, rule_id, now_ts):
     """Review gate: hold a validated rule for human approval instead of deploying."""
     import json as _json
@@ -420,6 +449,7 @@ def queue_for_review(sigma_yaml, analysis, rule_id, now_ts):
         "tactic": analysis.get("tactic"),
         "confidence": analysis.get("confidence"),
         "queued_at": now_ts,
+        "ai_context": write_ai_context(analysis),
     })
     with open(pfile, "w") as fh:
         fh.write(_json.dumps(items, indent=2))

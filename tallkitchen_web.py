@@ -268,13 +268,22 @@ def api_pending_detail(rule_id: str):
         raise HTTPException(status_code=404, detail="rule not found")
     raw = fp.read_text()
     out = {"rule_id": rule_id, "yaml": raw, "title": None, "summary": None,
-           "triggers": [], "false_alarms": [], "level": None}
+           "triggers": [], "false_alarms": [], "level": None, "meaning": None, "ai_context": None}
     try:
         doc = _yaml.safe_load(raw)
         out["title"] = doc.get("title")
         out["summary"] = doc.get("description")
         out["level"] = doc.get("level")
         out["meaning"] = _technique_plain(doc.get("tags", []))
+        # pull the AI-written context note (if any) from the pending record
+        try:
+            pend = json.loads((HERE / "state" / "pending_rules.json").read_text())
+            for p in pend:
+                if p.get("rule_id") == rule_id and p.get("ai_context"):
+                    out["ai_context"] = p["ai_context"]
+                    break
+        except Exception:
+            pass
         out["false_alarms"] = doc.get("falsepositives", []) or []
         # Translate the detection logic into plain human triggers.
         FIELD_PLAIN = {
