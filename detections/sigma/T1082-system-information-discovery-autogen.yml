@@ -9,21 +9,26 @@ references:
 tags:
     - attack.discovery
     - attack.t1082
+    - attack.t1016
+    - attack.t1033
 logsource:
     category: process_creation
     product: windows
 detection:
-    selection:
+    selection_parent:
         process.parent.name: 'cmd.exe'
-        process.name|contains:
-            - 'whoami'
-            - 'hostname'
-            - 'ipconfig'
-            - 'arp'
-            - 'nbtstat'
-            - 'netsh'
-            - 'net1'
-    condition: selection
+    selection_tools:
+        process.name:
+            - 'whoami.exe'
+            - 'hostname.exe'
+            - 'ipconfig.exe'
+            - 'arp.exe'
+            - 'nbtstat.exe'
+            - 'netsh.exe'
+            - 'net1.exe'
+            - 'net.exe'
+            - 'systeminfo.exe'
+    condition: selection_parent and selection_tools
 falsepositives:
     - Legitimate system administrators performing manual network diagnostics or inventory collection
     - Automated IT asset management or monitoring agents that enumerate host information

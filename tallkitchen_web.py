@@ -102,6 +102,27 @@ def api_water():
         }
     except Exception:
         efficacy = None
+    # 3-AI validation receipts (real per-validator votes, from validate_rule.py)
+    validations = None
+    try:
+        vraw = json.loads((state / "rule_validations.json").read_text())
+        items = []
+        for rid, v in vraw.items():
+            atts = v.get("attempts") or []
+            items.append({
+                "title": v.get("title"),
+                "outcome": v.get("outcome"),
+                "final_attempt": v.get("final_attempt"),
+                "avg_score": v.get("avg_score"),
+                "backtest_hits": v.get("backtest_hits"),
+                "validated_at": v.get("validated_at"),
+                "attempts": atts,
+                "healed": len(atts) > 1,
+            })
+        items.sort(key=lambda x: x.get("validated_at") or "", reverse=True)
+        validations = items[:6]
+    except Exception:
+        validations = None
 
     # techniques grouped by tactic
     by_tactic = {}
@@ -144,6 +165,7 @@ def api_water():
         "hunt_triggered": hunt_triggered,
         "timeline": timeline,
         "efficacy": efficacy,
+        "validations": validations,
     })
 
 

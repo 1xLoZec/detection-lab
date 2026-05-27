@@ -23,15 +23,47 @@ from email.message import EmailMessage
 from sigma.collection import SigmaCollection
 from sigma.backends.elasticsearch import LuceneBackend
 from sigma.pipelines.sysmon import sysmon_pipeline
+from sigma.pipelines.windows import windows_logsource_pipeline as windows_pipeline
+from sigma.processing.resolver import ProcessingPipelineResolver
+from sigma.processing.pipeline import ProcessingPipeline, ProcessingItem
+from sigma.processing.transformations import FieldMappingTransformation, DropDetectionItemTransformation
+from sigma.processing.conditions import IncludeFieldCondition
+from datetime import datetime, timezone
 
 
 # ── Sigma conversion ──────────────────────────────────────────────────────────
 
+def _ecs_fieldmap_pipeline():
+    """Same Sysmon->ECS field mapping used by deploy_rule.py — our Elastic data is ECS,
+    not raw Sysmon. Without this the backtest queries EventID/Image and gets 0 hits,
+    which wrongly fails good rules."""
+    return ProcessingPipeline(name="sysmon-to-ecs-fieldmap", priority=100, items=[
+        ProcessingItem(
+            transformation=DropDetectionItemTransformation(),
+            field_name_conditions=[IncludeFieldCondition(fields=["Channel"])],
+        ),
+        ProcessingItem(transformation=FieldMappingTransformation({
+            "EventID": "event.code",
+            "Image": "process.executable",
+            "ParentImage": "process.parent.executable",
+            "CommandLine": "process.command_line",
+            "ParentCommandLine": "process.parent.command_line",
+            "TargetFilename": "file.path",
+            "DestinationIp": "destination.ip",
+            "DestinationPort": "destination.port",
+            "User": "user.name",
+        })),
+    ])
+
 def convert_sigma(rule_path):
-    """Convert a Sigma YAML file to a Lucene query string."""
-    backend = LuceneBackend(processing_pipeline=sysmon_pipeline())
-    rules   = SigmaCollection.load_ruleset([rule_path])
-    result  = backend.convert(rules)
+    """Convert a Sigma YAML file to a Lucene query string (ECS field names)."""
+    resolver = ProcessingPipelineResolver()
+    resolver.add_pipeline_class(windows_pipeline())
+    resolver.add_pipeline_class(sysmon_pipeline())
+    resolved = resolver.resolve(resolver.pipelines) + _ecs_fieldmap_pipeline()
+    backend  = LuceneBackend(processing_pipeline=resolved)
+    rules    = SigmaCollection.load_ruleset([rule_path])
+    result   = backend.convert(rules)
     return result[0] if result else None
 
 
@@ -363,6 +395,46 @@ def send_circuit_breaker_email(rule_path, attempts, feedback_history):
         print(f"  [circuit breaker] email failed: {e}")
 
 
+def save_validation(rule_path, rule_text, feedback_history, approvals, avg_score, attempt, backtest_hits, outcome):
+    """Persist the real 3-AI vote receipts so the Water page can show them (no invented data)."""
+    import json as _json, re as _re
+    base = os.path.dirname(os.path.abspath(__file__))
+    vfile = os.path.join(base, "state", "rule_validations.json")
+    # pull rule id + title from the yaml text
+    rid = None; title = None
+    m = _re.search(r'^id:\s*(.+)$', rule_text, _re.MULTILINE)
+    if m: rid = m.group(1).strip()
+    mt = _re.search(r'^title:\s*(.+)$', rule_text, _re.MULTILINE)
+    if mt: title = mt.group(1).strip()
+    if not rid:
+        rid = os.path.basename(rule_path)
+    try:
+        data = _json.loads(open(vfile).read())
+    except Exception:
+        data = {}
+    # build per-attempt vote records from feedback_history
+    attempts = []
+    for i, fb in enumerate(feedback_history, 1):
+        votes = {}
+        for validator, r in fb.items():
+            votes[validator] = {"score": r.get("score"), "approve": r.get("approve")}
+        attempts.append({"attempt": i, "votes": votes})
+    data[rid] = {
+        "title": title,
+        "rule_file": os.path.basename(rule_path),
+        "outcome": outcome,                 # "approved" or "failed"
+        "final_attempt": attempt,
+        "approvals": approvals,             # final approvals out of 3
+        "avg_score": round(avg_score, 1),
+        "backtest_hits": backtest_hits,
+        "attempts": attempts,
+        "validated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    os.makedirs(os.path.dirname(vfile), exist_ok=True)
+    with open(vfile, "w") as fh:
+        fh.write(_json.dumps(data, indent=2))
+
+
 def main():
     import urllib3
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -453,6 +525,7 @@ def main():
                 with open(rule_path, "w") as f:
                     f.write(rule_text)
                 print(f"  Self-healed rule written back to {rule_path}")
+            save_validation(rule_path, rule_text, feedback_history, approvals, avg_score, attempt, last_backtest, "approved")
             print(f"\nPASS: Rule approved on attempt {attempt} ✓")
             sys.exit(0)
 

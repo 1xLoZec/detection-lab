@@ -216,6 +216,28 @@
   .eff-count{font-family:var(--disp); font-weight:700; font-size:15px; color:var(--text);}
   .eff-count span{font-size:11px; color:var(--faint); font-weight:400; margin-left:4px;}
   .eff-when{font-size:11px; color:var(--faint); margin-top:10px;}
+
+  .rcpt-sub{font-size:12.5px; color:var(--dim); line-height:1.6; margin:0 0 16px;}
+  .rcpt{border:1px solid var(--line); border-radius:11px; padding:14px 16px; margin-bottom:12px; background:rgba(120,150,170,.04);}
+  .rcpt-top{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px;}
+  .rcpt-title{flex:1; font-size:13.5px; color:var(--text); min-width:0;}
+  .rcpt-tag{font-family:var(--mono); font-size:10.5px; padding:3px 9px; border-radius:20px; font-weight:700; letter-spacing:.5px;}
+  .rcpt-tag.ok{background:rgba(34,211,238,.12); color:var(--cyan-l); border:1px solid rgba(34,211,238,.4);}
+  .rcpt-tag.heal{background:rgba(251,191,36,.12); color:var(--amber); border:1px solid rgba(251,191,36,.4);}
+  .att{margin-top:10px;}
+  .att-label{font-size:11px; color:var(--faint); margin-bottom:7px; font-family:var(--mono);}
+  .votes{display:flex; gap:10px; flex-wrap:wrap;}
+  .vote{flex:1; min-width:90px; border:1px solid var(--line); border-radius:9px; padding:9px 11px; display:flex; align-items:center; justify-content:space-between; gap:8px;}
+  .vote .vn{font-size:12px; color:var(--dim);}
+  .vote .vs{font-family:var(--disp); font-weight:700; font-size:16px;}
+  .vote.approve{border-color:rgba(34,211,238,.35);}
+  .vote.approve .vs{color:var(--cyan-l);}
+  .vote.reject{border-color:rgba(248,113,113,.4);}
+  .vote.reject .vs{color:#f87171;}
+  .vote .vv{font-size:9px; letter-spacing:.5px; font-family:var(--mono); margin-top:2px;}
+  .vote.approve .vv{color:var(--cyan-l);} .vote.reject .vv{color:#f87171;}
+  .rcpt-foot{font-size:11.5px; color:var(--faint); margin-top:12px; line-height:1.5;}
+  .rcpt-foot b{color:var(--dim); font-weight:400;}
 </style>
 </head>
 <body>
@@ -276,6 +298,10 @@
     <div class="detail" id="detail"></div>
   </div>
 
+  <div class="panel" id="receipts" style="margin-bottom:22px">
+    <div class="section-label">The three AIs, on the record</div>
+    <div class="section-sub">loading…</div>
+  </div>
   <!-- STATS -->
 
   <!-- MAP + EMAIL -->
@@ -373,6 +399,36 @@ const TLR={deployed:['deployed','wrote a new detection rule'],
   hunt_triggered_pending_review:['pending','rule written, waiting for review'],
   hunt_triggered_generation_failed:['failed','tried but could not generate a rule']};
 
+function fillReceipts(d){
+  const el=document.getElementById('receipts');
+  const v=d.validations;
+  if(!v||!v.length){ el.innerHTML='<div class="section-label">The three AIs, on the record</div>'
+    +'<div class="section-sub">No validation receipts yet. They appear here as Water validates rules.</div>'; return; }
+  let h='<div class="section-label">The three AIs, on the record</div>';
+  h+='<div class="rcpt-sub">Every rule is scored by three separate AIs. At least two must agree, or Water rewrites the rule and tries again. These are the real scores, not a claim.</div>';
+  v.forEach(r=>{
+    const healed=r.healed;
+    h+='<div class="rcpt">';
+    h+='<div class="rcpt-top"><span class="rcpt-title">'+esc(r.title||'Rule')+'</span>';
+    if(healed) h+='<span class="rcpt-tag heal">rewritten, then passed</span>';
+    else h+='<span class="rcpt-tag ok">passed first try</span>';
+    h+='</div>';
+    (r.attempts||[]).forEach(a=>{
+      h+='<div class="att">';
+      if((r.attempts||[]).length>1) h+='<div class="att-label">attempt '+a.attempt+(a.attempt<r.final_attempt?' · not enough agreement':' · approved')+'</div>';
+      h+='<div class="votes">';
+      Object.keys(a.votes||{}).forEach(name=>{
+        const vote=a.votes[name], ap=vote.approve;
+        h+='<div class="vote '+(ap?'approve':'reject')+'"><span class="vn">'+esc(name)+'</span>'
+          +'<span style="text-align:right"><div class="vs">'+vote.score+'</div><div class="vv">'+(ap?'APPROVE':'REJECT')+'</div></span></div>';
+      });
+      h+='</div></div>';
+    });
+    h+='<div class="rcpt-foot">Final: <b>2 of 3 agreed, average '+r.avg_score+'/10</b>. Tested against <b>'+r.backtest_hits+' real events</b> before approval.</div>';
+    h+='</div>';
+  });
+  el.innerHTML=h;
+}
 function fillEfficacy(d){
   const el=document.getElementById('efficacy');
   const e=d.efficacy;
@@ -407,6 +463,7 @@ function fill(d){
   dec+='</div>';
   document.getElementById('decisions').innerHTML=dec;
   try{ fillEfficacy(d); }catch(e){}
+  try{ fillReceipts(d); }catch(e){}
   requestAnimationFrame(()=>{
     document.querySelectorAll('#decisions .bfill').forEach(b=>{ b.style.width=b.dataset.w+'%'; });
   });

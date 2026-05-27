@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-05-27T00:27:24.254450+00:00",
+  "generated_at": "2026-05-27T00:57:33.086094+00:00",
   "alerts_index": ".internal.alerts-security.alerts-default-*",
-  "total_rules": 35,
+  "total_rules": 36,
   "rules_fired": 7,
-  "rules_dormant": 28,
+  "rules_dormant": 29,
   "rules_error": 0,
   "by_technique": {
     "T1059.001": {
@@ -272,9 +272,9 @@
       "tactic": "defense-evasion",
       "rule_id": "5c8ea8be-7a0e-4809-b65a-2d26f91ee077",
       "deployed_at": "2026-05-11T18:44:59.364279+00:00",
-      "fire_count": 690,
+      "fire_count": 693,
       "first_fired": "2026-05-11T12:47:32.793Z",
-      "last_fired": "2026-05-26T23:48:08.051Z"
+      "last_fired": "2026-05-27T00:48:07.872Z"
     },
     "T1033": {
       "technique_name": "System Owner/User Discovery",
@@ -317,6 +317,15 @@
       "tactic": "credential-access",
       "rule_id": "77ecdffa-3fa9-462a-a86d-ea87e42455d0",
       "deployed_at": "2026-05-15T23:50:03.456294+00:00",
+      "fire_count": 0,
+      "first_fired": null,
+      "last_fired": null
+    },
+    "T1046": {
+      "technique_name": "Network Service Scanning",
+      "tactic": "discovery",
+      "rule_id": "b70565cc-77c4-4dd4-8838-a1fdb18a392d",
+      "deployed_at": "2026-05-27T00:35:21.961691+00:00",
       "fire_count": 0,
       "first_fired": null,
       "last_fired": null

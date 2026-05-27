@@ -1,0 +1,48 @@
+{
+  "99975fcf-52cb-4595-a905-0c45242c30db": {
+    "title": "System Information Discovery via CMD Enumeration Utilities",
+    "rule_file": "T1082-system-information-discovery-autogen.yml",
+    "outcome": "approved",
+    "final_attempt": 2,
+    "approvals": 3,
+    "avg_score": 7.0,
+    "backtest_hits": 51,
+    "attempts": [
+      {
+        "attempt": 1,
+        "votes": {
+          "Ollama": {
+            "score": 7,
+            "approve": true
+          },
+          "Claude": {
+            "score": 5,
+            "approve": true
+          },
+          "Gemini": {
+            "score": 5,
+            "approve": false
+          }
+        }
+      },
+      {
+        "attempt": 2,
+        "votes": {
+          "Ollama": {
+            "score": 7,
+            "approve": true
+          },
+          "Claude": {
+            "score": 6,
+            "approve": true
+          },
+          "Gemini": {
+            "score": 8,
+            "approve": true
+          }
+        }
+      }
+    ],
+    "validated_at": "2026-05-27T01:02:16.553742+00:00"
+  }
+}
