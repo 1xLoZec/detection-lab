@@ -606,5 +606,40 @@
     "rule_id": "b70565cc-77c4-4dd4-8838-a1fdb18a392d",
     "filepath": "detections/sigma/T1046-network-service-scanning-autogen.yml",
     "approved_by": "human"
+  },
+  {
+    "timestamp": "2026-05-27T00:37:56.007197+00:00",
+    "result": "hunt_triggered_pending_review",
+    "ioc": "77.83.240.70",
+    "technique_id": "T1046",
+    "technique_name": "Network Service Scanning",
+    "confidence": "high",
+    "rule_id": "3f9a6b93-3242-4661-b8bc-e6871b802615",
+    "filepath": "detections/sigma/hunt-triggered/T1046-e37bc06b-77-83-240-70.yml",
+    "triggered_by_hunt_id": "e37bc06b-5f70-4d16-acd1-e2e4f86cda11",
+    "honeypots_seen": [
+      "P0f",
+      "Suricata",
+      "Honeytrap",
+      "Fatt",
+      "Miniprint",
+      "Ipphoney"
+    ],
+    "total_events": 1113574,
+    "provenance": {
+      "source": "water",
+      "trust_level": "medium",
+      "tagged_at": "2026-05-27T00:37:56.007208+00:00",
+      "triggered_by_hunt_id": "e37bc06b-5f70-4d16-acd1-e2e4f86cda11"
+    }
+  },
+  {
+    "timestamp": "2026-05-27T00:37:48.502259+00:00",
+    "result": "pending_review",
+    "technique_id": "T1053.002",
+    "technique_name": "Scheduled Task/Job: At",
+    "confidence": "medium",
+    "rule_id": "cde037fa-003b-43a1-8a00-7b1a043e392f",
+    "lookback": 10
   }
 ]
