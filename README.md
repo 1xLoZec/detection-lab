@@ -102,6 +102,15 @@ Live, auto-generated from the deployed rule set.
 
 ## Progress
 
+**May 26 — Human review gate + analyst-friendly approval page**
+- Water now holds every rule it generates for human approval before anything goes live. Nothing reaches the SIEM without a person signing off.
+- The new review page shows each waiting rule in plain language. A new analyst sees what the rule catches and why it matters, written in simple terms, with the real technical detail one click away. Approving a rule takes a deliberate confirmation, so nothing deploys by accident.
+- Each rule also gets a short AI-written note about what was actually seen, clearly marked as AI and never used as the final word. The plain-English explanation a person reads is human-written and fixed, so it is always correct. The AI only adds context. The human always makes the call.
+- Also fixed a second instance of the field-mapping bug, this time in the rule validator, which had been quietly failing good rules.
+
+<img width="1107" height="735" alt="image" src="https://github.com/user-attachments/assets/90baba53-93fb-4129-915f-db3967e511a7" />
+
+
 **May 26 — Tall Kitchen progress**
 - Built Hunt and Water web pages (plain-English), committed and polished.
 - Fixed Hunt scoring so confirmed-malicious results scale past 85 instead of flatlining; rewrote verdicts to lead with a clear action.
