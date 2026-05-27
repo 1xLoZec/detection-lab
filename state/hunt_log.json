@@ -562,5 +562,39 @@
     "technique_name": "System Binary Proxy Execution: Rundll32",
     "confidence": "high",
     "lookback": 1440
+  },
+  {
+    "timestamp": "2026-05-27T00:33:41.380865+00:00",
+    "result": "hunt_triggered_pending_review",
+    "ioc": "77.83.240.70",
+    "technique_id": "T1046",
+    "technique_name": "Network Service Scanning",
+    "confidence": "high",
+    "rule_id": "b70565cc-77c4-4dd4-8838-a1fdb18a392d",
+    "filepath": "detections/sigma/hunt-triggered/T1046-e37bc06b-77-83-240-70.yml",
+    "triggered_by_hunt_id": "e37bc06b-5f70-4d16-acd1-e2e4f86cda11",
+    "honeypots_seen": [
+      "P0f",
+      "Suricata",
+      "Honeytrap",
+      "Fatt",
+      "Miniprint",
+      "Ipphoney"
+    ],
+    "total_events": 1113574,
+    "provenance": {
+      "source": "water",
+      "trust_level": "medium",
+      "tagged_at": "2026-05-27T00:33:41.380878+00:00",
+      "triggered_by_hunt_id": "e37bc06b-5f70-4d16-acd1-e2e4f86cda11"
+    }
+  },
+  {
+    "timestamp": "2026-05-27T00:33:31.722716+00:00",
+    "result": "already_covered",
+    "technique_id": "T1053.005",
+    "technique_name": "Scheduled Task/Job: Scheduled Task",
+    "confidence": "high",
+    "lookback": 10
   }
 ]
