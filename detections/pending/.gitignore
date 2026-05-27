@@ -1,0 +1,4 @@
+# Pending rules are transient, awaiting human approval via approve.py.
+# Do not commit unapproved rule yaml to the repo.
+*.yml
+!.gitignore
