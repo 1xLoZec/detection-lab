@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tall Kitchen Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#070c10; --panel:rgba(14,21,28,.74); --panel2:rgba(10,16,22,.92);
+    --line:rgba(120,150,170,.16); --text:#dde7ee; --dim:#9db0bf; --faint:#74899a;
+    --cyan:#22d3ee; --cyan-l:#7df0ff;
+    --gold:#fbbf24; --gold-l:#fcd34d;
+    --violet:#b66bff; --violet-l:#e9d5ff;
+    --green:#34e2a8; --green-l:#7df5c8;
+    --red:#ff5c6c; --amber:#fbb43a;
+    --mono:"Space Mono",ui-monospace,Menlo,monospace;
+    --disp:"Space Grotesk",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;}
+  body{background:var(--bg); color:var(--text); font-family:var(--mono); font-size:15px;
+    line-height:1.55; overflow-x:hidden; position:relative; min-height:100vh;}
+  .bgfx{position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden;}
+  .grid{position:absolute; inset:-2px;
+    background-image:linear-gradient(rgba(120,150,170,.045) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(120,150,170,.045) 1px,transparent 1px);
+    background-size:46px 46px; mask-image:radial-gradient(ellipse 80% 55% at 50% 0%,#000 30%,transparent 75%);}
+  .orb{position:absolute; border-radius:50%; filter:blur(85px); opacity:.35;}
+  .orb.c{width:480px;height:480px;background:radial-gradient(circle,rgba(34,211,238,.4),transparent 70%); top:-160px;left:-110px;}
+  .orb.g{width:380px;height:380px;background:radial-gradient(circle,rgba(251,191,36,.22),transparent 70%); top:30%;right:-120px;}
+  .wrap{position:relative; z-index:2; max-width:760px; margin:0 auto; padding:48px 20px 80px;}
+  .head{display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:8px;}
+  .brand{font-family:var(--disp); font-weight:700; font-size:30px; letter-spacing:-.5px;
+    background:linear-gradient(120deg,var(--cyan) 0%,var(--cyan-l) 45%,var(--gold-l) 100%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;}
+  .brand .spoon{-webkit-text-fill-color:initial;}
+  .ver{font-size:11px; color:var(--dim); border:1px solid var(--line); border-radius:20px; padding:2px 9px; letter-spacing:1px;}
+  .tag{color:var(--dim); font-size:15px; margin:0 0 18px; max-width:680px;}
+  .tag b{color:var(--text); font-weight:400;}
+  .links{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:30px;}
+  .lk{display:inline-flex; align-items:center; gap:8px; text-decoration:none; border-radius:10px; padding:9px 16px; font-size:13px; transition:all .2s;}
+  .lk.water{background:rgba(34,211,238,.12); border:1px solid rgba(34,211,238,.4); color:var(--cyan-l);}
+  .lk.water:hover{background:rgba(34,211,238,.22);}
+  .section-label{font-family:var(--disp); font-size:11px; color:var(--cyan-l); text-transform:uppercase; letter-spacing:2px; margin:0 0 6px; display:flex; align-items:center; gap:8px;}
+  .section-label::after{content:""; flex:1; height:1px; background:linear-gradient(90deg,var(--line),transparent);}
+  .section-sub{color:var(--faint); font-size:12.5px; margin:0 0 22px;}
+
+  .card{border:1px solid var(--line); border-radius:13px; padding:16px 18px; margin-bottom:14px; background:var(--panel);}
+  .card-top{display:flex; align-items:flex-start; gap:12px; flex-wrap:wrap;}
+  .card-id{font-family:var(--mono); font-size:11px; color:var(--cyan-l); background:rgba(34,211,238,.1); border:1px solid rgba(34,211,238,.3); border-radius:6px; padding:2px 8px;}
+  .card-name{flex:1; font-size:15px; color:var(--text); min-width:0; cursor:pointer; transition:color .15s;}
+  .card-name:hover{color:var(--cyan-l);}
+  .card-caret{font-size:11px; color:var(--faint); margin-left:7px; transition:color .15s;}
+  .card-name:hover .card-caret{color:var(--cyan-l);}
+  .card-conf{font-size:10.5px; font-family:var(--mono); letter-spacing:.5px; padding:2px 9px; border-radius:20px;}
+  .conf-high{color:var(--red); background:rgba(255,92,108,.13); border:1px solid rgba(255,92,108,.4);}
+  .conf-medium{color:var(--amber); background:rgba(251,180,58,.12); border:1px solid rgba(251,180,58,.35);}
+  .conf-low{color:var(--green-l); background:rgba(52,226,168,.12); border:1px solid rgba(52,226,168,.35);}
+  .votes{display:flex; gap:8px; flex-wrap:wrap; margin:14px 0;}
+  .vote{flex:1; min-width:78px; border:1px solid var(--line); border-radius:9px; padding:8px 10px; text-align:center;}
+  .vote .vn{font-size:11px; color:var(--dim);}
+  .vote .vs{font-family:var(--disp); font-weight:700; font-size:17px; margin-top:2px;}
+  .vote.approve{border-color:rgba(34,211,238,.35);} .vote.approve .vs{color:var(--cyan-l);}
+  .vote.reject{border-color:rgba(255,92,108,.4);} .vote.reject .vs{color:var(--red);}
+  .meta{font-size:11.5px; color:var(--faint); margin:8px 0 0;}
+  .meta b{color:var(--dim); font-weight:400;}
+  .acts{display:flex; gap:10px; margin-top:14px;}
+  .btn{flex:1; font-family:var(--disp); font-weight:500; font-size:14px; border-radius:10px; padding:11px; cursor:pointer; transition:all .15s; border:1px solid;}
+  .btn.approve{background:rgba(52,226,168,.13); border-color:rgba(52,226,168,.45); color:var(--green-l);}
+  .btn.approve:hover{background:rgba(52,226,168,.24);}
+  .btn.reject{background:rgba(255,92,108,.1); border-color:rgba(255,92,108,.4); color:var(--red);}
+  .btn.reject:hover{background:rgba(255,92,108,.2);}
+  .btn:disabled{opacity:.4; cursor:default;}
+  .toggle{font-size:11.5px; color:var(--faint); cursor:pointer; margin-top:12px; display:inline-block; border-bottom:1px dashed var(--line);}
+  .toggle:hover{color:var(--cyan-l);}
+  .yaml{display:none; margin-top:12px; padding:12px; background:var(--panel2); border:1px solid var(--line); border-radius:8px; font-size:11.5px; color:var(--dim); white-space:pre-wrap; max-height:300px; overflow:auto;}
+  .rdetail{margin-top:12px; padding:12px 14px; background:var(--panel2); border:1px solid var(--line); border-radius:9px;}
+  .rdetail .d-desc{font-size:13px; color:var(--dim); line-height:1.6; margin:0 0 10px;}
+  .rdetail .d-label{font-size:10.5px; color:var(--faint); text-transform:uppercase; letter-spacing:1px; margin:0 0 4px;}
+  .rdetail pre{font-size:11px; color:var(--dim); white-space:pre-wrap; margin:0; max-height:240px; overflow:auto;}
+  .d-meaning{font-size:14.5px; color:var(--text); line-height:1.65; margin:0 0 10px; font-weight:400;}
+  .d-ai{font-size:12.5px; color:var(--dim); line-height:1.6; margin:0 0 10px; padding:9px 12px; background:rgba(182,107,255,.07); border:1px solid rgba(182,107,255,.25); border-radius:8px;}
+  .d-ai-tag{display:inline-block; font-family:var(--disp); font-size:9.5px; font-weight:700; letter-spacing:1px; color:var(--violet-l); background:rgba(182,107,255,.18); border-radius:5px; padding:2px 7px; margin-right:8px; vertical-align:1px;}
+  .d-simple{font-size:14px; color:var(--text); line-height:1.6; margin:0 0 10px;}
+  .d-more{display:inline-block; font-family:var(--disp); font-size:12px; color:var(--cyan-l); cursor:pointer; padding:4px 0; border-bottom:1px solid rgba(34,211,238,.3);}
+  .d-more:hover{border-bottom-color:var(--cyan-l);}
+  .d-full{margin-top:14px; padding-top:14px; border-top:1px solid var(--line);}
+  .d-row{margin-bottom:14px;}
+  .d-h{font-family:var(--disp); font-size:10.5px; color:var(--cyan-l); text-transform:uppercase; letter-spacing:1.5px; margin:0 0 6px;}
+  .d-p{font-size:13.5px; color:var(--text); line-height:1.65; margin:0;}
+  .d-list{margin:0; padding:0; list-style:none;}
+  .d-list li{font-size:13.5px; color:var(--text); line-height:1.55; padding:5px 0 5px 18px; position:relative;}
+  .d-list li::before{content:"\2192"; position:absolute; left:0; color:var(--cyan); }
+  .d-list.soft li{color:var(--dim);}
+  .d-list.soft li::before{content:"\2022"; color:var(--faint);}
+  .d-loading{font-size:13px; color:var(--faint); margin:0;}
+  .d-raw-toggle{display:inline-block; font-size:11.5px; color:var(--faint); cursor:pointer; margin-top:6px; border-bottom:1px dashed var(--line);}
+  .d-raw-toggle:hover{color:var(--cyan-l);}
+  .d-yaml{margin-top:10px; padding:12px; background:rgba(3,7,10,.6); border:1px solid var(--line); border-radius:8px; font-size:11px; color:var(--faint); white-space:pre-wrap; max-height:260px; overflow:auto;}
+  .empty{text-align:center; color:var(--faint); padding:50px 20px; font-size:14px;}
+  .empty .big{font-family:var(--disp); font-size:18px; color:var(--dim); margin-bottom:8px;}
+  .flash{padding:11px 14px; border-radius:9px; font-size:13px; margin-bottom:14px; display:none;}
+  .flash.ok{background:rgba(52,226,168,.13); border:1px solid rgba(52,226,168,.4); color:var(--green-l);}
+  .flash.err{background:rgba(255,92,108,.12); border:1px solid rgba(255,92,108,.4); color:var(--red);}
+  #modal{display:none; position:fixed; inset:0; z-index:50; background:rgba(3,7,10,.82); align-items:center; justify-content:center;}
+  #modal-backdrop{position:absolute; inset:0;}
+  .modal-box{position:relative; z-index:2; width:min(440px,90vw); min-height:300px; background:var(--panel2); border:1px solid var(--line); border-radius:16px; padding:26px 26px 22px; display:flex; flex-direction:column;}
+  .modal-q{font-family:var(--disp); font-weight:700; font-size:19px; color:var(--text); margin:0 0 12px;}
+  .modal-name{font-size:13px; color:var(--cyan-l); background:rgba(34,211,238,.1); border:1px solid rgba(34,211,238,.3); border-radius:8px; padding:9px 12px; margin:0 0 14px; word-break:break-word;}
+  .modal-note{font-size:12.5px; color:var(--faint); line-height:1.6; margin:0;}
+  .modal-actions{margin-top:auto; padding-top:26px; display:flex; align-items:flex-end; justify-content:space-between; gap:16px;}
+  .mbtn{font-family:var(--disp); font-weight:500; font-size:14px; border-radius:10px; padding:11px 16px; cursor:pointer; border:1px solid; transition:all .15s;}
+  .mbtn.cancel{background:rgba(120,150,170,.08); border-color:var(--line); color:var(--dim);}
+  .mbtn.cancel:hover{border-color:var(--cyan-l); color:var(--cyan-l);}
+  .mbtn.confirm.approve{background:rgba(52,226,168,.14); border-color:rgba(52,226,168,.5); color:var(--green-l);}
+  .mbtn.confirm.approve:hover{background:rgba(52,226,168,.26);}
+  .mbtn.confirm.reject{background:rgba(255,92,108,.12); border-color:rgba(255,92,108,.45); color:var(--red);}
+  .mbtn.confirm.reject:hover{background:rgba(255,92,108,.24);}
+</style>
+</head>
+<body>
+<div class="bgfx"><div class="grid"></div><div class="orb c"></div><div class="orb g"></div></div>
+<div id="modal">
+  <div id="modal-backdrop"></div>
+  <div class="modal-box">
+    <p class="modal-q" id="modal-q">Are you sure?</p>
+    <div class="modal-name" id="modal-name"></div>
+    <p class="modal-note" id="modal-note"></p>
+    <div class="modal-actions">
+      <button class="mbtn cancel" id="modal-cancel">Cancel</button>
+      <button class="mbtn confirm approve" id="modal-confirm">Confirm</button>
+    </div>
+  </div>
+</div>
+<div class="wrap">
+  <div class="head">
+    <span class="brand"><span class="spoon">🥄</span> Tall Kitchen</span>
+    <span class="ver">REVIEW</span>
+  </div>
+  <p class="tag">Rules Water wants to deploy. <b>Nothing goes live until you approve it here.</b> Three AIs scored each one. You make the final call.</p>
+  <div class="links"><a class="lk water" href="/water">← Back to Water</a></div>
+
+  <div class="section-label">Waiting for your call</div>
+  <div class="section-sub">Tap a rule to see exactly what it would catch before you decide.</div>
+  <div id="flash" class="flash"></div>
+  <div id="queue"><div class="empty">Loading…</div></div>
+</div>
+<script>
+function esc(s){return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+async function load(){
+  try{
+    const d=await (await fetch('/api/pending')).json();
+    render(d.pending||[]);
+  }catch(e){ document.getElementById('queue').innerHTML='<div class="empty">Could not load the queue.</div>'; }
+}
+
+function render(rules){
+  const q=document.getElementById('queue');
+  if(!rules.length){ q.innerHTML='<div class="empty"><div class="big">All clear.</div>No rules waiting. When Water finds something new, it shows up here.</div>'; return; }
+  let h='';
+  rules.forEach(r=>{
+    const last=(r.votes&&r.votes.length)?r.votes[r.votes.length-1]:null;
+    const conf=(r.confidence||'medium').toLowerCase();
+    h+='<div class="card" id="card-'+esc(r.rule_id)+'">';
+    h+='<div class="card-top"><span class="card-id">'+esc((r.rule_id||'').slice(0,8))+'</span>'
+      +'<span class="card-name" data-detail="'+esc(r.rule_id)+'">'+esc(r.technique_id)+' · '+esc(r.technique_name)+'<span class="card-caret">▸</span></span>'
+      +'<span class="card-conf conf-'+esc(conf)+'">'+esc(conf.toUpperCase())+'</span></div>';
+    if(last&&last.votes){
+      h+='<div class="votes">';
+      Object.keys(last.votes).forEach(n=>{
+        const v=last.votes[n];
+        h+='<div class="vote '+(v.approve?'approve':'reject')+'"><div class="vn">'+esc(n)+'</div><div class="vs">'+esc(v.score)+'</div></div>';
+      });
+      h+='</div>';
+      h+='<p class="meta">'+(r.healed?'Rewritten once, then ':'')+'approved by the AIs · avg <b>'+esc(r.avg_score)+'/10</b> · tested against <b>'+esc(r.backtest_hits)+' real events</b></p>';
+    }
+    h+='<div class="rdetail" id="det-'+esc(r.rule_id)+'" style="display:none"></div>';
+    h+='<div class="acts">'
+      +'<button class="btn approve" data-id="'+esc(r.rule_id)+'" data-kind="approve">Approve &amp; deploy</button>'
+      +'<button class="btn reject" data-id="'+esc(r.rule_id)+'" data-kind="reject">Reject</button></div>';
+    h+='</div>';
+  });
+  q.innerHTML=h;
+  q.querySelectorAll('button.btn').forEach(b=>{
+    b.addEventListener('click',()=>act(b.dataset.id, b.dataset.kind, b));
+  });
+  q.querySelectorAll('.card-name').forEach(t=>{
+    t.addEventListener('click',()=>toggleDetail(t.dataset.detail, t));
+  });
+}
+
+async function toggleDetail(id, nameEl){
+  const box=document.getElementById('det-'+id);
+  const caret=nameEl.querySelector('.card-caret');
+  if(box.style.display==='block'){ box.style.display='none'; if(caret) caret.textContent='\u25b8'; return; }
+  box.innerHTML='<p class="d-loading">Loading…</p>'; box.style.display='block';
+  if(caret) caret.textContent='\u25be';
+  try{
+    const d=await (await fetch('/api/pending-detail/'+id)).json();
+    // Tier 1: one plain sentence built from the triggers (not the jargony AI description)
+    let h='';
+    if(d.meaning){ h+='<p class="d-meaning">'+esc(d.meaning)+'</p>'; }
+    if(d.ai_context){ h+='<p class="d-ai"><span class="d-ai-tag">AI note</span>'+esc(d.ai_context)+'</p>'; }
+    let trig='';
+    if(d.triggers && d.triggers.length){ trig = 'Flags it when ' + d.triggers.join(', and ') + '.'; }
+    else if(d.summary){ trig = d.summary; }
+    if(trig){ h+='<p class="d-simple">'+esc(trig)+'</p>'; }
+    h+='<span class="d-more" data-more="'+id+'">See full detail</span>';
+    h+='<div class="d-full" id="full-'+id+'" style="display:none">';
+    if(d.triggers && d.triggers.length){
+      h+='<div class="d-row"><div class="d-h">It fires when</div><ul class="d-list">';
+      d.triggers.forEach(t=>{ h+='<li>'+esc(t)+'</li>'; });
+      h+='</ul></div>';
+    }
+    if(d.false_alarms && d.false_alarms.length){
+      h+='<div class="d-row"><div class="d-h">Might be a false alarm if</div><ul class="d-list soft">';
+      d.false_alarms.forEach(fa=>{ h+='<li>'+esc(fa)+'</li>'; });
+      h+='</ul></div>';
+    }
+    if(d.level){
+      h+='<div class="d-row"><div class="d-h">Seriousness</div><p class="d-p">'+esc(String(d.level).charAt(0).toUpperCase()+String(d.level).slice(1))+'</p></div>';
+    }
+    h+='<span class="d-raw-toggle" data-raw="'+id+'">Show the raw rule</span>';
+    h+='<pre class="d-yaml" id="raw-'+id+'" style="display:none">'+esc(d.yaml)+'</pre>';
+    h+='</div>';
+    box.innerHTML=h;
+
+    box.querySelector('.d-more').addEventListener('click',function(){
+      const full=document.getElementById('full-'+id);
+      const show=full.style.display==='none';
+      full.style.display=show?'block':'none';
+      this.textContent=show?'Hide detail':'See full detail';
+    });
+    const rt=box.querySelector('.d-raw-toggle');
+    rt.addEventListener('click',function(){
+      const pre=document.getElementById('raw-'+id);
+      const show=pre.style.display==='none';
+      pre.style.display=show?'block':'none';
+      this.textContent=show?'Hide the raw rule':'Show the raw rule';
+    });
+  }catch(e){ box.innerHTML='<p class="d-p">Could not load detail.</p>'; }
+}
+
+function flash(msg, ok){const f=document.getElementById('flash'); f.textContent=msg; f.className='flash '+(ok?'ok':'err'); f.style.display='block'; setTimeout(()=>{f.style.display='none';},4000);}
+
+let _pending=null;
+function act(id, kind, btn){
+  const card=document.getElementById('card-'+id);
+  const nm=card.querySelector('.card-name');
+  const name=nm ? nm.textContent.replace('\u25b8','').replace('\u25be','').trim() : id;
+  _pending={id, kind, name};
+  openModal(kind, name);
+}
+
+function openModal(kind, name){
+  const m=document.getElementById('modal');
+  const isApprove=kind==='approve';
+  document.getElementById('modal-q').textContent = isApprove ? 'Deploy this rule to your live SIEM?' : 'Reject and discard this rule?';
+  document.getElementById('modal-name').textContent = name;
+  const c=document.getElementById('modal-confirm');
+  c.textContent = isApprove ? 'Yes, deploy it' : 'Yes, reject it';
+  c.className = 'mbtn confirm '+(isApprove?'approve':'reject');
+  document.getElementById('modal-note').textContent = isApprove
+    ? 'This rule will go live and start matching real traffic. Move to the corner and confirm only if you are sure.'
+    : 'This rule will be permanently discarded.';
+  m.style.display='flex';
+}
+function closeModal(){ document.getElementById('modal').style.display='none'; _pending=null; }
+
+async function fire(){
+  if(!_pending) return;
+  const {id, kind}=_pending;
+  const card=document.getElementById('card-'+id);
+  closeModal();
+  if(card){ card.querySelectorAll('button').forEach(b=>b.disabled=true); }
+  try{
+    const r=await (await fetch('/api/'+kind+'/'+id,{method:'POST'})).json();
+    if(r.ok){
+      flash(kind==='approve'?'Rule approved and deployed.':'Rule rejected and discarded.', true);
+      if(card){ card.style.transition='opacity .4s'; card.style.opacity='0'; }
+      setTimeout(()=>{ load(); }, 450);
+    }else{
+      flash('Something went wrong: '+(r.output||'unknown'), false);
+      if(card){ card.querySelectorAll('button').forEach(b=>b.disabled=false); }
+    }
+  }catch(e){ flash('Request failed: '+e.message, false); if(card){ card.querySelectorAll('button').forEach(b=>b.disabled=false); } }
+}
+
+document.getElementById('modal-confirm').addEventListener('click', fire);
+document.getElementById('modal-cancel').addEventListener('click', closeModal);
+document.getElementById('modal-backdrop').addEventListener('click', closeModal);
+
+load();
+</script>
+</body>
+</html>
