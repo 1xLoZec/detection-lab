@@ -528,5 +528,39 @@
     "rule_id": "77ecdffa-3fa9-462a-a86d-ea87e42455d0",
     "filepath": "detections/sigma/T1110-001-brute-force:-password-guessing-autogen.yml",
     "lookback": 17
+  },
+  {
+    "timestamp": "2026-05-27T00:29:09.561488+00:00",
+    "result": "hunt_triggered_pending_review",
+    "ioc": "77.83.240.70",
+    "technique_id": "T1046",
+    "technique_name": "Network Service Scanning",
+    "confidence": "high",
+    "rule_id": "06d2c842-40d9-435d-aa3f-91a0982edadb",
+    "filepath": "detections/sigma/hunt-triggered/T1046-e37bc06b-77-83-240-70.yml",
+    "triggered_by_hunt_id": "e37bc06b-5f70-4d16-acd1-e2e4f86cda11",
+    "honeypots_seen": [
+      "P0f",
+      "Suricata",
+      "Honeytrap",
+      "Fatt",
+      "Miniprint",
+      "Ipphoney"
+    ],
+    "total_events": 1113574,
+    "provenance": {
+      "source": "water",
+      "trust_level": "medium",
+      "tagged_at": "2026-05-27T00:29:09.561504+00:00",
+      "triggered_by_hunt_id": "e37bc06b-5f70-4d16-acd1-e2e4f86cda11"
+    }
+  },
+  {
+    "timestamp": "2026-05-27T00:29:01.483506+00:00",
+    "result": "already_covered",
+    "technique_id": "T1218.011",
+    "technique_name": "System Binary Proxy Execution: Rundll32",
+    "confidence": "high",
+    "lookback": 1440
   }
 ]
