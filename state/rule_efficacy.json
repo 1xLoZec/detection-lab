@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-05-26T22:58:38.263739+00:00",
+  "generated_at": "2026-05-27T00:12:19.945283+00:00",
   "alerts_index": ".internal.alerts-security.alerts-default-*",
   "total_rules": 35,
-  "rules_fired": 5,
-  "rules_dormant": 30,
+  "rules_fired": 7,
+  "rules_dormant": 28,
   "rules_error": 0,
   "by_technique": {
     "T1059.001": {
@@ -11,18 +11,18 @@
       "tactic": "execution",
       "rule_id": "ae4b60ce-b6c0-4ca8-82df-9469de001220",
       "deployed_at": "2026-05-10T07:21:09.396447+00:00",
-      "fire_count": 0,
-      "first_fired": null,
-      "last_fired": null
+      "fire_count": 4,
+      "first_fired": "2026-05-26T23:28:00.615Z",
+      "last_fired": "2026-05-26T23:29:56.909Z"
     },
     "T1087.001": {
       "technique_name": "Account Discovery: Local Account",
       "tactic": "discovery",
       "rule_id": "5d9f4578-3ec8-4b4a-902d-62f951b3d28a",
       "deployed_at": "2026-05-10T08:01:43.617305+00:00",
-      "fire_count": 0,
-      "first_fired": null,
-      "last_fired": null
+      "fire_count": 1,
+      "first_fired": "2026-05-26T23:28:15.191Z",
+      "last_fired": "2026-05-26T23:28:15.191Z"
     },
     "T1082": {
       "technique_name": "System Information Discovery",
@@ -83,9 +83,9 @@
       "tactic": "discovery",
       "rule_id": "a43bd367-b5b5-4a03-b2b4-f3053b2eef83",
       "deployed_at": "2026-05-10T17:30:03.138867+00:00",
-      "fire_count": 2,
+      "fire_count": 3,
       "first_fired": "2026-05-26T22:53:21.085Z",
-      "last_fired": "2026-05-26T22:53:21.093Z"
+      "last_fired": "2026-05-26T23:28:21.097Z"
     },
     "T1021.002": {
       "technique_name": "Remote Services: SMB/Windows Admin Shares",
@@ -272,9 +272,9 @@
       "tactic": "defense-evasion",
       "rule_id": "5c8ea8be-7a0e-4809-b65a-2d26f91ee077",
       "deployed_at": "2026-05-11T18:44:59.364279+00:00",
-      "fire_count": 687,
+      "fire_count": 690,
       "first_fired": "2026-05-11T12:47:32.793Z",
-      "last_fired": "2026-05-26T22:48:08.941Z"
+      "last_fired": "2026-05-26T23:48:08.051Z"
     },
     "T1033": {
       "technique_name": "System Owner/User Discovery",

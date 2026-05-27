@@ -201,6 +201,21 @@
   /* hero treatment for the flow */
   .flow-hero-title{font-family:var(--disp); font-weight:700; font-size:32px; color:var(--text); margin:0 0 5px; letter-spacing:-.5px;}
   .flow-hero-sub{color:var(--dim); font-size:13px; margin:0 0 20px;}
+
+  .eff-top{display:flex; gap:14px; margin:10px 0 14px; flex-wrap:wrap;}
+  .eff-stat{flex:1; min-width:130px; background:rgba(120,150,170,.05); border:1px solid var(--line); border-radius:10px; padding:13px 15px;}
+  .eff-stat .en{font-family:var(--disp); font-weight:700; font-size:26px; line-height:1;}
+  .eff-stat .el{font-size:11.5px; color:var(--dim); margin-top:6px;}
+  .eff-stat.fired .en{color:var(--cyan-l);}
+  .eff-stat.dormant .en{color:var(--faint);}
+  .eff-note{font-size:12.5px; color:var(--dim); line-height:1.6; margin:0 0 16px; border-left:2px solid var(--line-bright); padding-left:12px;}
+  .eff-row{display:flex; align-items:center; gap:12px; padding:9px 0; border-top:1px solid rgba(120,150,170,.08);}
+  .eff-row:first-child{border-top:none;}
+  .eff-id{font-family:var(--mono); font-size:12px; color:var(--cyan-l); min-width:84px;}
+  .eff-name{flex:1; font-size:13px; color:var(--text); min-width:0;}
+  .eff-count{font-family:var(--disp); font-weight:700; font-size:15px; color:var(--text);}
+  .eff-count span{font-size:11px; color:var(--faint); font-weight:400; margin-left:4px;}
+  .eff-when{font-size:11px; color:var(--faint); margin-top:10px;}
 </style>
 </head>
 <body>
@@ -290,6 +305,10 @@
         </div>
       </div>
     </div>
+  <div class="panel" id="efficacy" style="margin-bottom:22px">
+    <div class="section-label">Do the rules actually catch attacks?</div>
+    <div class="section-sub">loading…</div>
+  </div>
   <div class="footer">tall kitchen · <b>water</b> — autonomous detection engineering · built by 1xLoZec</div>
 </div>
 <script>
@@ -354,6 +373,28 @@ const TLR={deployed:['deployed','wrote a new detection rule'],
   hunt_triggered_pending_review:['pending','rule written, waiting for review'],
   hunt_triggered_generation_failed:['failed','tried but could not generate a rule']};
 
+function fillEfficacy(d){
+  const el=document.getElementById('efficacy');
+  const e=d.efficacy;
+  if(!e){ el.innerHTML='<div class="section-label">Do the rules actually catch attacks?</div>'
+    +'<div class="section-sub">No efficacy data yet. Run the efficacy check to measure real rule fires.</div>'; return; }
+  const fired=e.rules_fired||0, dormant=e.rules_dormant||0, total=e.total_rules||0;
+  let h='<div class="section-label">Do the rules actually catch attacks?</div>';
+  h+='<div class="section-sub">Every deployed rule, checked against real alerts in the lab. This is measured, not assumed.</div>';
+  h+='<div class="eff-top">'
+    +'<div class="eff-stat fired"><div class="en">'+fired+'</div><div class="el">rules have caught real activity</div></div>'
+    +'<div class="eff-stat dormant"><div class="en">'+dormant+'</div><div class="el">deployed and waiting</div></div>'
+    +'<div class="eff-stat"><div class="en">'+total+'</div><div class="el">rules watching in total</div></div>'
+    +'</div>';
+  h+='<div class="eff-note">Waiting does not mean broken. A rule only fires when its specific attack actually happens in the lab. These rules are live and correct, they just have not seen their attack yet.</div>';
+  (e.fired||[]).forEach(r=>{
+    h+='<div class="eff-row"><span class="eff-id">'+esc(r.id)+'</span>'
+      +'<span class="eff-name">'+esc(r.name||'')+'</span>'
+      +'<span class="eff-count">'+r.count+'<span>'+(r.count===1?'time':'times')+'</span></span></div>';
+  });
+  if(e.measured_at) h+='<div class="eff-when">last measured: '+fmtDate(e.measured_at)+'</div>';
+  el.innerHTML=h;
+}
 function fill(d){
   const total=Object.values(d.outcomes).reduce((a,b)=>a+b,0)||1;
   let dec='<div class="section-label">Every decision it made</div>'
@@ -365,6 +406,7 @@ function fill(d){
   });
   dec+='</div>';
   document.getElementById('decisions').innerHTML=dec;
+  try{ fillEfficacy(d); }catch(e){}
   requestAnimationFrame(()=>{
     document.querySelectorAll('#decisions .bfill').forEach(b=>{ b.style.width=b.dataset.w+'%'; });
   });

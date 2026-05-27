@@ -79,6 +79,29 @@ def api_water():
         last_run = json.loads((state / "last_run.json").read_text()).get("timestamp")
     except Exception:
         last_run = None
+    # rule efficacy snapshot (real fires per deployed rule; updated when rule_efficacy.py runs)
+    efficacy = None
+    try:
+        eff = json.loads((state / "rule_efficacy.json").read_text())
+        fired = []
+        for tid, r in (eff.get("by_technique") or {}).items():
+            if isinstance(r, dict) and r.get("fire_count", 0) > 0:
+                fired.append({
+                    "id": tid,
+                    "name": r.get("technique_name"),
+                    "count": r.get("fire_count", 0),
+                    "last_fired": r.get("last_fired"),
+                })
+        fired.sort(key=lambda x: x["count"], reverse=True)
+        efficacy = {
+            "measured_at": eff.get("generated_at"),
+            "total_rules": eff.get("total_rules", 0),
+            "rules_fired": eff.get("rules_fired", 0),
+            "rules_dormant": eff.get("rules_dormant", 0),
+            "fired": fired,
+        }
+    except Exception:
+        efficacy = None
 
     # techniques grouped by tactic
     by_tactic = {}
@@ -120,6 +143,7 @@ def api_water():
         "prod_rules": prod_rules,
         "hunt_triggered": hunt_triggered,
         "timeline": timeline,
+        "efficacy": efficacy,
     })
 
 
