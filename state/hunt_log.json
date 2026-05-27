@@ -641,5 +641,40 @@
     "confidence": "medium",
     "rule_id": "cde037fa-003b-43a1-8a00-7b1a043e392f",
     "lookback": 10
+  },
+  {
+    "timestamp": "2026-05-27T12:00:14.844939+00:00",
+    "result": "hunt_triggered_pending_review",
+    "ioc": "77.83.240.70",
+    "technique_id": "T1046",
+    "technique_name": "Network Service Scanning",
+    "confidence": "high",
+    "rule_id": "601cc03c-8ca1-48a4-b9e1-297ef3e0927e",
+    "filepath": "detections/sigma/hunt-triggered/T1046-e37bc06b-77-83-240-70.yml",
+    "triggered_by_hunt_id": "e37bc06b-5f70-4d16-acd1-e2e4f86cda11",
+    "honeypots_seen": [
+      "P0f",
+      "Suricata",
+      "Honeytrap",
+      "Fatt",
+      "Miniprint",
+      "Ipphoney"
+    ],
+    "total_events": 1113574,
+    "provenance": {
+      "source": "water",
+      "trust_level": "medium",
+      "tagged_at": "2026-05-27T12:00:14.845004+00:00",
+      "triggered_by_hunt_id": "e37bc06b-5f70-4d16-acd1-e2e4f86cda11"
+    }
+  },
+  {
+    "timestamp": "2026-05-27T12:00:03.932489+00:00",
+    "result": "pending_review",
+    "technique_id": "T1547.009",
+    "technique_name": "Boot or Logon Autostart Execution: Shortcut Modification",
+    "confidence": "medium",
+    "rule_id": "6dab6f31-3bfc-4dae-ae35-88114e36dc80",
+    "lookback": 687
   }
 ]

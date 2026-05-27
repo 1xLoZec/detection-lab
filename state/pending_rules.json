@@ -14,5 +14,23 @@
     "tactic": "execution",
     "confidence": "medium",
     "queued_at": "2026-05-27T00:37:48.502259+00:00"
+  },
+  {
+    "rule_id": "601cc03c-8ca1-48a4-b9e1-297ef3e0927e",
+    "technique_id": "T1046",
+    "technique_name": "Network Service Scanning",
+    "tactic": "discovery",
+    "confidence": "high",
+    "queued_at": "2026-05-27T12:00:12.617518+00:00",
+    "ai_context": "A network service scan was detected, meaning something on the network was probing devices or ports to discover what services are running."
+  },
+  {
+    "rule_id": "6dab6f31-3bfc-4dae-ae35-88114e36dc80",
+    "technique_id": "T1547.009",
+    "technique_name": "Boot or Logon Autostart Execution: Shortcut Modification",
+    "tactic": "persistence",
+    "confidence": "medium",
+    "queued_at": "2026-05-27T12:00:03.932489+00:00",
+    "ai_context": "Windows compatibility shim database files (msimain.sdb and sysmain.sdb) were silently installed and registered in the registry, which can cause certain applications to behave differently each time they run."
   }
 ]
