@@ -41,5 +41,14 @@
     "confidence": "medium",
     "queued_at": "2026-05-28T00:00:05.964221+00:00",
     "ai_context": "Rundll32.exe loaded a Windows compatibility DLL and a separate tool silently installed shim database files while writing related entries to the registry."
+  },
+  {
+    "rule_id": "5ed8d0ad-8fed-49ee-aac9-3f82a442319b",
+    "technique_id": "T1574.002",
+    "technique_name": "Hijack Execution Flow: DLL Side-Loading",
+    "tactic": "defense-evasion",
+    "confidence": "medium",
+    "queued_at": "2026-05-28T12:00:06.600931+00:00",
+    "ai_context": "Windows ran a scheduled task that loaded a compatibility database file and registered shim entries in the registry, which can sometimes be used to redirect how programs load DLL files."
   }
 ]

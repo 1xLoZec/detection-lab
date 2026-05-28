@@ -685,5 +685,14 @@
     "confidence": "medium",
     "rule_id": "2c4af804-dedd-41d3-b68c-62c8767ef180",
     "lookback": 725
+  },
+  {
+    "timestamp": "2026-05-28T12:00:06.600931+00:00",
+    "result": "pending_review",
+    "technique_id": "T1574.002",
+    "technique_name": "Hijack Execution Flow: DLL Side-Loading",
+    "confidence": "medium",
+    "rule_id": "5ed8d0ad-8fed-49ee-aac9-3f82a442319b",
+    "lookback": 725
   }
 ]

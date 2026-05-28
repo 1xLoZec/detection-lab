@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-27T23:49:39.242954+00:00",
+  "generated_at": "2026-05-28T11:54:13.811034+00:00",
   "alerts_index": ".internal.alerts-security.alerts-default-*",
   "total_rules": 36,
   "rules_fired": 7,
@@ -272,9 +272,9 @@
       "tactic": "defense-evasion",
       "rule_id": "5c8ea8be-7a0e-4809-b65a-2d26f91ee077",
       "deployed_at": "2026-05-11T18:44:59.364279+00:00",
-      "fire_count": 762,
+      "fire_count": 798,
       "first_fired": "2026-05-11T12:47:32.793Z",
-      "last_fired": "2026-05-27T23:48:14.721Z"
+      "last_fired": "2026-05-28T11:48:13.244Z"
     },
     "T1033": {
       "technique_name": "System Owner/User Discovery",
