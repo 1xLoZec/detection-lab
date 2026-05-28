@@ -32,5 +32,14 @@
     "confidence": "medium",
     "queued_at": "2026-05-27T12:00:03.932489+00:00",
     "ai_context": "Windows compatibility shim database files (msimain.sdb and sysmain.sdb) were silently installed and registered in the registry, which can cause certain applications to behave differently each time they run."
+  },
+  {
+    "rule_id": "2c4af804-dedd-41d3-b68c-62c8767ef180",
+    "technique_id": "T1574.002",
+    "technique_name": "Hijack Execution Flow: DLL Side-Loading",
+    "tactic": "defense-evasion",
+    "confidence": "medium",
+    "queued_at": "2026-05-28T00:00:05.964221+00:00",
+    "ai_context": "Rundll32.exe loaded a Windows compatibility DLL and a separate tool silently installed shim database files while writing related entries to the registry."
   }
 ]
