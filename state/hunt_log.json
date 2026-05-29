@@ -702,5 +702,14 @@
     "technique_name": "System Binary Proxy Execution: Rundll32",
     "confidence": "high",
     "lookback": 724
+  },
+  {
+    "timestamp": "2026-05-29T12:00:06.141636+00:00",
+    "result": "pending_review",
+    "technique_id": "T1574.001",
+    "technique_name": "Hijack Execution Flow: DLL Search Order Hijacking",
+    "confidence": "medium",
+    "rule_id": "c9fb18b1-51b6-4a9f-bb62-c409dbc7c429",
+    "lookback": 725
   }
 ]

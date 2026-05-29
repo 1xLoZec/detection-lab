@@ -50,5 +50,14 @@
     "confidence": "medium",
     "queued_at": "2026-05-28T12:00:06.600931+00:00",
     "ai_context": "Windows ran a scheduled task that loaded a compatibility database file and registered shim entries in the registry, which can sometimes be used to redirect how programs load DLL files."
+  },
+  {
+    "rule_id": "c9fb18b1-51b6-4a9f-bb62-c409dbc7c429",
+    "technique_id": "T1574.001",
+    "technique_name": "Hijack Execution Flow: DLL Search Order Hijacking",
+    "tactic": "defense-evasion",
+    "confidence": "medium",
+    "queued_at": "2026-05-29T12:00:06.141636+00:00",
+    "ai_context": "Windows ran a scheduled task that loaded a system DLL and updated application compatibility database entries in the registry, which are steps sometimes used to redirect how programs load DLL files."
   }
 ]
