@@ -694,5 +694,13 @@
     "confidence": "medium",
     "rule_id": "5ed8d0ad-8fed-49ee-aac9-3f82a442319b",
     "lookback": 725
+  },
+  {
+    "timestamp": "2026-05-29T00:00:05.947838+00:00",
+    "result": "already_covered",
+    "technique_id": "T1218.011",
+    "technique_name": "System Binary Proxy Execution: Rundll32",
+    "confidence": "high",
+    "lookback": 724
   }
 ]
