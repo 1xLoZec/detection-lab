@@ -68,5 +68,14 @@
     "confidence": "medium",
     "queued_at": "2026-05-30T00:00:02.850260+00:00",
     "ai_context": "Windows update and error-reporting processes ran under SYSTEM account alongside a network connectivity check and an upload action, which are behaviours sometimes used to hide malicious file transfers within normal Windows traffic."
+  },
+  {
+    "rule_id": "4e2e2961-dd5f-4a68-817b-76b29a6f8348",
+    "technique_id": "T1195.002",
+    "technique_name": "Supply Chain Compromise: Compromise Software Supply Chain",
+    "tactic": "initial-access",
+    "confidence": "medium",
+    "queued_at": "2026-05-30T12:00:05.948208+00:00",
+    "ai_context": "A script in the Windows System32 folder triggered the silent installation of application compatibility databases and wrote related registry keys, which is an unusual combination sometimes used to maintain persistence."
   }
 ]
