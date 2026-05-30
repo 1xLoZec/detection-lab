@@ -59,5 +59,14 @@
     "confidence": "medium",
     "queued_at": "2026-05-29T12:00:06.141636+00:00",
     "ai_context": "Windows ran a scheduled task that loaded a system DLL and updated application compatibility database entries in the registry, which are steps sometimes used to redirect how programs load DLL files."
+  },
+  {
+    "rule_id": "a5e42eef-e419-44b0-acad-1dc5471d4fb9",
+    "technique_id": "T1197",
+    "technique_name": "BITS Jobs",
+    "tactic": "defense-evasion",
+    "confidence": "medium",
+    "queued_at": "2026-05-30T00:00:02.850260+00:00",
+    "ai_context": "Windows update and error-reporting processes ran under SYSTEM account alongside a network connectivity check and an upload action, which are behaviours sometimes used to hide malicious file transfers within normal Windows traffic."
   }
 ]

@@ -711,5 +711,14 @@
     "confidence": "medium",
     "rule_id": "c9fb18b1-51b6-4a9f-bb62-c409dbc7c429",
     "lookback": 725
+  },
+  {
+    "timestamp": "2026-05-30T00:00:02.850260+00:00",
+    "result": "pending_review",
+    "technique_id": "T1197",
+    "technique_name": "BITS Jobs",
+    "confidence": "medium",
+    "rule_id": "a5e42eef-e419-44b0-acad-1dc5471d4fb9",
+    "lookback": 724
   }
 ]
