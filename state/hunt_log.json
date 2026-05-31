@@ -729,5 +729,13 @@
     "confidence": "medium",
     "rule_id": "4e2e2961-dd5f-4a68-817b-76b29a6f8348",
     "lookback": 725
+  },
+  {
+    "timestamp": "2026-05-31T00:00:05.940002+00:00",
+    "result": "confidence_too_low",
+    "technique_id": "T1195.002",
+    "technique_name": "Supply Chain Compromise: Compromise Software Supply Chain",
+    "confidence": "low",
+    "lookback": 725
   }
 ]
