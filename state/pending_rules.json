@@ -77,5 +77,14 @@
     "confidence": "medium",
     "queued_at": "2026-05-30T12:00:05.948208+00:00",
     "ai_context": "A script in the Windows System32 folder triggered the silent installation of application compatibility databases and wrote related registry keys, which is an unusual combination sometimes used to maintain persistence."
+  },
+  {
+    "rule_id": "a5c15337-1bdd-4b85-8d66-79b4dcd198fe",
+    "technique_id": "T1574.001",
+    "technique_name": "Hijack Execution Flow: DLL Search Order Hijacking",
+    "tactic": "defense-evasion",
+    "confidence": "medium",
+    "queued_at": "2026-05-31T12:00:05.612490+00:00",
+    "ai_context": "A program silently installed application compatibility shim databases and updated related registry entries, which can be used to redirect how other programs run on this machine."
   }
 ]
