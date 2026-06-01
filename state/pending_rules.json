@@ -95,5 +95,14 @@
     "confidence": "medium",
     "queued_at": "2026-06-01T00:00:06.017161+00:00",
     "ai_context": "Windows Defender update processes dropped executable files to temporary folders while a separate tool modified application compatibility databases, which are system files that can change how programs run."
+  },
+  {
+    "rule_id": "30ba40ce-b054-4d5d-ab96-a446bf911b2a",
+    "technique_id": "T1574.001",
+    "technique_name": "Hijack Execution Flow: DLL Search Order Hijacking",
+    "tactic": "defense-evasion",
+    "confidence": "medium",
+    "queued_at": "2026-06-01T12:00:04.037911+00:00",
+    "ai_context": "Sdbinst.exe and rundll32.exe made registry changes related to Windows application compatibility shim databases, which can be used to redirect how programs load certain files."
   }
 ]

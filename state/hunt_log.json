@@ -755,5 +755,14 @@
     "confidence": "medium",
     "rule_id": "81b83b2d-776d-412c-b318-4a53e7b54f9a",
     "lookback": 725
+  },
+  {
+    "timestamp": "2026-06-01T12:00:04.037911+00:00",
+    "result": "pending_review",
+    "technique_id": "T1574.001",
+    "technique_name": "Hijack Execution Flow: DLL Search Order Hijacking",
+    "confidence": "medium",
+    "rule_id": "30ba40ce-b054-4d5d-ab96-a446bf911b2a",
+    "lookback": 724
   }
 ]
