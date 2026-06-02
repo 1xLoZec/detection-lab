@@ -773,5 +773,14 @@
     "confidence": "medium",
     "rule_id": "6b35df2f-f06a-4ccc-a06f-0ba99351521b",
     "lookback": 724
+  },
+  {
+    "timestamp": "2026-06-02T12:00:02.302165+00:00",
+    "result": "pending_review",
+    "technique_id": "T1547.009",
+    "technique_name": "Boot or Logon Autostart Execution: Shortcut Modification",
+    "confidence": "medium",
+    "rule_id": "1bb71557-113b-4671-b554-75fd355655a9",
+    "lookback": 725
   }
 ]

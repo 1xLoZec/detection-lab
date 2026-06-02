@@ -113,5 +113,14 @@
     "confidence": "medium",
     "queued_at": "2026-06-02T00:00:01.896083+00:00",
     "ai_context": "Executable files with GUID-based names were dropped into Windows temp folders by Defender's update tool while Edge's updater ran scheduled tasks at the same time."
+  },
+  {
+    "rule_id": "1bb71557-113b-4671-b554-75fd355655a9",
+    "technique_id": "T1547.009",
+    "technique_name": "Boot or Logon Autostart Execution: Shortcut Modification",
+    "tactic": "persistence",
+    "confidence": "medium",
+    "queued_at": "2026-06-02T12:00:02.302165+00:00",
+    "ai_context": "A Windows tool that installs application compatibility databases ran silently in the background, making machine-wide registry changes \u2014 the same method legitimate Windows updates and malicious persistence both use."
   }
 ]
