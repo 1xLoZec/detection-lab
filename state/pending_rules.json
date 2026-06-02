@@ -104,5 +104,14 @@
     "confidence": "medium",
     "queued_at": "2026-06-01T12:00:04.037911+00:00",
     "ai_context": "Sdbinst.exe and rundll32.exe made registry changes related to Windows application compatibility shim databases, which can be used to redirect how programs load certain files."
+  },
+  {
+    "rule_id": "6b35df2f-f06a-4ccc-a06f-0ba99351521b",
+    "technique_id": "T1195.002",
+    "technique_name": "Supply Chain Compromise: Compromise Software Supply Chain",
+    "tactic": "initial-access",
+    "confidence": "medium",
+    "queued_at": "2026-06-02T00:00:01.896083+00:00",
+    "ai_context": "Executable files with GUID-based names were dropped into Windows temp folders by Defender's update tool while Edge's updater ran scheduled tasks at the same time."
   }
 ]
