@@ -122,5 +122,14 @@
     "confidence": "medium",
     "queued_at": "2026-06-02T12:00:02.302165+00:00",
     "ai_context": "A Windows tool that installs application compatibility databases ran silently in the background, making machine-wide registry changes \u2014 the same method legitimate Windows updates and malicious persistence both use."
+  },
+  {
+    "rule_id": "39b854a4-a877-4e4e-a317-e9bcae2b32c2",
+    "technique_id": "T1195.002",
+    "technique_name": "Supply Chain Compromise: Compromise Software Supply Chain",
+    "tactic": "initial-access",
+    "confidence": "medium",
+    "queued_at": "2026-06-03T00:00:06.042179+00:00",
+    "ai_context": "Several Windows update processes ran at the same time and dropped executable files into temporary folders, which can sometimes indicate abuse of legitimate update channels to deliver files."
   }
 ]
