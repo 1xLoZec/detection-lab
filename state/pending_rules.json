@@ -131,5 +131,14 @@
     "confidence": "medium",
     "queued_at": "2026-06-03T00:00:06.042179+00:00",
     "ai_context": "Several Windows update processes ran at the same time and dropped executable files into temporary folders, which can sometimes indicate abuse of legitimate update channels to deliver files."
+  },
+  {
+    "rule_id": "716ee502-3cf7-4ea6-9622-6c0c45119ef3",
+    "technique_id": "T1195.002",
+    "technique_name": "Supply Chain Compromise: Compromise Software Supply Chain",
+    "tactic": "initial-access",
+    "confidence": "medium",
+    "queued_at": "2026-06-04T00:00:05.883134+00:00",
+    "ai_context": "During a Windows Update process, a tool that installs application compatibility patches ran silently and wrote entries to the registry, which is normal behaviour but can also be abused to modify how programs run."
   }
 ]
