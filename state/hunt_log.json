@@ -800,5 +800,10 @@
     "confidence": "medium",
     "rule_id": "716ee502-3cf7-4ea6-9622-6c0c45119ef3",
     "lookback": 1440
+  },
+  {
+    "timestamp": "2026-06-04T12:00:03.988870+00:00",
+    "result": "no_events",
+    "lookback": 724
   }
 ]
