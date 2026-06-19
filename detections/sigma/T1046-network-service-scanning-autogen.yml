@@ -1,58 +1,37 @@
-title: Network Service Scanning - Inbound Mass Scan from Known Scanner IP
-id: b70565cc-77c4-4dd4-8838-a1fdb18a392d
+title: Network Service Scanning from Known Mass Scanner IPs
+id: 3f9a6b93-3242-4661-b8bc-e6871b802615
 status: experimental
-description: Detects inbound network connection attempts from known mass-scanning source IP 77.83.240.70 (ASN 49870, Alsycon B.V.) or similar high-volume scanners targeting multiple distinct ports. Indicative of T1046 Network Service Scanning behaviour as observed via honeypot telemetry showing over 1 million events in 24 hours across P0f, Suricata, Honeytrap, Fatt, and Miniprint honeypot types.
+description: Detects inbound network connection attempts from known mass scanning IP addresses indicative of Network Service Scanning (T1046). The source IP 77.83.240.70 (ASN 49870, Alsycon B.V.) was observed hitting multiple honeypot types with over 1 million events in 24 hours, suggesting automated mass scanning behaviour.
 author: 1xLoZec
 date: 2026/05/27
 references:
-  - https://attack.mitre.org/techniques/T1046/
+    - https://attack.mitre.org/techniques/T1046/
 tags:
-  - attack.discovery
-  - attack.t1046
+    - attack.discovery
+    - attack.t1046
 logsource:
-  product: windows
-  service: sysmon
+    product: windows
+    service: sysmon
 detection:
-  selection_event:
-    event.code: '3'
-  selection_source_ip:
-    source.ip: '77.83.240.70'
-  selection_destination_ports:
-    destination.port:
-      - 21
-      - 22
-      - 23
-      - 25
-      - 53
-      - 80
-      - 110
-      - 135
-      - 139
-      - 143
-      - 443
-      - 445
-      - 631
-      - 1433
-      - 1883
-      - 3306
-      - 3389
-      - 5060
-      - 5900
-      - 6379
-      - 8080
-      - 8443
-      - 9200
-      - 27017
-  condition: selection_event and selection_source_ip and selection_destination_ports
-falsepositives:
-  - Legitimate security scanning tools operated by internal red teams targeting the same destination ports
-  - Threat intelligence or honeypot feed aggregation systems that replay or mirror scanner traffic
-  - Misconfigured network monitoring appliances generating synthetic connection events
-level: high
+    selection_event:
+        event.code: '3'
+    selection_source_ip:
+        source.ip:
+            - '77.83.240.70'
+    filter_legitimate_services:
+        destination.port:
+            - 80
+            - 443
+    condition: selection_event and selection_source_ip and not filter_legitimate_services
 fields:
-  - source.ip
-  - source.port
-  - destination.ip
-  - destination.port
-  - process.name
-  - process.executable
+    - source.ip
+    - destination.ip
+    - destination.port
+    - process.name
+    - process.executable
+    - process.command_line
+falsepositives:
+    - Legitimate security scanners or vulnerability assessment tools from shared infrastructure
+    - CDN or proxy services sharing IP address space
+    - Penetration testing engagements from third-party vendors
+level: high
