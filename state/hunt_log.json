@@ -955,5 +955,10 @@
     "rule_id": "3f9a6b93-3242-4661-b8bc-e6871b802615",
     "filepath": "detections/sigma/T1046-network-service-scanning-autogen.yml",
     "approved_by": "human"
+  },
+  {
+    "timestamp": "2026-06-20T00:00:06.065252+00:00",
+    "result": "no_events",
+    "lookback": 725
   }
 ]
