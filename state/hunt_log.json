@@ -965,5 +965,10 @@
     "timestamp": "2026-06-20T12:00:01.992351+00:00",
     "result": "no_events",
     "lookback": 724
+  },
+  {
+    "timestamp": "2026-06-21T00:00:05.056991+00:00",
+    "result": "no_events",
+    "lookback": 725
   }
 ]
