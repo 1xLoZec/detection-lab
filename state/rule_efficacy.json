@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-27T23:58:22.187770+00:00",
+  "generated_at": "2026-08-28T11:48:38.050664+00:00",
   "alerts_index": ".internal.alerts-security.alerts-default-*",
   "total_rules": 36,
   "rules_fired": 7,
